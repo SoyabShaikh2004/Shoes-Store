@@ -154,12 +154,12 @@ export default async function AboutPage() {
           <div className="text-center">
             {productImages.length > 0 && (
               <TeamMemberImage
-                src="/images/team-1.jpg"
+                src="/images/Laxmi.png"
                 alt="Team Member"
                 productFallback={productImages[0]}
               />
             )}
-            <h3 className="text-xl font-semibold">Alex Johnson</h3>
+            <h3 className="text-xl font-semibold">Laxmi Jaiswar</h3>
             <p className="text-indigo-600 mb-2">Founder & CEO</p>
             <p className="text-gray-600">Passionate about bringing quality footwear to everyone</p>
           </div>
@@ -168,12 +168,12 @@ export default async function AboutPage() {
           <div className="text-center">
             {productImages.length > 1 && (
               <TeamMemberImage
-                src="/images/team-2.jpg"
+                src="/images/Samir.png"
                 alt="Team Member"
                 productFallback={productImages[1]}
               />
             )}
-            <h3 className="text-xl font-semibold">Samantha Lee</h3>
+            <h3 className="text-xl font-semibold">Samir Shaikh</h3>
             <p className="text-indigo-600 mb-2">Head of Design</p>
             <p className="text-gray-600">Curates our collection with an eye for style and comfort</p>
           </div>
@@ -182,12 +182,12 @@ export default async function AboutPage() {
           <div className="text-center">
             {productImages.length > 2 && (
               <TeamMemberImage
-                src="/images/Product4/HomeProduct.webp"
+                src="/images/Malik.png"
                 alt="Team Member"
                 productFallback={productImages[0]}
               />
             )}
-            <h3 className="text-xl font-semibold">Michael Chen</h3>
+            <h3 className="text-xl font-semibold">Malik Shaikh</h3>
             <p className="text-indigo-600 mb-2">Customer Experience</p>
             <p className="text-gray-600">Ensures every customer finds their perfect pair</p>
           </div>

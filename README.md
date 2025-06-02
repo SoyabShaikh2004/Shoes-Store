@@ -19,19 +19,19 @@
 
 ```
 shoe-store/
-├── public/                 # Static assets
-│   └── images/            # Product images, logos, and UI assets
+├── public/                                # Static assets
+│   └── images/                            # Product images, logos, and UI assets
 ├── src/
-│   ├── app/              # Next.js App Router pages
-│   │   ├── page.tsx      # Home page
-│   │   ├── about/        # About page
-│   │   ├── account/      # User account management
-│   │   ├── auth/         # Authentication flows
-│   │   ├── cart/         # Shopping cart
-│   │   ├── contact/      # Contact page
-│   │   ├── products/     # Product listings
-│   │   └── wishlist/     # User wishlist
-│   ├── components/       # Reusable React components
+│   ├── app/                               # Next.js App Router pages
+│   │   ├── page.tsx                       # Home page
+│   │   ├── about/                         # About page
+│   │   ├── account/                       # User account management
+│   │   ├── auth/                          # Authentication flows
+│   │   ├── cart/                          # Shopping cart
+│   │   ├── contact/                       # Contact page
+│   │   ├── products/                      # Product listings
+│   │   └── wishlist/                      # User wishlist
+│   ├── components/                        # Reusable React components
 │   │   ├── AddToCartButton.tsx
 │   │   ├── AddToWishlistButton.tsx
 │   │   ├── CartItems.tsx
@@ -39,7 +39,7 @@ shoe-store/
 │   │   ├── ImageCarousel.tsx
 │   │   ├── Navbar.tsx
 │   │   └── ... other components
-│   └── lib/             # Utilities and data layer
+│   └── lib/                               # Utilities and data layer
 └── configuration files
     ├── next.config.js
     ├── tailwind.config.js

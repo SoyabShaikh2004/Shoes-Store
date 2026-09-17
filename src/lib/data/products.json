@@ -8,8 +8,24 @@
     "imagePath": "/images/Product1",
     "category": "Running",
     "inStock": true,
-    "colors": ["Black/White", "Blue/Gray", "Red/Black"],
-    "sizes": [7, 7.5, 8, 8.5, 9, 9.5, 10, 10.5, 11, 11.5, 12]
+    "colors": [
+      "Black/White",
+      "Blue/Gray",
+      "Red/Black"
+    ],
+    "sizes": [
+      7,
+      7.5,
+      8,
+      8.5,
+      9,
+      9.5,
+      10,
+      10.5,
+      11,
+      11.5,
+      12
+    ]
   },
   {
     "id": 2,
@@ -20,8 +36,21 @@
     "imagePath": "/images/Product2",
     "category": "Casual",
     "inStock": true,
-    "colors": ["White", "Black", "Navy", "Red"],
-    "sizes": [6, 7, 8, 9, 10, 11, 12]
+    "colors": [
+      "White",
+      "Black",
+      "Navy",
+      "Red"
+    ],
+    "sizes": [
+      6,
+      7,
+      8,
+      9,
+      10,
+      11,
+      12
+    ]
   },
   {
     "id": 3,
@@ -32,8 +61,17 @@
     "imagePath": "/images/Product3",
     "category": "Hiking",
     "inStock": true,
-    "colors": ["Brown/Black", "Gray/Orange"],
-    "sizes": [8, 9, 10, 11, 12]
+    "colors": [
+      "Brown/Black",
+      "Gray/Orange"
+    ],
+    "sizes": [
+      8,
+      9,
+      10,
+      11,
+      12
+    ]
   },
   {
     "id": 4,
@@ -44,8 +82,19 @@
     "imagePath": "/images/Product4",
     "category": "Running",
     "inStock": true,
-    "colors": ["Neon Yellow/Black", "Red/White", "Blue/Silver"],
-    "sizes": [7, 8, 9, 10, 11, 12]
+    "colors": [
+      "Neon Yellow/Black",
+      "Red/White",
+      "Blue/Silver"
+    ],
+    "sizes": [
+      7,
+      8,
+      9,
+      10,
+      11,
+      12
+    ]
   },
   {
     "id": 5,
@@ -56,8 +105,19 @@
     "imagePath": "/images/Product5",
     "category": "Casual",
     "inStock": true,
-    "colors": ["White/Black", "All Black", "Gray/White"],
-    "sizes": [7, 8, 9, 10, 11, 12]
+    "colors": [
+      "White/Black",
+      "All Black",
+      "Gray/White"
+    ],
+    "sizes": [
+      7,
+      8,
+      9,
+      10,
+      11,
+      12
+    ]
   },
   {
     "id": 6,
@@ -68,8 +128,18 @@
     "imagePath": "/images/Product6",
     "category": "Tennis",
     "inStock": true,
-    "colors": ["White/Green", "White/Blue"],
-    "sizes": [7, 8, 9, 10, 11, 12]
+    "colors": [
+      "White/Green",
+      "White/Blue"
+    ],
+    "sizes": [
+      7,
+      8,
+      9,
+      10,
+      11,
+      12
+    ]
   },
   {
     "id": 7,
@@ -80,8 +150,17 @@
     "imagePath": "/images/Product7",
     "category": "Outdoor",
     "inStock": true,
-    "colors": ["Green/Brown", "Gray/Black"],
-    "sizes": [8, 9, 10, 11, 12]
+    "colors": [
+      "Green/Brown",
+      "Gray/Black"
+    ],
+    "sizes": [
+      8,
+      9,
+      10,
+      11,
+      12
+    ]
   },
   {
     "id": 8,
@@ -92,8 +171,19 @@
     "imagePath": "/images/Product8",
     "category": "Training",
     "inStock": true,
-    "colors": ["Black/Red", "Blue/White", "Gray/Green"],
-    "sizes": [7, 8, 9, 10, 11, 12]
+    "colors": [
+      "Black/Red",
+      "Blue/White",
+      "Gray/Green"
+    ],
+    "sizes": [
+      7,
+      8,
+      9,
+      10,
+      11,
+      12
+    ]
   },
   {
     "id": 9,
@@ -104,8 +194,20 @@
     "imagePath": "/images/Product9",
     "category": "Skateboarding",
     "inStock": true,
-    "colors": ["Black/White", "Navy/Gum", "Burgundy/White"],
-    "sizes": [7, 8, 9, 10, 11, 12, 13]
+    "colors": [
+      "Black/White",
+      "Navy/Gum",
+      "Burgundy/White"
+    ],
+    "sizes": [
+      7,
+      8,
+      9,
+      10,
+      11,
+      12,
+      13
+    ]
   },
   {
     "id": 10,
@@ -116,8 +218,18 @@
     "imagePath": "/images/Product10",
     "category": "Formal",
     "inStock": true,
-    "colors": ["Black", "Brown", "Tan"],
-    "sizes": [8, 9, 10, 11, 12]
+    "colors": [
+      "Black",
+      "Brown",
+      "Tan"
+    ],
+    "sizes": [
+      8,
+      9,
+      10,
+      11,
+      12
+    ]
   },
   {
     "id": 11,
@@ -128,8 +240,17 @@
     "imagePath": "/images/Product11",
     "category": "Winter",
     "inStock": true,
-    "colors": ["Black", "Brown"],
-    "sizes": [8, 9, 10, 11, 12]
+    "colors": [
+      "Black",
+      "Brown"
+    ],
+    "sizes": [
+      8,
+      9,
+      10,
+      11,
+      12
+    ]
   },
   {
     "id": 12,
@@ -140,8 +261,18 @@
     "imagePath": "/images/Product12",
     "category": "Water",
     "inStock": true,
-    "colors": ["Black/Blue", "Gray/Yellow"],
-    "sizes": [7, 8, 9, 10, 11, 12]
+    "colors": [
+      "Black/Blue",
+      "Gray/Yellow"
+    ],
+    "sizes": [
+      7,
+      8,
+      9,
+      10,
+      11,
+      12
+    ]
   },
   {
     "id": 13,
@@ -152,8 +283,19 @@
     "imagePath": "/images/Product13",
     "category": "Running",
     "inStock": true,
-    "colors": ["Core Black", "Cloud White", "Solar Red"],
-    "sizes": [7, 8, 9, 10, 11, 12]
+    "colors": [
+      "Core Black",
+      "Cloud White",
+      "Solar Red"
+    ],
+    "sizes": [
+      7,
+      8,
+      9,
+      10,
+      11,
+      12
+    ]
   },
   {
     "id": 14,
@@ -164,8 +306,19 @@
     "imagePath": "/images/Product14",
     "category": "Basketball",
     "inStock": true,
-    "colors": ["Black/Gold", "White/Red", "Blue/Orange"],
-    "sizes": [8, 9, 10, 11, 12, 13]
+    "colors": [
+      "Black/Gold",
+      "White/Red",
+      "Blue/Orange"
+    ],
+    "sizes": [
+      8,
+      9,
+      10,
+      11,
+      12,
+      13
+    ]
   },
   {
     "id": 15,
@@ -176,8 +329,20 @@
     "imagePath": "/images/Product15",
     "category": "Casual",
     "inStock": true,
-    "colors": ["White/Navy", "Gray/Green", "Beige/Brown"],
-    "sizes": [6, 7, 8, 9, 10, 11, 12]
+    "colors": [
+      "White/Navy",
+      "Gray/Green",
+      "Beige/Brown"
+    ],
+    "sizes": [
+      6,
+      7,
+      8,
+      9,
+      10,
+      11,
+      12
+    ]
   },
   {
     "id": 16,
@@ -188,8 +353,19 @@
     "imagePath": "/images/Product16",
     "category": "Football",
     "inStock": true,
-    "colors": ["Black/White", "Blue/Yellow", "Red/Black"],
-    "sizes": [7, 8, 9, 10, 11, 12]
+    "colors": [
+      "Black/White",
+      "Blue/Yellow",
+      "Red/Black"
+    ],
+    "sizes": [
+      7,
+      8,
+      9,
+      10,
+      11,
+      12
+    ]
   },
   {
     "id": 17,
@@ -200,8 +376,18 @@
     "imagePath": "/images/Product17",
     "category": "Golf",
     "inStock": true,
-    "colors": ["White/Green", "Black/Gray", "Brown/Tan"],
-    "sizes": [8, 9, 10, 11, 12]
+    "colors": [
+      "White/Green",
+      "Black/Gray",
+      "Brown/Tan"
+    ],
+    "sizes": [
+      8,
+      9,
+      10,
+      11,
+      12
+    ]
   },
   {
     "id": 18,
@@ -212,8 +398,20 @@
     "imagePath": "/images/Product18",
     "category": "Walking",
     "inStock": true,
-    "colors": ["Gray/Blue", "Black/Pink", "Navy/White"],
-    "sizes": [6, 7, 8, 9, 10, 11, 12]
+    "colors": [
+      "Gray/Blue",
+      "Black/Pink",
+      "Navy/White"
+    ],
+    "sizes": [
+      6,
+      7,
+      8,
+      9,
+      10,
+      11,
+      12
+    ]
   },
   {
     "id": 19,
@@ -224,8 +422,19 @@
     "imagePath": "/images/Product19",
     "category": "Hiking",
     "inStock": true,
-    "colors": ["Brown/Orange", "Green/Black", "Gray/Blue"],
-    "sizes": [7, 8, 9, 10, 11, 12]
+    "colors": [
+      "Brown/Orange",
+      "Green/Black",
+      "Gray/Blue"
+    ],
+    "sizes": [
+      7,
+      8,
+      9,
+      10,
+      11,
+      12
+    ]
   },
   {
     "id": 20,
@@ -236,7 +445,18 @@
     "imagePath": "/images/Product20",
     "category": "Formal",
     "inStock": true,
-    "colors": ["Black", "Navy", "Burgundy"],
-    "sizes": [7, 8, 9, 10, 11, 12]
+    "colors": [
+      "Black",
+      "Navy",
+      "Burgundy"
+    ],
+    "sizes": [
+      7,
+      8,
+      9,
+      10,
+      11,
+      12
+    ]
   }
 ]

@@ -16,6 +16,8 @@ export type Product = {
   featured?: boolean;
   brand?: string;
   createdAt?: string;
+  status?: 'active' | 'inactive';
+  isDeleted?: boolean;
 };
 
 // Cache the products data
@@ -33,16 +35,37 @@ export async function getProducts(forceRefresh = false): Promise<Product[]> {
     const filePath = getProductsFilePath();
     const data = await fs.readFile(filePath, 'utf8');
     const products: Product[] = JSON.parse(data);
-    productsCache = products;
-    return products;
+    // Sanitize and filter out unwanted, deleted, inactive, or corrupted products
+    const validProducts = products.filter(
+      (p) =>
+        p &&
+        p.id &&
+        p.name &&
+        p.name.trim() !== '' &&
+        p.price > 0 &&
+        !p.isDeleted &&
+        p.status !== 'inactive'
+    );
+    productsCache = validProducts;
+    return validProducts;
   } catch (error) {
     // If products.json is missing or corrupted, attempt fallback
     try {
       const defaultPath = getDefaultProductsFilePath();
       const defaultData = await fs.readFile(defaultPath, 'utf8');
       const products: Product[] = JSON.parse(defaultData);
-      productsCache = products;
-      return products;
+      const validProducts = products.filter(
+        (p) =>
+          p &&
+          p.id &&
+          p.name &&
+          p.name.trim() !== '' &&
+          p.price > 0 &&
+          !p.isDeleted &&
+          p.status !== 'inactive'
+      );
+      productsCache = validProducts;
+      return validProducts;
     } catch {
       return [];
     }

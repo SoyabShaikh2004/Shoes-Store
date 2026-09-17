@@ -3,8 +3,7 @@ import { notFound } from 'next/navigation';
 import { getProductById } from '@/lib/data';
 import ProductImages from '@/components/ProductImages';
 import ProductDetailActions from '@/components/ProductDetailActions';
-import fs from 'fs';
-import path from 'path';
+import Link from 'next/link';
 
 interface ProductDetailPageProps {
   params: {
@@ -35,10 +34,26 @@ export default async function ProductDetailPage({ params }: ProductDetailPagePro
     notFound();
   }
   
-  // Function to get appropriate image slides based on product ID
-  const getProductImageSlides = (productId: number, imagePath: string) => {
-    // Define the mapping of product IDs to file formats
-    const productFormats: Record<number, { [key: string]: string }> = {
+  // Function to get appropriate image slides based on product data
+  const getProductImageSlides = (productId: number, imagePath: string, customImages?: string[]) => {
+    // 1. If product has dedicated images array, use them
+    if (customImages && customImages.length > 0) {
+      return customImages;
+    }
+
+    // 2. If imagePath is a direct uploaded file or URL
+    if (
+      imagePath &&
+      (imagePath.startsWith('/uploads/') ||
+        imagePath.startsWith('http') ||
+        imagePath.startsWith('data:') ||
+        /\.(jpg|jpeg|png|webp|svg)$/i.test(imagePath))
+    ) {
+      return [imagePath];
+    }
+
+    // 3. Fallback to default catalog mapping
+    const productFormats: Record<number, { [key: string]: string; slide3NoHyphen?: boolean }> = {
       1: { home: '.jpeg', slide1: '.webp', slide2: '.webp', slide3: '.webp' },
       2: { home: '.webp', slide1: '.webp', slide2: '.webp', slide3: '.jpg' },
       3: { home: '.webp', slide1: '.webp', slide2: '.jpg', slide3: '.jpg' },
@@ -61,61 +76,68 @@ export default async function ProductDetailPage({ params }: ProductDetailPagePro
       20: { home: '.png', slide1: '.png', slide2: '.png', slide3: '.png' },
     };
     
-    // Fallback formats to try in order
-    const fallbackFormats = ['.webp', '.jpg', '.jpeg', '.png'];
-    
-    // Get the format for the current product or use default
     const productFormat = productFormats[productId] || {
       home: '.webp',
       slide1: '.webp',
       slide2: '.webp',
-      slide3: '.webp'
+      slide3: '.webp',
     };
     
-    // Create the image paths with correct extensions
     const homeProductPath = `${imagePath}/HomeProduct${productFormat.home}`;
-    
-    // Handle special case for Slide3 with no hyphen (Product19)
     const slide3Path = productFormat.slide3NoHyphen
       ? `${imagePath}/Slide3${productFormat.slide3}`
       : `${imagePath}/Slide-3${productFormat.slide3}`;
     
     return [
+      homeProductPath,
       `${imagePath}/Slide-1${productFormat.slide1}`,
       `${imagePath}/Slide-2${productFormat.slide2}`,
       slide3Path,
-      homeProductPath,
     ];
   };
   
-  // Get image slides for the current product
-  const productImages = getProductImageSlides(product.id, product.imagePath);
+  const productImages = getProductImageSlides(product.id, product.imagePath, product.images);
+
+  const hasDiscount = product.mrp && product.mrp > product.price;
+  const discountAmount = hasDiscount ? product.mrp! - product.price : 0;
+  const discountPercent = hasDiscount
+    ? Math.round(((product.mrp! - product.price) / product.mrp!) * 100)
+    : 0;
   
   return (
     <div className="container mx-auto px-4 py-4 sm:py-6 md:py-8">
-      <div className="mb-2 sm:mb-4">
+      {/* Breadcrumb Navigation */}
+      <div className="mb-4">
         <nav className="flex text-xs sm:text-sm">
-          <ol className="inline-flex items-center space-x-1 md:space-x-2">
+          <ol className="inline-flex items-center space-x-1 md:space-x-2 text-gray-500">
             <li className="inline-flex items-center">
-              <a href="/" className="text-gray-500 hover:text-gray-900">Home</a>
+              <Link href="/" className="hover:text-indigo-600 transition-colors">Home</Link>
             </li>
             <li>
               <div className="flex items-center">
                 <span className="mx-1 sm:mx-2 text-gray-400">/</span>
-                <a href="/products" className="text-gray-500 hover:text-gray-900">Products</a>
+                <Link href="/products" className="hover:text-indigo-600 transition-colors">Products</Link>
+              </div>
+            </li>
+            <li>
+              <div className="flex items-center">
+                <span className="mx-1 sm:mx-2 text-gray-400">/</span>
+                <span className="text-gray-400">{product.category}</span>
               </div>
             </li>
             <li aria-current="page">
               <div className="flex items-center">
                 <span className="mx-1 sm:mx-2 text-gray-400">/</span>
-                <span className="text-gray-800 truncate max-w-[150px] sm:max-w-[300px]">{product.name}</span>
+                <span className="text-gray-900 font-medium truncate max-w-[150px] sm:max-w-[300px]">
+                  {product.name}
+                </span>
               </div>
             </li>
           </ol>
         </nav>
       </div>
       
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-4 sm:gap-6 md:gap-8">
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-6 sm:gap-8 md:gap-12">
         {/* Product Images */}
         <div>
           <ProductImages slides={productImages} productName={product.name} />
@@ -124,38 +146,64 @@ export default async function ProductDetailPage({ params }: ProductDetailPagePro
         {/* Product Details */}
         <div className="flex flex-col space-y-4 sm:space-y-6">
           <div>
-            <h1 className="text-2xl sm:text-3xl font-bold text-gray-900">{product.name}</h1>
-            <p className="mt-1 text-lg sm:text-xl font-semibold text-indigo-600">₹{product.price}</p>
-          </div>
-          
-          {/* Category tag */}
-          <div className="mt-1 sm:mt-2">
-            <span className="inline-block rounded-full bg-indigo-100 px-2 sm:px-3 py-1 text-xs sm:text-sm font-medium text-indigo-800">
-              {product.category}
-            </span>
-            {product.inStock ? (
-              <span className="ml-2 inline-block rounded-full bg-green-100 px-2 sm:px-3 py-1 text-xs sm:text-sm font-medium text-green-800">
-                In Stock
+            <div className="flex items-center gap-2 mb-2">
+              <span className="text-xs font-semibold uppercase tracking-wider text-indigo-600 bg-indigo-50 px-2.5 py-1 rounded-md">
+                {product.brand || 'StepStyle'}
               </span>
-            ) : (
-              <span className="ml-2 inline-block rounded-full bg-red-100 px-2 sm:px-3 py-1 text-xs sm:text-sm font-medium text-red-800">
-                Out of Stock
+              <span className="inline-block rounded-md bg-gray-100 px-2.5 py-1 text-xs font-medium text-gray-700">
+                {product.category}
               </span>
-            )}
+              {product.inStock ? (
+                <span className="inline-block rounded-md bg-emerald-50 border border-emerald-200 px-2.5 py-1 text-xs font-medium text-emerald-800">
+                  In Stock
+                </span>
+              ) : (
+                <span className="inline-block rounded-md bg-rose-50 border border-rose-200 px-2.5 py-1 text-xs font-medium text-rose-800">
+                  Out of Stock
+                </span>
+              )}
+            </div>
+
+            <h1 className="text-2xl sm:text-3xl lg:text-4xl font-extrabold text-gray-900 tracking-tight">
+              {product.name}
+            </h1>
+            
+            {/* Pricing Section with MRP */}
+            <div className="mt-3 flex items-baseline flex-wrap gap-3">
+              <span className="text-2xl sm:text-3xl font-extrabold text-indigo-600">
+                ₹{product.price.toLocaleString('en-IN')}
+              </span>
+              
+              {hasDiscount && (
+                <>
+                  <span className="text-lg sm:text-xl text-gray-400 line-through">
+                    MRP ₹{product.mrp!.toLocaleString('en-IN')}
+                  </span>
+                  <span className="rounded-full bg-rose-100 border border-rose-200 px-3 py-0.5 text-xs sm:text-sm font-bold text-rose-700">
+                    Save ₹{discountAmount.toLocaleString('en-IN')} ({discountPercent}% OFF)
+                  </span>
+                </>
+              )}
+            </div>
+            <p className="mt-1 text-xs text-gray-400">Inclusive of all taxes</p>
           </div>
           
           {/* Description */}
-          <div>
-            <h2 className="text-base sm:text-lg font-medium text-gray-900">Description</h2>
-            <p className="mt-1 sm:mt-2 text-sm sm:text-base text-gray-700">{product.description}</p>
+          <div className="border-t border-gray-100 pt-4">
+            <h2 className="text-sm font-semibold uppercase tracking-wider text-gray-900 mb-2">
+              Product Overview
+            </h2>
+            <p className="text-sm sm:text-base text-gray-600 leading-relaxed">
+              {product.description}
+            </p>
           </div>
           
-          {/* Product options and actions */}
-          <ProductDetailActions 
-            product={product}
-          />
+          {/* Product options and actions (Size, Color, Add to Cart, Buy Now) */}
+          <div className="border-t border-gray-100 pt-4">
+            <ProductDetailActions product={product} />
+          </div>
         </div>
       </div>
     </div>
   );
-} 
+}

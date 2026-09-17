@@ -29,15 +29,15 @@ export default function ProductDetailActions({ product }: ProductDetailActionsPr
       />
       
       {/* Action Buttons */}
-      <div className="mt-4 sm:mt-6 md:mt-8 flex flex-col xs:flex-row gap-2 xs:gap-3 sm:gap-4">
-        <div className="flex-grow">
+      <div className="mt-4 sm:mt-6 md:mt-8 flex flex-col sm:flex-row gap-3 sm:gap-4">
+        <div className="flex-1">
           <AddToCartButton 
             product={product} 
             selectedColor={selectedColor}
             selectedSize={selectedSize}
           />
         </div>
-        <div className="mt-2 xs:mt-0">
+        <div className="w-full sm:w-auto">
           <AddToWishlistButton product={product} />
         </div>
       </div>

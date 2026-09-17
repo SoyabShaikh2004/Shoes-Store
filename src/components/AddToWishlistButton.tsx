@@ -57,17 +57,17 @@ export default function AddToWishlistButton({ product }: AddToWishlistButtonProp
     <button
       onClick={toggleWishlist}
       disabled={isProcessing}
-      className={`flex w-full items-center justify-center rounded-md border px-6 py-3 text-base font-medium focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2 ${
+      className={`flex w-full items-center justify-center rounded-xl border px-6 py-3 min-h-[48px] text-sm sm:text-base font-bold transition-all duration-150 active:scale-[0.99] cursor-pointer focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2 ${
         isInWishlist
-          ? 'border-red-500 bg-white text-red-500 hover:bg-red-50'
-          : 'border-gray-300 bg-white text-gray-700 hover:bg-gray-50'
+          ? 'border-rose-300 bg-rose-50 text-rose-600 hover:bg-rose-100'
+          : 'border-gray-300 bg-white text-gray-700 hover:bg-gray-50 hover:border-gray-400'
       }`}
     >
       {isProcessing
-        ? 'Processing...'
+        ? 'Updating...'
         : isInWishlist
-          ? 'Remove from Wishlist'
-          : 'Add to Wishlist'}
+          ? '♥ Saved to Wishlist'
+          : '♡ Add to Wishlist'}
     </button>
   );
 } 

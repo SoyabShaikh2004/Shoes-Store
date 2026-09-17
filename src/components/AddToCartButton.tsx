@@ -91,12 +91,12 @@ export default function AddToCartButton({
       <button
         onClick={addToCart}
         disabled={isAdding || !product.inStock}
-        className={`flex w-full items-center justify-center rounded-md px-6 py-3 text-base font-medium focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2 ${
+        className={`flex w-full items-center justify-center rounded-xl px-6 py-3 min-h-[48px] text-sm sm:text-base font-bold shadow-sm transition-all duration-150 active:scale-[0.99] cursor-pointer focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2 ${
           !product.inStock
-            ? 'cursor-not-allowed bg-gray-300 text-gray-500'
+            ? 'cursor-not-allowed bg-gray-200 text-gray-400'
             : isAdded
-              ? 'bg-green-600 text-white hover:bg-green-700'
-              : 'bg-indigo-600 text-white hover:bg-indigo-700'
+              ? 'bg-emerald-600 text-white hover:bg-emerald-700 shadow-emerald-600/20'
+              : 'bg-indigo-600 text-white hover:bg-indigo-700 shadow-indigo-600/20'
         }`}
       >
         {!product.inStock
@@ -104,7 +104,7 @@ export default function AddToCartButton({
           : isAdded
             ? 'Added to Cart ✓'
             : isAdding
-              ? 'Adding...'
+              ? 'Adding to Cart...'
               : 'Add to Cart'}
       </button>
       

@@ -131,15 +131,15 @@ export default function Navbar() {
             {/* Mobile menu button */}
             <button
               onClick={() => setIsMenuOpen(!isMenuOpen)}
-              className="mr-2 rounded-md p-1 text-gray-600 md:hidden"
+              className="mr-2 min-w-[44px] min-h-[44px] flex items-center justify-center rounded-xl p-2 text-gray-700 hover:bg-gray-100 md:hidden cursor-pointer transition-colors"
               aria-label="Toggle menu"
             >
               {isMenuOpen ? (
-                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="h-6 w-6">
+                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.75} stroke="currentColor" className="h-6 w-6">
                   <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
                 </svg>
               ) : (
-                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="h-6 w-6">
+                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.75} stroke="currentColor" className="h-6 w-6">
                   <path strokeLinecap="round" strokeLinejoin="round" d="M3.75 6.75h16.5M3.75 12h16.5m-16.5 5.25h16.5" />
                 </svg>
               )}
@@ -204,6 +204,7 @@ export default function Navbar() {
                   Contact
                 </Link>
               </li>
+
             </ul>
           </nav>
 
@@ -213,26 +214,26 @@ export default function Navbar() {
               {isAuthenticated ? (
                 <button
                   onClick={() => setShowUserMenu(!showUserMenu)}
-                  className="mr-1 sm:mr-2 md:mr-4 flex items-center rounded-full p-1 sm:p-2 text-gray-900 transition-colors hover:bg-gray-100 relative"
+                  className="mr-1 sm:mr-2 md:mr-3 min-w-[44px] min-h-[44px] flex items-center justify-center rounded-full p-2 text-gray-900 transition-colors hover:bg-gray-100 relative cursor-pointer"
+                  aria-label="User profile"
                 >
-                  <div className="flex items-center">
-                    <div className="h-7 w-7 sm:h-8 sm:w-8 rounded-full bg-indigo-600 text-white flex items-center justify-center text-sm font-medium">
-                      {authUser?.email?.charAt(0).toUpperCase() || 'U'}
-                    </div>
+                  <div className="h-8 w-8 rounded-full bg-indigo-600 text-white flex items-center justify-center text-sm font-semibold shadow-xs">
+                    {authUser?.email?.charAt(0).toUpperCase() || 'U'}
                   </div>
                 </button>
               ) : (
                 <Link
                   href="/auth/login"
-                  className="mr-1 sm:mr-2 md:mr-4 flex items-center rounded-full p-1 sm:p-2 text-gray-900 transition-colors hover:bg-gray-100"
+                  className="mr-1 sm:mr-2 md:mr-3 min-w-[44px] min-h-[44px] flex items-center justify-center rounded-full p-2 text-gray-900 transition-colors hover:bg-gray-100"
+                  aria-label="Account sign in"
                 >
                   <svg
                     xmlns="http://www.w3.org/2000/svg"
                     fill="none"
                     viewBox="0 0 24 24"
-                    strokeWidth={1.5}
+                    strokeWidth={1.75}
                     stroke="currentColor"
-                    className="h-6 w-6 sm:h-7 sm:w-7"
+                    className="h-6 w-6"
                   >
                     <path
                       strokeLinecap="round"
@@ -245,28 +246,29 @@ export default function Navbar() {
               
               {/* User dropdown menu */}
               {showUserMenu && (
-                <div className="absolute right-0 mt-2 w-48 origin-top-right rounded-md bg-white py-1 shadow-lg ring-1 ring-black ring-opacity-5 focus:outline-none z-20">
+                <div className="absolute right-0 mt-2 w-48 origin-top-right rounded-xl bg-white py-1 shadow-lg ring-1 ring-black/5 focus:outline-none z-20">
                   <div className="border-b border-gray-100 px-4 py-2">
-                    <p className="text-sm font-medium text-gray-900">{authUser?.name || 'User'}</p>
+                    <p className="text-sm font-bold text-gray-900">{authUser?.name || 'User'}</p>
                     <p className="truncate text-xs text-gray-500">{authUser?.email}</p>
                   </div>
                   <Link
                     href="/account"
-                    className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
+                    className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-50"
                     onClick={() => setShowUserMenu(false)}
                   >
                     Your Account
                   </Link>
+
                   <Link
                     href="/wishlist"
-                    className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
+                    className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-50"
                     onClick={() => setShowUserMenu(false)}
                   >
                     Wishlist
                   </Link>
                   <button
                     onClick={handleLogout}
-                    className="block w-full text-left px-4 py-2 text-sm text-red-600 hover:bg-gray-100"
+                    className="block w-full text-left px-4 py-2 text-sm text-red-600 hover:bg-red-50 font-medium"
                   >
                     Sign Out
                   </button>
@@ -277,16 +279,16 @@ export default function Navbar() {
             {/* Wishlist */}
             <Link
               href="/wishlist"
-              className="relative mr-1 sm:mr-2 md:mr-4 rounded-full p-1 sm:p-2 text-gray-900 transition-colors hover:bg-gray-100"
+              className="relative mr-1 sm:mr-2 md:mr-3 min-w-[44px] min-h-[44px] flex items-center justify-center rounded-full p-2 text-gray-900 transition-colors hover:bg-gray-100"
               aria-label="Wishlist"
             >
               <svg
                 xmlns="http://www.w3.org/2000/svg"
                 fill="none"
                 viewBox="0 0 24 24"
-                strokeWidth={1.5}
+                strokeWidth={1.75}
                 stroke="currentColor"
-                className="h-6 w-6 sm:h-7 sm:w-7"
+                className="h-6 w-6"
               >
                 <path
                   strokeLinecap="round"
@@ -295,7 +297,7 @@ export default function Navbar() {
                 />
               </svg>
               {wishlistItemsCount > 0 && (
-                <span className="absolute right-0 top-0 flex h-4 w-4 items-center justify-center rounded-full bg-red-500 text-xs font-bold text-white">
+                <span className="absolute top-1 right-1 flex h-4 w-4 items-center justify-center rounded-full bg-rose-600 text-[10px] font-bold text-white shadow-xs">
                   {wishlistItemsCount > 9 ? '9+' : wishlistItemsCount}
                 </span>
               )}
@@ -304,16 +306,16 @@ export default function Navbar() {
             {/* Cart */}
             <Link
               href="/cart"
-              className="relative rounded-full p-1 sm:p-2 text-gray-900 transition-colors hover:bg-gray-100"
+              className="relative min-w-[44px] min-h-[44px] flex items-center justify-center rounded-full p-2 text-gray-900 transition-colors hover:bg-gray-100"
               aria-label="Cart"
             >
               <svg
                 xmlns="http://www.w3.org/2000/svg"
                 fill="none"
                 viewBox="0 0 24 24"
-                strokeWidth={1.5}
+                strokeWidth={1.75}
                 stroke="currentColor"
-                className="h-6 w-6 sm:h-7 sm:w-7"
+                className="h-6 w-6"
               >
                 <path
                   strokeLinecap="round"
@@ -322,7 +324,7 @@ export default function Navbar() {
                 />
               </svg>
               {cartItemsCount > 0 && (
-                <span className="absolute right-0 top-0 flex h-4 w-4 items-center justify-center rounded-full bg-red-500 text-xs font-bold text-white">
+                <span className="absolute top-1 right-1 flex h-4 w-4 items-center justify-center rounded-full bg-indigo-600 text-[10px] font-bold text-white shadow-xs">
                   {cartItemsCount > 9 ? '9+' : cartItemsCount}
                 </span>
               )}
@@ -377,6 +379,7 @@ export default function Navbar() {
                 </svg>
                 Contact
               </Link>
+
             </div>
             
             {isAuthenticated ? (

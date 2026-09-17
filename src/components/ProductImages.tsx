@@ -17,14 +17,27 @@ export default function ProductImages({ slides, productName }: ProductImagesProp
 
   useEffect(() => {
     // Update images when slides prop changes
-    setCurrentImages(slides);
+    if (slides && slides.length > 0) {
+      setCurrentImages(slides);
+    } else {
+      setCurrentImages([FALLBACK_IMAGE]);
+    }
     setFailedImages({});
     setActiveImage(0);
   }, [slides]);
 
   // Generate fallback paths for a given image path
   const generateFallbackPaths = (imagePath: string): string[] => {
-    // Extract base path and product ID
+    // If direct uploads or full URL, standard fallback is just the fallback placeholder
+    if (
+      imagePath.startsWith('/uploads/') ||
+      imagePath.startsWith('http') ||
+      imagePath.startsWith('data:')
+    ) {
+      return [FALLBACK_IMAGE];
+    }
+
+    // Extract base path and product ID for original catalog items
     const productMatch = imagePath.match(/\/images\/(Product\d+)\/([^.]+)/);
     
     if (!productMatch) return [FALLBACK_IMAGE];
@@ -50,66 +63,68 @@ export default function ProductImages({ slides, productName }: ProductImagesProp
 
   // Try alternative formats if an image fails to load
   const handleImageError = (imageSrc: string, index: number) => {
-    // Mark the current image as failed
     setFailedImages(prev => ({ ...prev, [imageSrc]: true }));
     
-    // Get fallback paths for this image
     const fallbackPaths = generateFallbackPaths(imageSrc);
-    
-    // Find the first fallback that hasn't failed yet
     const availableFallback = fallbackPaths.find(path => 
       path !== imageSrc && !failedImages[path]
     );
     
     if (availableFallback) {
-      // Update the image source with the fallback
       const newImages = [...currentImages];
       newImages[index] = availableFallback;
       setCurrentImages(newImages);
     } else {
-      // If all fallbacks have failed, use the global fallback
       const newImages = [...currentImages];
       newImages[index] = FALLBACK_IMAGE;
       setCurrentImages(newImages);
     }
   };
 
+  const activeSrc = currentImages[activeImage] || currentImages[0] || FALLBACK_IMAGE;
+
   return (
-    <div className="flex flex-col md:flex-row bg-gray-50 rounded-lg p-1 xs:p-2 md:p-4">
-      {/* Thumbnail sidebar - horizontal on mobile, vertical on desktop */}
-      <div className="flex flex-row md:flex-col gap-2 xs:gap-3 p-2 xs:p-3 md:mr-4 mb-2 md:mb-0 overflow-x-auto md:overflow-x-visible md:w-20 lg:w-24 xl:w-28">
-        {currentImages.map((image, index) => (
-          <div 
-            key={`${image}-${index}`} 
-            className={`relative flex-shrink-0 h-16 w-16 xs:h-20 xs:w-20 sm:h-24 sm:w-24 cursor-pointer overflow-hidden rounded-md border-2 ${
-              activeImage === index ? 'border-black' : 'border-gray-200'
-            } hover:border-gray-400 transition-all duration-200`}
-            onMouseEnter={() => setActiveImage(index)}
-            onClick={() => setActiveImage(index)}
-          >
-            <Image
-              src={image}
-              alt={`${productName} thumbnail ${index + 1}`}
-              fill
-              className="object-cover"
-              onError={() => handleImageError(image, index)}
-            />
-          </div>
-        ))}
-      </div>
+    <div className="flex flex-col-reverse md:flex-row bg-gray-50 rounded-2xl p-3 sm:p-4 md:p-5 border border-gray-200">
+      {/* Thumbnail sidebar - horizontal below image on mobile/tablet, vertical on desktop */}
+      {currentImages.length > 1 && (
+        <div className="flex flex-row md:flex-col gap-2.5 sm:gap-3 p-1 md:mr-4 mt-3 md:mt-0 overflow-x-auto no-scrollbar md:overflow-x-visible md:w-24">
+          {currentImages.map((image, index) => (
+            <button
+              type="button"
+              key={`${image}-${index}`} 
+              className={`relative flex-shrink-0 h-16 w-16 sm:h-20 sm:w-20 cursor-pointer overflow-hidden rounded-xl border-2 transition-all duration-200 ${
+                activeImage === index
+                  ? 'border-indigo-600 shadow-md ring-2 ring-indigo-200 scale-[1.02]'
+                  : 'border-gray-200 hover:border-gray-400 opacity-80 hover:opacity-100'
+              }`}
+              onMouseEnter={() => setActiveImage(index)}
+              onClick={() => setActiveImage(index)}
+              aria-label={`View ${productName} image ${index + 1}`}
+            >
+              <Image
+                src={image}
+                alt={`${productName} view ${index + 1}`}
+                fill
+                className="object-contain p-1"
+                onError={() => handleImageError(image, index)}
+              />
+            </button>
+          ))}
+        </div>
+      )}
       
       {/* Main image */}
-      <div className="relative flex-1 aspect-square overflow-hidden bg-white rounded-lg">
+      <div className="relative flex-1 aspect-square overflow-hidden bg-white rounded-xl border border-gray-100 flex items-center justify-center shadow-inner">
         <Image
-          src={currentImages[activeImage]}
+          src={activeSrc}
           alt={productName}
           fill
           sizes="(max-width: 768px) 100vw, 50vw"
-          className="object-contain transition-opacity duration-300"
+          className="object-contain p-4 transition-all duration-300"
           priority
-          onError={() => handleImageError(currentImages[activeImage], activeImage)}
+          onError={() => handleImageError(activeSrc, activeImage)}
         />
       </div>
     </div>
   );
-} 
+}

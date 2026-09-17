@@ -21,8 +21,8 @@ export type CartItem = {
 
 export default function CartPage() {
   return (
-    <div className="container mx-auto px-4 py-6 sm:py-8 md:py-12 pt-20 sm:pt-24">
-      <h1 className="mb-4 sm:mb-6 text-2xl sm:text-3xl font-bold">Shopping Cart</h1>
+    <div className="container mx-auto px-4 py-6 sm:py-8 md:py-10 max-w-7xl">
+      <h1 className="mb-4 sm:mb-6 text-2xl sm:text-3xl font-extrabold text-gray-900 tracking-tight">Shopping Cart</h1>
       <CartItems />
     </div>
   );

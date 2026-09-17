@@ -1,0 +1,8 @@
+{
+  "name": "StepStyle",
+  "description": "Premium footwear eCommerce store with full-featured admin panel, image uploading, MRP pricing management, and inventory customization",
+  "requestFramePermissions": [],
+  "majorCapabilities": [
+    "MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"
+  ]
+}

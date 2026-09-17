@@ -49,6 +49,17 @@ export default function WishlistItems() {
 
   // Get the correct image path based on product ID
   const getImagePath = (item: WishlistItem) => {
+    // If direct uploads or full URL, return directly
+    if (
+      item.imagePath &&
+      (item.imagePath.startsWith('/uploads/') ||
+        item.imagePath.startsWith('http') ||
+        item.imagePath.startsWith('data:') ||
+        /\.(jpg|jpeg|png|webp|svg)$/i.test(item.imagePath))
+    ) {
+      return item.imagePath;
+    }
+
     // Define the mapping of product IDs to file formats
     const productFormats: Record<number, string> = {
       1: '.jpeg',

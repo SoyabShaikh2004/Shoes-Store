@@ -17,6 +17,14 @@ export default function SignupPage() {
   const [error, setError] = useState('');
   const [otp, setOtp] = useState('');
   const [countdown, setCountdown] = useState(0);
+  const [redirectPath, setRedirectPath] = useState<string>('/');
+
+  useEffect(() => {
+    const raw = new URLSearchParams(window.location.search).get('redirect');
+    if (raw && raw.startsWith('/') && !raw.startsWith('//')) {
+      setRedirectPath(raw);
+    }
+  }, []);
   
   // Validate email or phone number
   useEffect(() => {
@@ -118,9 +126,10 @@ export default function SignupPage() {
       // Set auth status and store current user data
       localStorage.setItem('isAuthenticated', 'true');
       localStorage.setItem('authUser', JSON.stringify(userData));
+      window.dispatchEvent(new Event('authUpdated'));
       
-      // Navigate to login page after successful signup
-      router.push('/auth/login');
+      // Navigate to requested redirect or home page after successful signup
+      router.push(redirectPath);
     } catch (error) {
       setIsLoading(false);
       setError('An error occurred during signup. Please try again.');
@@ -340,7 +349,10 @@ export default function SignupPage() {
         <div className="text-center">
           <p className="text-xs sm:text-sm text-gray-600">
             Already have an account?{' '}
-            <Link href="/auth/login" className="text-indigo-600 hover:text-indigo-800 font-medium">
+            <Link
+              href={redirectPath !== '/' ? `/auth/login?redirect=${encodeURIComponent(redirectPath)}` : '/auth/login'}
+              className="text-indigo-600 hover:text-indigo-800 font-medium"
+            >
               Sign in
             </Link>
           </p>

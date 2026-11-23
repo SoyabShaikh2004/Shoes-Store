@@ -13,6 +13,8 @@ export interface InvoiceOrderData {
     brand?: string;
     category?: string;
   }>;
+  shippingFee?: number;
+  discountAmount?: number;
   totalAmount: number;
   paymentStatus: string;
   paymentMethod: string;
@@ -36,7 +38,7 @@ export function generateTaxInvoicePDF(order: InvoiceOrderData) {
     format: 'a4',
   });
 
-  const pageWidth = doc.getPageWidth();
+  const pageWidth = doc.internal.pageSize.getWidth();
   const margin = 14;
   let y = 14;
 
@@ -193,20 +195,20 @@ export function generateTaxInvoicePDF(order: InvoiceOrderData) {
 
   y += 4;
 
-  // --- TAX CALCULATION BREAKDOWN ---
-  // In India, Footwear <= 1000 has 12% GST, > 1000 has 18% GST.
-  // Standard 18% GST (9% CGST + 9% SGST)
+  const shippingFee = typeof order.shippingFee === 'number' ? order.shippingFee : 0;
+  const discountAmount = typeof order.discountAmount === 'number' ? order.discountAmount : 0;
   const taxableBase = Math.round((order.totalAmount / 1.18) * 100) / 100;
   const totalGst = Math.round((order.totalAmount - taxableBase) * 100) / 100;
   const cgst = Math.round((totalGst / 2) * 100) / 100;
-  const sgst = Math.round((totalGst / 2) * 100) / 100;
+  const sgst = Math.round((totalGst - cgst) * 100) / 100;
 
-  const summaryX = pageWidth - margin - 75;
+  const summaryX = pageWidth - margin - 78;
+  const summaryHeight = discountAmount > 0 ? 40 : 34;
 
   doc.setFillColor(249, 250, 251);
-  doc.roundedRect(summaryX, y, 75, 34, 2, 2, 'F');
+  doc.roundedRect(summaryX, y, 78, summaryHeight, 2, 2, 'F');
   doc.setDrawColor(229, 231, 235);
-  doc.roundedRect(summaryX, y, 75, 34, 2, 2, 'S');
+  doc.roundedRect(summaryX, y, 78, summaryHeight, 2, 2, 'S');
 
   doc.setFontSize(8);
   doc.setTextColor(75, 85, 99);
@@ -219,22 +221,37 @@ export function generateTaxInvoicePDF(order: InvoiceOrderData) {
   doc.text('SGST (9.0%):', summaryX + 4, y + 18);
   doc.text(`₹${sgst.toLocaleString('en-IN')}`, pageWidth - margin - 6, y + 18, { align: 'right' });
 
-  doc.text('Shipping & Handling:', summaryX + 4, y + 24);
-  doc.text('FREE (₹0)', pageWidth - margin - 6, y + 24, { align: 'right' });
+  let cursorY = y + 24;
+  if (discountAmount > 0) {
+    doc.setTextColor(5, 150, 105);
+    doc.text('MRP Savings:', summaryX + 4, cursorY);
+    doc.text(`-₹${discountAmount.toLocaleString('en-IN')}`, pageWidth - margin - 6, cursorY, { align: 'right' });
+    cursorY += 6;
+    doc.setTextColor(75, 85, 99);
+  }
+
+  doc.text('Shipping & Handling:', summaryX + 4, cursorY);
+  doc.text(
+    shippingFee === 0 ? 'FREE (₹0)' : `₹${shippingFee.toLocaleString('en-IN')}`,
+    pageWidth - margin - 6,
+    cursorY,
+    { align: 'right' }
+  );
 
   // TOTAL ROW
+  const totalLineY = y + summaryHeight - 8;
   doc.setDrawColor(199, 210, 254);
-  doc.line(summaryX, y + 26, pageWidth - margin, y + 26);
+  doc.line(summaryX, totalLineY, pageWidth - margin, totalLineY);
 
   doc.setFont('helvetica', 'bold');
   doc.setFontSize(9.5);
   doc.setTextColor(67, 56, 202);
-  doc.text('Grand Total:', summaryX + 4, y + 31);
-  doc.text(`₹${order.totalAmount.toLocaleString('en-IN')}`, pageWidth - margin - 6, y + 31, {
+  doc.text('Grand Total:', summaryX + 4, y + summaryHeight - 3);
+  doc.text(`₹${order.totalAmount.toLocaleString('en-IN')}`, pageWidth - margin - 6, y + summaryHeight - 3, {
     align: 'right',
   });
 
-  y += 42;
+  y += summaryHeight + 8;
 
   // --- TERMS & AUTHORIZED SIGNATORY ---
   doc.setFont('helvetica', 'bold');
@@ -268,7 +285,7 @@ export function generateTaxInvoicePDF(order: InvoiceOrderData) {
 
   // Bottom footer accent
   doc.setFillColor(79, 70, 229);
-  doc.rect(0, doc.getPageHeight() - 4, pageWidth, 4, 'F');
+  doc.rect(0, doc.internal.pageSize.getHeight() - 4, pageWidth, 4, 'F');
 
   // Trigger Save
   doc.save(`StepStyle_Invoice_${order.orderId}.pdf`);

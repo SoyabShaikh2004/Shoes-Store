@@ -4,6 +4,7 @@ import { useState, useRef, DragEvent, ChangeEvent } from 'react';
 import Image from 'next/image';
 import { Upload, X, Star, Link as LinkIcon, Image as ImageIcon, Loader2 } from 'lucide-react';
 import { toast } from 'react-hot-toast';
+import { getAdminAuthHeaders } from '@/lib/adminAuth';
 
 interface ImageUploaderProps {
   images: string[];
@@ -51,6 +52,8 @@ export default function ImageUploader({
 
       const res = await fetch('/api/admin/upload', {
         method: 'POST',
+        credentials: 'include',
+        headers: getAdminAuthHeaders(),
         body: formData,
       });
 
@@ -183,7 +186,7 @@ export default function ImageUploader({
         <input
           ref={fileInputRef}
           type="file"
-          accept="image/png,image/jpeg,image/webp,image/jpg,image/svg+xml"
+          accept="image/png,image/jpeg,image/webp,image/jpg,image/gif"
           multiple
           onChange={handleFileChange}
           className="hidden"
@@ -208,7 +211,7 @@ export default function ImageUploader({
                 or drag & drop shoe photos here
               </div>
               <p className="text-xs text-gray-400">
-                PNG, JPG, WEBP or SVG up to 10MB each
+                PNG, JPG, WEBP or GIF up to 5MB each
               </p>
             </>
           )}

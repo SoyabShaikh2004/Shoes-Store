@@ -1,11 +1,17 @@
 [
   {
     "id": 1,
+    "sku": "STEP-0001",
     "name": "Air Max Comfort",
     "description": "Experience unparalleled comfort with the Air Max Comfort. These stylish sneakers feature advanced cushioning technology, breathable mesh uppers, and a durable rubber outsole for excellent traction. Perfect for everyday wear or light workouts.",
     "price": 12999,
     "mrp": 15999,
+    "discountPercentage": 19,
+    "stockQuantity": 35,
     "imagePath": "/images/Product1",
+    "images": [
+      "/images/Product1"
+    ],
     "category": "Running",
     "inStock": true,
     "colors": [
@@ -25,15 +31,32 @@
       11,
       11.5,
       12
-    ]
+    ],
+    "tags": [
+      "Running",
+      "StepStyle"
+    ],
+    "featured": false,
+    "brand": "StepStyle",
+    "gender": "Men",
+    "shoeType": "Running",
+    "status": "active",
+    "isDeleted": false,
+    "createdAt": "2026-11-23T18:29:48.714Z"
   },
   {
     "id": 2,
+    "sku": "STEP-0002",
     "name": "Classic Canvas Low-Tops",
     "description": "Timeless canvas low-top sneakers that go with any outfit. Made with premium materials for comfort and durability, featuring reinforced stitching and cushioned insoles for all-day comfort.",
     "price": 5999,
     "mrp": 7999,
+    "discountPercentage": 25,
+    "stockQuantity": 35,
     "imagePath": "/images/Product2",
+    "images": [
+      "/images/Product2"
+    ],
     "category": "Casual",
     "inStock": true,
     "colors": [
@@ -50,15 +73,32 @@
       10,
       11,
       12
-    ]
+    ],
+    "tags": [
+      "Casual",
+      "StepStyle"
+    ],
+    "featured": false,
+    "brand": "StepStyle",
+    "gender": "Men",
+    "shoeType": "Casual",
+    "status": "active",
+    "isDeleted": false,
+    "createdAt": "2026-11-23T18:29:48.714Z"
   },
   {
     "id": 3,
+    "sku": "STEP-0003",
     "name": "Hiker Pro Boots",
     "description": "Conquer any trail with the Hiker Pro Boots. These rugged hiking boots feature waterproof leather uppers, aggressive traction outsoles, and supportive ankle collars. The breathable membrane keeps your feet dry while allowing moisture to escape.",
     "price": 14999,
     "mrp": 18999,
+    "discountPercentage": 21,
+    "stockQuantity": 35,
     "imagePath": "/images/Product3",
+    "images": [
+      "/images/Product3"
+    ],
     "category": "Hiking",
     "inStock": true,
     "colors": [
@@ -71,15 +111,32 @@
       10,
       11,
       12
-    ]
+    ],
+    "tags": [
+      "Hiking",
+      "StepStyle"
+    ],
+    "featured": false,
+    "brand": "StepStyle",
+    "gender": "Men",
+    "shoeType": "Hiking",
+    "status": "active",
+    "isDeleted": false,
+    "createdAt": "2026-11-23T18:29:48.714Z"
   },
   {
     "id": 4,
+    "sku": "STEP-0004",
     "name": "Sprint Elite Racing Flats",
     "description": "Engineered for speed, the Sprint Elite Racing Flats are ultra-lightweight with a responsive midsole and strategically placed rubber on the outsole. These racing shoes help you shave seconds off your personal best in competitions.",
     "price": 11999,
     "mrp": 14999,
+    "discountPercentage": 20,
+    "stockQuantity": 35,
     "imagePath": "/images/Product4",
+    "images": [
+      "/images/Product4"
+    ],
     "category": "Running",
     "inStock": true,
     "colors": [
@@ -94,15 +151,32 @@
       10,
       11,
       12
-    ]
+    ],
+    "tags": [
+      "Running",
+      "StepStyle"
+    ],
+    "featured": false,
+    "brand": "StepStyle",
+    "gender": "Men",
+    "shoeType": "Running",
+    "status": "active",
+    "isDeleted": false,
+    "createdAt": "2026-11-23T18:29:48.714Z"
   },
   {
     "id": 5,
+    "sku": "STEP-0005",
     "name": "Urban Street High-Tops",
     "description": "Make a statement with these stylish high-top sneakers. The Urban Street features premium leather uppers, padded collars for ankle support, and a cushioned footbed for comfort. The rubber outsole provides excellent grip on city streets.",
     "price": 8999,
     "mrp": 11499,
+    "discountPercentage": 22,
+    "stockQuantity": 35,
     "imagePath": "/images/Product5",
+    "images": [
+      "/images/Product5"
+    ],
     "category": "Casual",
     "inStock": true,
     "colors": [
@@ -117,15 +191,32 @@
       10,
       11,
       12
-    ]
+    ],
+    "tags": [
+      "Casual",
+      "StepStyle"
+    ],
+    "featured": false,
+    "brand": "StepStyle",
+    "gender": "Men",
+    "shoeType": "Casual",
+    "status": "active",
+    "isDeleted": false,
+    "createdAt": "2026-11-23T18:29:48.714Z"
   },
   {
     "id": 6,
+    "sku": "STEP-0006",
     "name": "Court Master Tennis Shoes",
     "description": "Dominate the tennis court with the Court Master shoes. Featuring a herringbone pattern outsole for multi-directional grip, reinforced toe area for durability, and cushioned midsole for impact protection during quick lateral movements.",
     "price": 10999,
     "mrp": 13999,
+    "discountPercentage": 21,
+    "stockQuantity": 35,
     "imagePath": "/images/Product6",
+    "images": [
+      "/images/Product6"
+    ],
     "category": "Tennis",
     "inStock": true,
     "colors": [
@@ -139,15 +230,32 @@
       10,
       11,
       12
-    ]
+    ],
+    "tags": [
+      "Tennis",
+      "StepStyle"
+    ],
+    "featured": false,
+    "brand": "StepStyle",
+    "gender": "Men",
+    "shoeType": "Tennis",
+    "status": "active",
+    "isDeleted": false,
+    "createdAt": "2026-11-23T18:29:48.714Z"
   },
   {
     "id": 7,
+    "sku": "STEP-0007",
     "name": "Trail Blazer Outdoor Shoes",
     "description": "Versatile outdoor shoes that transition from trail to town with ease. The Trail Blazer features water-resistant uppers, grippy rubber outsoles, and protective toe caps. Cushioned midsoles provide all-day comfort on any terrain.",
     "price": 9999,
     "mrp": 12999,
+    "discountPercentage": 23,
+    "stockQuantity": 35,
     "imagePath": "/images/Product7",
+    "images": [
+      "/images/Product7"
+    ],
     "category": "Outdoor",
     "inStock": true,
     "colors": [
@@ -160,15 +268,32 @@
       10,
       11,
       12
-    ]
+    ],
+    "tags": [
+      "Outdoor",
+      "StepStyle"
+    ],
+    "featured": false,
+    "brand": "StepStyle",
+    "gender": "Men",
+    "shoeType": "Outdoor",
+    "status": "active",
+    "isDeleted": false,
+    "createdAt": "2026-11-23T18:29:48.714Z"
   },
   {
     "id": 8,
+    "sku": "STEP-0008",
     "name": "Flex Trainer Cross-Training Shoes",
     "description": "Versatile training shoes for the gym, HIIT workouts, or light running. The Flex Trainer features a flexible outsole, breathable mesh upper, and supportive overlays for lateral stability during multi-directional movements.",
     "price": 7999,
     "mrp": 9999,
+    "discountPercentage": 20,
+    "stockQuantity": 35,
     "imagePath": "/images/Product8",
+    "images": [
+      "/images/Product8"
+    ],
     "category": "Training",
     "inStock": true,
     "colors": [
@@ -183,15 +308,32 @@
       10,
       11,
       12
-    ]
+    ],
+    "tags": [
+      "Training",
+      "StepStyle"
+    ],
+    "featured": false,
+    "brand": "StepStyle",
+    "gender": "Men",
+    "shoeType": "Training",
+    "status": "active",
+    "isDeleted": false,
+    "createdAt": "2026-11-23T18:29:48.714Z"
   },
   {
     "id": 9,
+    "sku": "STEP-0009",
     "name": "Skate Pro Board Shoes",
     "description": "Built for skateboarders, the Skate Pro features durable suede uppers, reinforced ollie areas, and sticky gum rubber outsoles for board feel and grip. Double-stitched high-wear areas ensure these shoes can handle daily skating abuse.",
     "price": 7499,
     "mrp": 9499,
+    "discountPercentage": 21,
+    "stockQuantity": 35,
     "imagePath": "/images/Product9",
+    "images": [
+      "/images/Product9"
+    ],
     "category": "Skateboarding",
     "inStock": true,
     "colors": [
@@ -207,15 +349,32 @@
       11,
       12,
       13
-    ]
+    ],
+    "tags": [
+      "Skateboarding",
+      "StepStyle"
+    ],
+    "featured": false,
+    "brand": "StepStyle",
+    "gender": "Men",
+    "shoeType": "Skateboarding",
+    "status": "active",
+    "isDeleted": false,
+    "createdAt": "2026-11-23T18:29:48.714Z"
   },
   {
     "id": 10,
+    "sku": "STEP-0010",
     "name": "Business Casual Loafers",
     "description": "Elegant yet comfortable loafers perfect for the office or formal occasions. Crafted from premium leather with cushioned footbeds and flexible outsoles, these shoes provide sophistication without sacrificing comfort.",
     "price": 12999,
     "mrp": 16499,
+    "discountPercentage": 21,
+    "stockQuantity": 35,
     "imagePath": "/images/Product10",
+    "images": [
+      "/images/Product10"
+    ],
     "category": "Formal",
     "inStock": true,
     "colors": [
@@ -229,15 +388,32 @@
       10,
       11,
       12
-    ]
+    ],
+    "tags": [
+      "Formal",
+      "StepStyle"
+    ],
+    "featured": false,
+    "brand": "StepStyle",
+    "gender": "Men",
+    "shoeType": "Formal",
+    "status": "active",
+    "isDeleted": false,
+    "createdAt": "2026-11-23T18:29:48.714Z"
   },
   {
     "id": 11,
+    "sku": "STEP-0011",
     "name": "Winter Trek Snow Boots",
     "description": "Conquer winter conditions with the insulated Winter Trek boots. Featuring 200g insulation, waterproof construction, and aggressive rubber outsoles with multi-directional lugs for traction on snow and ice.",
     "price": 15999,
     "mrp": 19999,
+    "discountPercentage": 20,
+    "stockQuantity": 35,
     "imagePath": "/images/Product11",
+    "images": [
+      "/images/Product11"
+    ],
     "category": "Winter",
     "inStock": true,
     "colors": [
@@ -250,15 +426,32 @@
       10,
       11,
       12
-    ]
+    ],
+    "tags": [
+      "Winter",
+      "StepStyle"
+    ],
+    "featured": false,
+    "brand": "StepStyle",
+    "gender": "Men",
+    "shoeType": "Winter",
+    "status": "active",
+    "isDeleted": false,
+    "createdAt": "2026-11-23T18:29:48.714Z"
   },
   {
     "id": 12,
+    "sku": "STEP-0012",
     "name": "Aqua Grip Water Shoes",
     "description": "Perfect for water activities, the Aqua Grip features quick-drying mesh uppers, drainage holes in the sole, and grippy rubber outsoles for traction on wet surfaces. Protect your feet while staying comfortable in and around water.",
     "price": 4999,
     "mrp": 6499,
+    "discountPercentage": 23,
+    "stockQuantity": 35,
     "imagePath": "/images/Product12",
+    "images": [
+      "/images/Product12"
+    ],
     "category": "Water",
     "inStock": true,
     "colors": [
@@ -272,15 +465,32 @@
       10,
       11,
       12
-    ]
+    ],
+    "tags": [
+      "Water",
+      "StepStyle"
+    ],
+    "featured": false,
+    "brand": "StepStyle",
+    "gender": "Men",
+    "shoeType": "Water",
+    "status": "active",
+    "isDeleted": false,
+    "createdAt": "2026-11-23T18:29:48.714Z"
   },
   {
     "id": 13,
+    "sku": "STEP-0013",
     "name": "Ultra Boost Running Shoes",
     "description": "Experience supreme energy return with Ultra Boost Running Shoes. Featuring responsive cushioning, breathable Primeknit upper, and Continental™ rubber outsole for superior traction in all weather conditions.",
     "price": 13999,
     "mrp": 17999,
+    "discountPercentage": 22,
+    "stockQuantity": 35,
     "imagePath": "/images/Product13",
+    "images": [
+      "/images/Product13"
+    ],
     "category": "Running",
     "inStock": true,
     "colors": [
@@ -295,15 +505,32 @@
       10,
       11,
       12
-    ]
+    ],
+    "tags": [
+      "Running",
+      "StepStyle"
+    ],
+    "featured": false,
+    "brand": "StepStyle",
+    "gender": "Men",
+    "shoeType": "Running",
+    "status": "active",
+    "isDeleted": false,
+    "createdAt": "2026-11-23T18:29:48.714Z"
   },
   {
     "id": 14,
+    "sku": "STEP-0014",
     "name": "Basketball Pro Performance",
     "description": "Dominate the court with these high-performance basketball shoes. Featuring ankle support technology, responsive cushioning, and multi-directional traction pattern for quick pivots and explosive movements.",
     "price": 11999,
     "mrp": 14999,
+    "discountPercentage": 20,
+    "stockQuantity": 35,
     "imagePath": "/images/Product14",
+    "images": [
+      "/images/Product14"
+    ],
     "category": "Basketball",
     "inStock": true,
     "colors": [
@@ -318,15 +545,32 @@
       11,
       12,
       13
-    ]
+    ],
+    "tags": [
+      "Basketball",
+      "StepStyle"
+    ],
+    "featured": false,
+    "brand": "StepStyle",
+    "gender": "Men",
+    "shoeType": "Basketball",
+    "status": "active",
+    "isDeleted": false,
+    "createdAt": "2026-11-23T18:29:48.714Z"
   },
   {
     "id": 15,
+    "sku": "STEP-0015",
     "name": "Retro Classics Sneakers",
     "description": "Step back in time with these retro-inspired sneakers. Combining vintage design elements with modern comfort technology, these classic shoes offer both style and substance for everyday wear.",
     "price": 8999,
     "mrp": 11999,
+    "discountPercentage": 25,
+    "stockQuantity": 35,
     "imagePath": "/images/Product15",
+    "images": [
+      "/images/Product15"
+    ],
     "category": "Casual",
     "inStock": true,
     "colors": [
@@ -342,15 +586,32 @@
       10,
       11,
       12
-    ]
+    ],
+    "tags": [
+      "Casual",
+      "StepStyle"
+    ],
+    "featured": false,
+    "brand": "StepStyle",
+    "gender": "Men",
+    "shoeType": "Casual",
+    "status": "active",
+    "isDeleted": false,
+    "createdAt": "2026-11-23T18:29:48.714Z"
   },
   {
     "id": 16,
+    "sku": "STEP-0016",
     "name": "Performance Football Cleats",
     "description": "Engineered for speed and control on the pitch. These lightweight football cleats feature strategically placed studs for optimal traction, synthetic upper for ball control, and ankle support for stability during quick direction changes.",
     "price": 9999,
     "mrp": 12999,
+    "discountPercentage": 23,
+    "stockQuantity": 35,
     "imagePath": "/images/Product16",
+    "images": [
+      "/images/Product16"
+    ],
     "category": "Football",
     "inStock": true,
     "colors": [
@@ -365,15 +626,32 @@
       10,
       11,
       12
-    ]
+    ],
+    "tags": [
+      "Football",
+      "StepStyle"
+    ],
+    "featured": false,
+    "brand": "StepStyle",
+    "gender": "Men",
+    "shoeType": "Football",
+    "status": "active",
+    "isDeleted": false,
+    "createdAt": "2026-11-23T18:29:48.714Z"
   },
   {
     "id": 17,
+    "sku": "STEP-0017",
     "name": "Golf Tour Pro Shoes",
     "description": "Premium golf shoes designed for the serious player. Featuring waterproof leather, responsive cushioning, and advanced spike technology for maximum grip and stability throughout your swing.",
     "price": 16999,
     "mrp": 21999,
+    "discountPercentage": 23,
+    "stockQuantity": 35,
     "imagePath": "/images/Product17",
+    "images": [
+      "/images/Product17"
+    ],
     "category": "Golf",
     "inStock": true,
     "colors": [
@@ -387,15 +665,32 @@
       10,
       11,
       12
-    ]
+    ],
+    "tags": [
+      "Golf",
+      "StepStyle"
+    ],
+    "featured": false,
+    "brand": "StepStyle",
+    "gender": "Men",
+    "shoeType": "Golf",
+    "status": "active",
+    "isDeleted": false,
+    "createdAt": "2026-11-23T18:29:48.714Z"
   },
   {
     "id": 18,
+    "sku": "STEP-0018",
     "name": "Daily Comfort Walking Shoes",
     "description": "Designed for all-day comfort, these walking shoes feature memory foam insoles, breathable mesh uppers, and shock-absorbing outsoles. Perfect for those who are on their feet all day or enjoy long walks.",
     "price": 7999,
     "mrp": 9999,
+    "discountPercentage": 20,
+    "stockQuantity": 35,
     "imagePath": "/images/Product18",
+    "images": [
+      "/images/Product18"
+    ],
     "category": "Walking",
     "inStock": true,
     "colors": [
@@ -411,15 +706,32 @@
       10,
       11,
       12
-    ]
+    ],
+    "tags": [
+      "Walking",
+      "StepStyle"
+    ],
+    "featured": false,
+    "brand": "StepStyle",
+    "gender": "Men",
+    "shoeType": "Walking",
+    "status": "active",
+    "isDeleted": false,
+    "createdAt": "2026-11-23T18:29:48.714Z"
   },
   {
     "id": 19,
+    "sku": "STEP-0019",
     "name": "Mountain Trail Hiking Boots",
     "description": "Tackle the toughest trails with confidence in these durable hiking boots. Featuring waterproof Gore-Tex membrane, Vibram outsoles for superior grip, and supportive midsoles to reduce fatigue on long hikes.",
     "price": 14999,
     "mrp": 18999,
+    "discountPercentage": 21,
+    "stockQuantity": 35,
     "imagePath": "/images/Product19",
+    "images": [
+      "/images/Product19"
+    ],
     "category": "Hiking",
     "inStock": true,
     "colors": [
@@ -434,15 +746,32 @@
       10,
       11,
       12
-    ]
+    ],
+    "tags": [
+      "Hiking",
+      "StepStyle"
+    ],
+    "featured": false,
+    "brand": "StepStyle",
+    "gender": "Men",
+    "shoeType": "Hiking",
+    "status": "active",
+    "isDeleted": false,
+    "createdAt": "2026-11-23T18:29:48.714Z"
   },
   {
     "id": 20,
+    "sku": "STEP-0020",
     "name": "Designer Suede Dress Shoes",
     "description": "Elevate your formal attire with these premium suede dress shoes. Meticulously crafted with genuine suede uppers, leather linings, and hand-finished details for a sophisticated, elegant look for special occasions.",
     "price": 18999,
     "mrp": 24999,
+    "discountPercentage": 24,
+    "stockQuantity": 35,
     "imagePath": "/images/Product20",
+    "images": [
+      "/images/Product20"
+    ],
     "category": "Formal",
     "inStock": true,
     "colors": [
@@ -457,6 +786,17 @@
       10,
       11,
       12
-    ]
+    ],
+    "tags": [
+      "Formal",
+      "StepStyle"
+    ],
+    "featured": false,
+    "brand": "StepStyle",
+    "gender": "Men",
+    "shoeType": "Formal",
+    "status": "active",
+    "isDeleted": false,
+    "createdAt": "2026-11-23T18:29:48.714Z"
   }
 ]

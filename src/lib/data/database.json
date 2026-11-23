@@ -1,0 +1,4063 @@
+{
+  "version": 1,
+  "users": [
+    {
+      "id": "usr-8830422747",
+      "name": "Soyab Shaikh",
+      "email": "",
+      "phone": "8830422747",
+      "defaultAddress": "Zar Complex Vasai East - 401208",
+      "defaultPincode": "401208",
+      "createdAt": "2026-11-23T18:18:23.739Z",
+      "lastOrderAt": "2026-11-23T18:18:23.739Z"
+    }
+  ],
+  "adminUsers": [
+    {
+      "id": "admin-soyab-super",
+      "name": "Soyab Shaikh",
+      "email": "soyxbshxikh@gmail.com",
+      "passwordHash": "d5e9bdb18892e46df423a5a9676c58a1d22d0ae9285b623a1bcca7f891b92c7e6c8b3d309d52dfeae0524142b13e15e8a395f90b4041b0122bc6a1b7dc287ff3",
+      "passwordSalt": "b1a8b1451d762d62dd950c2114e79991",
+      "role": "Super Admin",
+      "status": "active",
+      "createdAt": "2026-01-01T00:00:00.000Z"
+    }
+  ],
+  "categories": [
+    {
+      "id": "cat-running",
+      "name": "Running",
+      "slug": "running",
+      "description": "Running footwear collection",
+      "createdAt": "2026-11-23T18:29:48.714Z"
+    },
+    {
+      "id": "cat-casual",
+      "name": "Casual",
+      "slug": "casual",
+      "description": "Casual footwear collection",
+      "createdAt": "2026-11-23T18:29:48.714Z"
+    },
+    {
+      "id": "cat-hiking",
+      "name": "Hiking",
+      "slug": "hiking",
+      "description": "Hiking footwear collection",
+      "createdAt": "2026-11-23T18:29:48.714Z"
+    },
+    {
+      "id": "cat-tennis",
+      "name": "Tennis",
+      "slug": "tennis",
+      "description": "Tennis footwear collection",
+      "createdAt": "2026-11-23T18:29:48.714Z"
+    },
+    {
+      "id": "cat-outdoor",
+      "name": "Outdoor",
+      "slug": "outdoor",
+      "description": "Outdoor footwear collection",
+      "createdAt": "2026-11-23T18:29:48.714Z"
+    },
+    {
+      "id": "cat-training",
+      "name": "Training",
+      "slug": "training",
+      "description": "Training footwear collection",
+      "createdAt": "2026-11-23T18:29:48.714Z"
+    },
+    {
+      "id": "cat-skateboarding",
+      "name": "Skateboarding",
+      "slug": "skateboarding",
+      "description": "Skateboarding footwear collection",
+      "createdAt": "2026-11-23T18:29:48.714Z"
+    },
+    {
+      "id": "cat-formal",
+      "name": "Formal",
+      "slug": "formal",
+      "description": "Formal footwear collection",
+      "createdAt": "2026-11-23T18:29:48.714Z"
+    },
+    {
+      "id": "cat-winter",
+      "name": "Winter",
+      "slug": "winter",
+      "description": "Winter footwear collection",
+      "createdAt": "2026-11-23T18:29:48.714Z"
+    },
+    {
+      "id": "cat-water",
+      "name": "Water",
+      "slug": "water",
+      "description": "Water footwear collection",
+      "createdAt": "2026-11-23T18:29:48.714Z"
+    },
+    {
+      "id": "cat-basketball",
+      "name": "Basketball",
+      "slug": "basketball",
+      "description": "Basketball footwear collection",
+      "createdAt": "2026-11-23T18:29:48.714Z"
+    },
+    {
+      "id": "cat-football",
+      "name": "Football",
+      "slug": "football",
+      "description": "Football footwear collection",
+      "createdAt": "2026-11-23T18:29:48.714Z"
+    },
+    {
+      "id": "cat-golf",
+      "name": "Golf",
+      "slug": "golf",
+      "description": "Golf footwear collection",
+      "createdAt": "2026-11-23T18:29:48.714Z"
+    },
+    {
+      "id": "cat-walking",
+      "name": "Walking",
+      "slug": "walking",
+      "description": "Walking footwear collection",
+      "createdAt": "2026-11-23T18:29:48.714Z"
+    }
+  ],
+  "brands": [
+    {
+      "id": "brand-stepstyle",
+      "name": "StepStyle",
+      "slug": "stepstyle",
+      "createdAt": "2026-11-23T18:29:48.714Z"
+    }
+  ],
+  "products": [
+    {
+      "id": 1,
+      "sku": "STEP-0001",
+      "name": "Air Max Comfort",
+      "description": "Experience unparalleled comfort with the Air Max Comfort. These stylish sneakers feature advanced cushioning technology, breathable mesh uppers, and a durable rubber outsole for excellent traction. Perfect for everyday wear or light workouts.",
+      "price": 12999,
+      "mrp": 15999,
+      "discountPercentage": 19,
+      "stockQuantity": 35,
+      "categoryId": "cat-running",
+      "category": "Running",
+      "brandId": "brand-stepstyle",
+      "brand": "StepStyle",
+      "imagePath": "/images/Product1",
+      "images": [
+        "/images/Product1"
+      ],
+      "colors": [
+        "Black/White",
+        "Blue/Gray",
+        "Red/Black"
+      ],
+      "sizes": [
+        7,
+        7.5,
+        8,
+        8.5,
+        9,
+        9.5,
+        10,
+        10.5,
+        11,
+        11.5,
+        12
+      ],
+      "tags": [
+        "Running",
+        "StepStyle"
+      ],
+      "featured": false,
+      "inStock": true,
+      "status": "active",
+      "gender": "Men",
+      "shoeType": "Running",
+      "isDeleted": false,
+      "createdAt": "2026-11-23T18:29:48.714Z",
+      "updatedAt": "2026-11-23T18:29:48.714Z"
+    },
+    {
+      "id": 2,
+      "sku": "STEP-0002",
+      "name": "Classic Canvas Low-Tops",
+      "description": "Timeless canvas low-top sneakers that go with any outfit. Made with premium materials for comfort and durability, featuring reinforced stitching and cushioned insoles for all-day comfort.",
+      "price": 5999,
+      "mrp": 7999,
+      "discountPercentage": 25,
+      "stockQuantity": 35,
+      "categoryId": "cat-casual",
+      "category": "Casual",
+      "brandId": "brand-stepstyle",
+      "brand": "StepStyle",
+      "imagePath": "/images/Product2",
+      "images": [
+        "/images/Product2"
+      ],
+      "colors": [
+        "White",
+        "Black",
+        "Navy",
+        "Red"
+      ],
+      "sizes": [
+        6,
+        7,
+        8,
+        9,
+        10,
+        11,
+        12
+      ],
+      "tags": [
+        "Casual",
+        "StepStyle"
+      ],
+      "featured": false,
+      "inStock": true,
+      "status": "active",
+      "gender": "Men",
+      "shoeType": "Casual",
+      "isDeleted": false,
+      "createdAt": "2026-11-23T18:29:48.714Z",
+      "updatedAt": "2026-11-23T18:29:48.714Z"
+    },
+    {
+      "id": 3,
+      "sku": "STEP-0003",
+      "name": "Hiker Pro Boots",
+      "description": "Conquer any trail with the Hiker Pro Boots. These rugged hiking boots feature waterproof leather uppers, aggressive traction outsoles, and supportive ankle collars. The breathable membrane keeps your feet dry while allowing moisture to escape.",
+      "price": 14999,
+      "mrp": 18999,
+      "discountPercentage": 21,
+      "stockQuantity": 35,
+      "categoryId": "cat-hiking",
+      "category": "Hiking",
+      "brandId": "brand-stepstyle",
+      "brand": "StepStyle",
+      "imagePath": "/images/Product3",
+      "images": [
+        "/images/Product3"
+      ],
+      "colors": [
+        "Brown/Black",
+        "Gray/Orange"
+      ],
+      "sizes": [
+        8,
+        9,
+        10,
+        11,
+        12
+      ],
+      "tags": [
+        "Hiking",
+        "StepStyle"
+      ],
+      "featured": false,
+      "inStock": true,
+      "status": "active",
+      "gender": "Men",
+      "shoeType": "Hiking",
+      "isDeleted": false,
+      "createdAt": "2026-11-23T18:29:48.714Z",
+      "updatedAt": "2026-11-23T18:29:48.714Z"
+    },
+    {
+      "id": 4,
+      "sku": "STEP-0004",
+      "name": "Sprint Elite Racing Flats",
+      "description": "Engineered for speed, the Sprint Elite Racing Flats are ultra-lightweight with a responsive midsole and strategically placed rubber on the outsole. These racing shoes help you shave seconds off your personal best in competitions.",
+      "price": 11999,
+      "mrp": 14999,
+      "discountPercentage": 20,
+      "stockQuantity": 35,
+      "categoryId": "cat-running",
+      "category": "Running",
+      "brandId": "brand-stepstyle",
+      "brand": "StepStyle",
+      "imagePath": "/images/Product4",
+      "images": [
+        "/images/Product4"
+      ],
+      "colors": [
+        "Neon Yellow/Black",
+        "Red/White",
+        "Blue/Silver"
+      ],
+      "sizes": [
+        7,
+        8,
+        9,
+        10,
+        11,
+        12
+      ],
+      "tags": [
+        "Running",
+        "StepStyle"
+      ],
+      "featured": false,
+      "inStock": true,
+      "status": "active",
+      "gender": "Men",
+      "shoeType": "Running",
+      "isDeleted": false,
+      "createdAt": "2026-11-23T18:29:48.714Z",
+      "updatedAt": "2026-11-23T18:29:48.714Z"
+    },
+    {
+      "id": 5,
+      "sku": "STEP-0005",
+      "name": "Urban Street High-Tops",
+      "description": "Make a statement with these stylish high-top sneakers. The Urban Street features premium leather uppers, padded collars for ankle support, and a cushioned footbed for comfort. The rubber outsole provides excellent grip on city streets.",
+      "price": 8999,
+      "mrp": 11499,
+      "discountPercentage": 22,
+      "stockQuantity": 35,
+      "categoryId": "cat-casual",
+      "category": "Casual",
+      "brandId": "brand-stepstyle",
+      "brand": "StepStyle",
+      "imagePath": "/images/Product5",
+      "images": [
+        "/images/Product5"
+      ],
+      "colors": [
+        "White/Black",
+        "All Black",
+        "Gray/White"
+      ],
+      "sizes": [
+        7,
+        8,
+        9,
+        10,
+        11,
+        12
+      ],
+      "tags": [
+        "Casual",
+        "StepStyle"
+      ],
+      "featured": false,
+      "inStock": true,
+      "status": "active",
+      "gender": "Men",
+      "shoeType": "Casual",
+      "isDeleted": false,
+      "createdAt": "2026-11-23T18:29:48.714Z",
+      "updatedAt": "2026-11-23T18:29:48.714Z"
+    },
+    {
+      "id": 6,
+      "sku": "STEP-0006",
+      "name": "Court Master Tennis Shoes",
+      "description": "Dominate the tennis court with the Court Master shoes. Featuring a herringbone pattern outsole for multi-directional grip, reinforced toe area for durability, and cushioned midsole for impact protection during quick lateral movements.",
+      "price": 10999,
+      "mrp": 13999,
+      "discountPercentage": 21,
+      "stockQuantity": 35,
+      "categoryId": "cat-tennis",
+      "category": "Tennis",
+      "brandId": "brand-stepstyle",
+      "brand": "StepStyle",
+      "imagePath": "/images/Product6",
+      "images": [
+        "/images/Product6"
+      ],
+      "colors": [
+        "White/Green",
+        "White/Blue"
+      ],
+      "sizes": [
+        7,
+        8,
+        9,
+        10,
+        11,
+        12
+      ],
+      "tags": [
+        "Tennis",
+        "StepStyle"
+      ],
+      "featured": false,
+      "inStock": true,
+      "status": "active",
+      "gender": "Men",
+      "shoeType": "Tennis",
+      "isDeleted": false,
+      "createdAt": "2026-11-23T18:29:48.714Z",
+      "updatedAt": "2026-11-23T18:29:48.714Z"
+    },
+    {
+      "id": 7,
+      "sku": "STEP-0007",
+      "name": "Trail Blazer Outdoor Shoes",
+      "description": "Versatile outdoor shoes that transition from trail to town with ease. The Trail Blazer features water-resistant uppers, grippy rubber outsoles, and protective toe caps. Cushioned midsoles provide all-day comfort on any terrain.",
+      "price": 9999,
+      "mrp": 12999,
+      "discountPercentage": 23,
+      "stockQuantity": 35,
+      "categoryId": "cat-outdoor",
+      "category": "Outdoor",
+      "brandId": "brand-stepstyle",
+      "brand": "StepStyle",
+      "imagePath": "/images/Product7",
+      "images": [
+        "/images/Product7"
+      ],
+      "colors": [
+        "Green/Brown",
+        "Gray/Black"
+      ],
+      "sizes": [
+        8,
+        9,
+        10,
+        11,
+        12
+      ],
+      "tags": [
+        "Outdoor",
+        "StepStyle"
+      ],
+      "featured": false,
+      "inStock": true,
+      "status": "active",
+      "gender": "Men",
+      "shoeType": "Outdoor",
+      "isDeleted": false,
+      "createdAt": "2026-11-23T18:29:48.714Z",
+      "updatedAt": "2026-11-23T18:29:48.714Z"
+    },
+    {
+      "id": 8,
+      "sku": "STEP-0008",
+      "name": "Flex Trainer Cross-Training Shoes",
+      "description": "Versatile training shoes for the gym, HIIT workouts, or light running. The Flex Trainer features a flexible outsole, breathable mesh upper, and supportive overlays for lateral stability during multi-directional movements.",
+      "price": 7999,
+      "mrp": 9999,
+      "discountPercentage": 20,
+      "stockQuantity": 35,
+      "categoryId": "cat-training",
+      "category": "Training",
+      "brandId": "brand-stepstyle",
+      "brand": "StepStyle",
+      "imagePath": "/images/Product8",
+      "images": [
+        "/images/Product8"
+      ],
+      "colors": [
+        "Black/Red",
+        "Blue/White",
+        "Gray/Green"
+      ],
+      "sizes": [
+        7,
+        8,
+        9,
+        10,
+        11,
+        12
+      ],
+      "tags": [
+        "Training",
+        "StepStyle"
+      ],
+      "featured": false,
+      "inStock": true,
+      "status": "active",
+      "gender": "Men",
+      "shoeType": "Training",
+      "isDeleted": false,
+      "createdAt": "2026-11-23T18:29:48.714Z",
+      "updatedAt": "2026-11-23T18:29:48.714Z"
+    },
+    {
+      "id": 9,
+      "sku": "STEP-0009",
+      "name": "Skate Pro Board Shoes",
+      "description": "Built for skateboarders, the Skate Pro features durable suede uppers, reinforced ollie areas, and sticky gum rubber outsoles for board feel and grip. Double-stitched high-wear areas ensure these shoes can handle daily skating abuse.",
+      "price": 7499,
+      "mrp": 9499,
+      "discountPercentage": 21,
+      "stockQuantity": 35,
+      "categoryId": "cat-skateboarding",
+      "category": "Skateboarding",
+      "brandId": "brand-stepstyle",
+      "brand": "StepStyle",
+      "imagePath": "/images/Product9",
+      "images": [
+        "/images/Product9"
+      ],
+      "colors": [
+        "Black/White",
+        "Navy/Gum",
+        "Burgundy/White"
+      ],
+      "sizes": [
+        7,
+        8,
+        9,
+        10,
+        11,
+        12,
+        13
+      ],
+      "tags": [
+        "Skateboarding",
+        "StepStyle"
+      ],
+      "featured": false,
+      "inStock": true,
+      "status": "active",
+      "gender": "Men",
+      "shoeType": "Skateboarding",
+      "isDeleted": false,
+      "createdAt": "2026-11-23T18:29:48.714Z",
+      "updatedAt": "2026-11-23T18:29:48.714Z"
+    },
+    {
+      "id": 10,
+      "sku": "STEP-0010",
+      "name": "Business Casual Loafers",
+      "description": "Elegant yet comfortable loafers perfect for the office or formal occasions. Crafted from premium leather with cushioned footbeds and flexible outsoles, these shoes provide sophistication without sacrificing comfort.",
+      "price": 12999,
+      "mrp": 16499,
+      "discountPercentage": 21,
+      "stockQuantity": 35,
+      "categoryId": "cat-formal",
+      "category": "Formal",
+      "brandId": "brand-stepstyle",
+      "brand": "StepStyle",
+      "imagePath": "/images/Product10",
+      "images": [
+        "/images/Product10"
+      ],
+      "colors": [
+        "Black",
+        "Brown",
+        "Tan"
+      ],
+      "sizes": [
+        8,
+        9,
+        10,
+        11,
+        12
+      ],
+      "tags": [
+        "Formal",
+        "StepStyle"
+      ],
+      "featured": false,
+      "inStock": true,
+      "status": "active",
+      "gender": "Men",
+      "shoeType": "Formal",
+      "isDeleted": false,
+      "createdAt": "2026-11-23T18:29:48.714Z",
+      "updatedAt": "2026-11-23T18:29:48.714Z"
+    },
+    {
+      "id": 11,
+      "sku": "STEP-0011",
+      "name": "Winter Trek Snow Boots",
+      "description": "Conquer winter conditions with the insulated Winter Trek boots. Featuring 200g insulation, waterproof construction, and aggressive rubber outsoles with multi-directional lugs for traction on snow and ice.",
+      "price": 15999,
+      "mrp": 19999,
+      "discountPercentage": 20,
+      "stockQuantity": 35,
+      "categoryId": "cat-winter",
+      "category": "Winter",
+      "brandId": "brand-stepstyle",
+      "brand": "StepStyle",
+      "imagePath": "/images/Product11",
+      "images": [
+        "/images/Product11"
+      ],
+      "colors": [
+        "Black",
+        "Brown"
+      ],
+      "sizes": [
+        8,
+        9,
+        10,
+        11,
+        12
+      ],
+      "tags": [
+        "Winter",
+        "StepStyle"
+      ],
+      "featured": false,
+      "inStock": true,
+      "status": "active",
+      "gender": "Men",
+      "shoeType": "Winter",
+      "isDeleted": false,
+      "createdAt": "2026-11-23T18:29:48.714Z",
+      "updatedAt": "2026-11-23T18:29:48.714Z"
+    },
+    {
+      "id": 12,
+      "sku": "STEP-0012",
+      "name": "Aqua Grip Water Shoes",
+      "description": "Perfect for water activities, the Aqua Grip features quick-drying mesh uppers, drainage holes in the sole, and grippy rubber outsoles for traction on wet surfaces. Protect your feet while staying comfortable in and around water.",
+      "price": 4999,
+      "mrp": 6499,
+      "discountPercentage": 23,
+      "stockQuantity": 35,
+      "categoryId": "cat-water",
+      "category": "Water",
+      "brandId": "brand-stepstyle",
+      "brand": "StepStyle",
+      "imagePath": "/images/Product12",
+      "images": [
+        "/images/Product12"
+      ],
+      "colors": [
+        "Black/Blue",
+        "Gray/Yellow"
+      ],
+      "sizes": [
+        7,
+        8,
+        9,
+        10,
+        11,
+        12
+      ],
+      "tags": [
+        "Water",
+        "StepStyle"
+      ],
+      "featured": false,
+      "inStock": true,
+      "status": "active",
+      "gender": "Men",
+      "shoeType": "Water",
+      "isDeleted": false,
+      "createdAt": "2026-11-23T18:29:48.714Z",
+      "updatedAt": "2026-11-23T18:29:48.714Z"
+    },
+    {
+      "id": 13,
+      "sku": "STEP-0013",
+      "name": "Ultra Boost Running Shoes",
+      "description": "Experience supreme energy return with Ultra Boost Running Shoes. Featuring responsive cushioning, breathable Primeknit upper, and Continental™ rubber outsole for superior traction in all weather conditions.",
+      "price": 13999,
+      "mrp": 17999,
+      "discountPercentage": 22,
+      "stockQuantity": 35,
+      "categoryId": "cat-running",
+      "category": "Running",
+      "brandId": "brand-stepstyle",
+      "brand": "StepStyle",
+      "imagePath": "/images/Product13",
+      "images": [
+        "/images/Product13"
+      ],
+      "colors": [
+        "Core Black",
+        "Cloud White",
+        "Solar Red"
+      ],
+      "sizes": [
+        7,
+        8,
+        9,
+        10,
+        11,
+        12
+      ],
+      "tags": [
+        "Running",
+        "StepStyle"
+      ],
+      "featured": false,
+      "inStock": true,
+      "status": "active",
+      "gender": "Men",
+      "shoeType": "Running",
+      "isDeleted": false,
+      "createdAt": "2026-11-23T18:29:48.714Z",
+      "updatedAt": "2026-11-23T18:29:48.714Z"
+    },
+    {
+      "id": 14,
+      "sku": "STEP-0014",
+      "name": "Basketball Pro Performance",
+      "description": "Dominate the court with these high-performance basketball shoes. Featuring ankle support technology, responsive cushioning, and multi-directional traction pattern for quick pivots and explosive movements.",
+      "price": 11999,
+      "mrp": 14999,
+      "discountPercentage": 20,
+      "stockQuantity": 35,
+      "categoryId": "cat-basketball",
+      "category": "Basketball",
+      "brandId": "brand-stepstyle",
+      "brand": "StepStyle",
+      "imagePath": "/images/Product14",
+      "images": [
+        "/images/Product14"
+      ],
+      "colors": [
+        "Black/Gold",
+        "White/Red",
+        "Blue/Orange"
+      ],
+      "sizes": [
+        8,
+        9,
+        10,
+        11,
+        12,
+        13
+      ],
+      "tags": [
+        "Basketball",
+        "StepStyle"
+      ],
+      "featured": false,
+      "inStock": true,
+      "status": "active",
+      "gender": "Men",
+      "shoeType": "Basketball",
+      "isDeleted": false,
+      "createdAt": "2026-11-23T18:29:48.714Z",
+      "updatedAt": "2026-11-23T18:29:48.714Z"
+    },
+    {
+      "id": 15,
+      "sku": "STEP-0015",
+      "name": "Retro Classics Sneakers",
+      "description": "Step back in time with these retro-inspired sneakers. Combining vintage design elements with modern comfort technology, these classic shoes offer both style and substance for everyday wear.",
+      "price": 8999,
+      "mrp": 11999,
+      "discountPercentage": 25,
+      "stockQuantity": 35,
+      "categoryId": "cat-casual",
+      "category": "Casual",
+      "brandId": "brand-stepstyle",
+      "brand": "StepStyle",
+      "imagePath": "/images/Product15",
+      "images": [
+        "/images/Product15"
+      ],
+      "colors": [
+        "White/Navy",
+        "Gray/Green",
+        "Beige/Brown"
+      ],
+      "sizes": [
+        6,
+        7,
+        8,
+        9,
+        10,
+        11,
+        12
+      ],
+      "tags": [
+        "Casual",
+        "StepStyle"
+      ],
+      "featured": false,
+      "inStock": true,
+      "status": "active",
+      "gender": "Men",
+      "shoeType": "Casual",
+      "isDeleted": false,
+      "createdAt": "2026-11-23T18:29:48.714Z",
+      "updatedAt": "2026-11-23T18:29:48.714Z"
+    },
+    {
+      "id": 16,
+      "sku": "STEP-0016",
+      "name": "Performance Football Cleats",
+      "description": "Engineered for speed and control on the pitch. These lightweight football cleats feature strategically placed studs for optimal traction, synthetic upper for ball control, and ankle support for stability during quick direction changes.",
+      "price": 9999,
+      "mrp": 12999,
+      "discountPercentage": 23,
+      "stockQuantity": 35,
+      "categoryId": "cat-football",
+      "category": "Football",
+      "brandId": "brand-stepstyle",
+      "brand": "StepStyle",
+      "imagePath": "/images/Product16",
+      "images": [
+        "/images/Product16"
+      ],
+      "colors": [
+        "Black/White",
+        "Blue/Yellow",
+        "Red/Black"
+      ],
+      "sizes": [
+        7,
+        8,
+        9,
+        10,
+        11,
+        12
+      ],
+      "tags": [
+        "Football",
+        "StepStyle"
+      ],
+      "featured": false,
+      "inStock": true,
+      "status": "active",
+      "gender": "Men",
+      "shoeType": "Football",
+      "isDeleted": false,
+      "createdAt": "2026-11-23T18:29:48.714Z",
+      "updatedAt": "2026-11-23T18:29:48.714Z"
+    },
+    {
+      "id": 17,
+      "sku": "STEP-0017",
+      "name": "Golf Tour Pro Shoes",
+      "description": "Premium golf shoes designed for the serious player. Featuring waterproof leather, responsive cushioning, and advanced spike technology for maximum grip and stability throughout your swing.",
+      "price": 16999,
+      "mrp": 21999,
+      "discountPercentage": 23,
+      "stockQuantity": 35,
+      "categoryId": "cat-golf",
+      "category": "Golf",
+      "brandId": "brand-stepstyle",
+      "brand": "StepStyle",
+      "imagePath": "/images/Product17",
+      "images": [
+        "/images/Product17"
+      ],
+      "colors": [
+        "White/Green",
+        "Black/Gray",
+        "Brown/Tan"
+      ],
+      "sizes": [
+        8,
+        9,
+        10,
+        11,
+        12
+      ],
+      "tags": [
+        "Golf",
+        "StepStyle"
+      ],
+      "featured": false,
+      "inStock": true,
+      "status": "active",
+      "gender": "Men",
+      "shoeType": "Golf",
+      "isDeleted": false,
+      "createdAt": "2026-11-23T18:29:48.714Z",
+      "updatedAt": "2026-11-23T18:29:48.714Z"
+    },
+    {
+      "id": 18,
+      "sku": "STEP-0018",
+      "name": "Daily Comfort Walking Shoes",
+      "description": "Designed for all-day comfort, these walking shoes feature memory foam insoles, breathable mesh uppers, and shock-absorbing outsoles. Perfect for those who are on their feet all day or enjoy long walks.",
+      "price": 7999,
+      "mrp": 9999,
+      "discountPercentage": 20,
+      "stockQuantity": 35,
+      "categoryId": "cat-walking",
+      "category": "Walking",
+      "brandId": "brand-stepstyle",
+      "brand": "StepStyle",
+      "imagePath": "/images/Product18",
+      "images": [
+        "/images/Product18"
+      ],
+      "colors": [
+        "Gray/Blue",
+        "Black/Pink",
+        "Navy/White"
+      ],
+      "sizes": [
+        6,
+        7,
+        8,
+        9,
+        10,
+        11,
+        12
+      ],
+      "tags": [
+        "Walking",
+        "StepStyle"
+      ],
+      "featured": false,
+      "inStock": true,
+      "status": "active",
+      "gender": "Men",
+      "shoeType": "Walking",
+      "isDeleted": false,
+      "createdAt": "2026-11-23T18:29:48.714Z",
+      "updatedAt": "2026-11-23T18:29:48.714Z"
+    },
+    {
+      "id": 19,
+      "sku": "STEP-0019",
+      "name": "Mountain Trail Hiking Boots",
+      "description": "Tackle the toughest trails with confidence in these durable hiking boots. Featuring waterproof Gore-Tex membrane, Vibram outsoles for superior grip, and supportive midsoles to reduce fatigue on long hikes.",
+      "price": 14999,
+      "mrp": 18999,
+      "discountPercentage": 21,
+      "stockQuantity": 35,
+      "categoryId": "cat-hiking",
+      "category": "Hiking",
+      "brandId": "brand-stepstyle",
+      "brand": "StepStyle",
+      "imagePath": "/images/Product19",
+      "images": [
+        "/images/Product19"
+      ],
+      "colors": [
+        "Brown/Orange",
+        "Green/Black",
+        "Gray/Blue"
+      ],
+      "sizes": [
+        7,
+        8,
+        9,
+        10,
+        11,
+        12
+      ],
+      "tags": [
+        "Hiking",
+        "StepStyle"
+      ],
+      "featured": false,
+      "inStock": true,
+      "status": "active",
+      "gender": "Men",
+      "shoeType": "Hiking",
+      "isDeleted": false,
+      "createdAt": "2026-11-23T18:29:48.714Z",
+      "updatedAt": "2026-11-23T18:29:48.714Z"
+    },
+    {
+      "id": 20,
+      "sku": "STEP-0020",
+      "name": "Designer Suede Dress Shoes",
+      "description": "Elevate your formal attire with these premium suede dress shoes. Meticulously crafted with genuine suede uppers, leather linings, and hand-finished details for a sophisticated, elegant look for special occasions.",
+      "price": 18999,
+      "mrp": 24999,
+      "discountPercentage": 24,
+      "stockQuantity": 35,
+      "categoryId": "cat-formal",
+      "category": "Formal",
+      "brandId": "brand-stepstyle",
+      "brand": "StepStyle",
+      "imagePath": "/images/Product20",
+      "images": [
+        "/images/Product20"
+      ],
+      "colors": [
+        "Black",
+        "Navy",
+        "Burgundy"
+      ],
+      "sizes": [
+        7,
+        8,
+        9,
+        10,
+        11,
+        12
+      ],
+      "tags": [
+        "Formal",
+        "StepStyle"
+      ],
+      "featured": false,
+      "inStock": true,
+      "status": "active",
+      "gender": "Men",
+      "shoeType": "Formal",
+      "isDeleted": false,
+      "createdAt": "2026-11-23T18:29:48.714Z",
+      "updatedAt": "2026-11-23T18:29:48.714Z"
+    }
+  ],
+  "productImages": [
+    {
+      "id": "img-1-1",
+      "productId": 1,
+      "url": "/images/Product1",
+      "isPrimary": true,
+      "sortOrder": 0,
+      "createdAt": "2026-11-23T18:29:48.714Z"
+    },
+    {
+      "id": "img-2-1",
+      "productId": 2,
+      "url": "/images/Product2",
+      "isPrimary": true,
+      "sortOrder": 0,
+      "createdAt": "2026-11-23T18:29:48.714Z"
+    },
+    {
+      "id": "img-3-1",
+      "productId": 3,
+      "url": "/images/Product3",
+      "isPrimary": true,
+      "sortOrder": 0,
+      "createdAt": "2026-11-23T18:29:48.714Z"
+    },
+    {
+      "id": "img-4-1",
+      "productId": 4,
+      "url": "/images/Product4",
+      "isPrimary": true,
+      "sortOrder": 0,
+      "createdAt": "2026-11-23T18:29:48.714Z"
+    },
+    {
+      "id": "img-5-1",
+      "productId": 5,
+      "url": "/images/Product5",
+      "isPrimary": true,
+      "sortOrder": 0,
+      "createdAt": "2026-11-23T18:29:48.714Z"
+    },
+    {
+      "id": "img-6-1",
+      "productId": 6,
+      "url": "/images/Product6",
+      "isPrimary": true,
+      "sortOrder": 0,
+      "createdAt": "2026-11-23T18:29:48.714Z"
+    },
+    {
+      "id": "img-7-1",
+      "productId": 7,
+      "url": "/images/Product7",
+      "isPrimary": true,
+      "sortOrder": 0,
+      "createdAt": "2026-11-23T18:29:48.714Z"
+    },
+    {
+      "id": "img-8-1",
+      "productId": 8,
+      "url": "/images/Product8",
+      "isPrimary": true,
+      "sortOrder": 0,
+      "createdAt": "2026-11-23T18:29:48.714Z"
+    },
+    {
+      "id": "img-9-1",
+      "productId": 9,
+      "url": "/images/Product9",
+      "isPrimary": true,
+      "sortOrder": 0,
+      "createdAt": "2026-11-23T18:29:48.714Z"
+    },
+    {
+      "id": "img-10-1",
+      "productId": 10,
+      "url": "/images/Product10",
+      "isPrimary": true,
+      "sortOrder": 0,
+      "createdAt": "2026-11-23T18:29:48.714Z"
+    },
+    {
+      "id": "img-11-1",
+      "productId": 11,
+      "url": "/images/Product11",
+      "isPrimary": true,
+      "sortOrder": 0,
+      "createdAt": "2026-11-23T18:29:48.714Z"
+    },
+    {
+      "id": "img-12-1",
+      "productId": 12,
+      "url": "/images/Product12",
+      "isPrimary": true,
+      "sortOrder": 0,
+      "createdAt": "2026-11-23T18:29:48.714Z"
+    },
+    {
+      "id": "img-13-1",
+      "productId": 13,
+      "url": "/images/Product13",
+      "isPrimary": true,
+      "sortOrder": 0,
+      "createdAt": "2026-11-23T18:29:48.714Z"
+    },
+    {
+      "id": "img-14-1",
+      "productId": 14,
+      "url": "/images/Product14",
+      "isPrimary": true,
+      "sortOrder": 0,
+      "createdAt": "2026-11-23T18:29:48.714Z"
+    },
+    {
+      "id": "img-15-1",
+      "productId": 15,
+      "url": "/images/Product15",
+      "isPrimary": true,
+      "sortOrder": 0,
+      "createdAt": "2026-11-23T18:29:48.714Z"
+    },
+    {
+      "id": "img-16-1",
+      "productId": 16,
+      "url": "/images/Product16",
+      "isPrimary": true,
+      "sortOrder": 0,
+      "createdAt": "2026-11-23T18:29:48.714Z"
+    },
+    {
+      "id": "img-17-1",
+      "productId": 17,
+      "url": "/images/Product17",
+      "isPrimary": true,
+      "sortOrder": 0,
+      "createdAt": "2026-11-23T18:29:48.714Z"
+    },
+    {
+      "id": "img-18-1",
+      "productId": 18,
+      "url": "/images/Product18",
+      "isPrimary": true,
+      "sortOrder": 0,
+      "createdAt": "2026-11-23T18:29:48.714Z"
+    },
+    {
+      "id": "img-19-1",
+      "productId": 19,
+      "url": "/images/Product19",
+      "isPrimary": true,
+      "sortOrder": 0,
+      "createdAt": "2026-11-23T18:29:48.714Z"
+    },
+    {
+      "id": "img-20-1",
+      "productId": 20,
+      "url": "/images/Product20",
+      "isPrimary": true,
+      "sortOrder": 0,
+      "createdAt": "2026-11-23T18:29:48.714Z"
+    }
+  ],
+  "productVariants": [
+    {
+      "id": "var-1-7-black-white",
+      "productId": 1,
+      "sku": "STEP-0001-7-BLAC",
+      "size": 7,
+      "color": "Black/White",
+      "stockQuantity": 1
+    },
+    {
+      "id": "var-1-7-blue-gray",
+      "productId": 1,
+      "sku": "STEP-0001-7-BLUE",
+      "size": 7,
+      "color": "Blue/Gray",
+      "stockQuantity": 1
+    },
+    {
+      "id": "var-1-7-red-black",
+      "productId": 1,
+      "sku": "STEP-0001-7-RED-",
+      "size": 7,
+      "color": "Red/Black",
+      "stockQuantity": 1
+    },
+    {
+      "id": "var-1-7.5-black-white",
+      "productId": 1,
+      "sku": "STEP-0001-7.5-BLAC",
+      "size": 7.5,
+      "color": "Black/White",
+      "stockQuantity": 1
+    },
+    {
+      "id": "var-1-7.5-blue-gray",
+      "productId": 1,
+      "sku": "STEP-0001-7.5-BLUE",
+      "size": 7.5,
+      "color": "Blue/Gray",
+      "stockQuantity": 1
+    },
+    {
+      "id": "var-1-7.5-red-black",
+      "productId": 1,
+      "sku": "STEP-0001-7.5-RED-",
+      "size": 7.5,
+      "color": "Red/Black",
+      "stockQuantity": 1
+    },
+    {
+      "id": "var-1-8-black-white",
+      "productId": 1,
+      "sku": "STEP-0001-8-BLAC",
+      "size": 8,
+      "color": "Black/White",
+      "stockQuantity": 1
+    },
+    {
+      "id": "var-1-8-blue-gray",
+      "productId": 1,
+      "sku": "STEP-0001-8-BLUE",
+      "size": 8,
+      "color": "Blue/Gray",
+      "stockQuantity": 1
+    },
+    {
+      "id": "var-1-8-red-black",
+      "productId": 1,
+      "sku": "STEP-0001-8-RED-",
+      "size": 8,
+      "color": "Red/Black",
+      "stockQuantity": 1
+    },
+    {
+      "id": "var-1-8.5-black-white",
+      "productId": 1,
+      "sku": "STEP-0001-8.5-BLAC",
+      "size": 8.5,
+      "color": "Black/White",
+      "stockQuantity": 1
+    },
+    {
+      "id": "var-1-8.5-blue-gray",
+      "productId": 1,
+      "sku": "STEP-0001-8.5-BLUE",
+      "size": 8.5,
+      "color": "Blue/Gray",
+      "stockQuantity": 1
+    },
+    {
+      "id": "var-1-8.5-red-black",
+      "productId": 1,
+      "sku": "STEP-0001-8.5-RED-",
+      "size": 8.5,
+      "color": "Red/Black",
+      "stockQuantity": 1
+    },
+    {
+      "id": "var-1-9-black-white",
+      "productId": 1,
+      "sku": "STEP-0001-9-BLAC",
+      "size": 9,
+      "color": "Black/White",
+      "stockQuantity": 1
+    },
+    {
+      "id": "var-1-9-blue-gray",
+      "productId": 1,
+      "sku": "STEP-0001-9-BLUE",
+      "size": 9,
+      "color": "Blue/Gray",
+      "stockQuantity": 1
+    },
+    {
+      "id": "var-1-9-red-black",
+      "productId": 1,
+      "sku": "STEP-0001-9-RED-",
+      "size": 9,
+      "color": "Red/Black",
+      "stockQuantity": 1
+    },
+    {
+      "id": "var-1-9.5-black-white",
+      "productId": 1,
+      "sku": "STEP-0001-9.5-BLAC",
+      "size": 9.5,
+      "color": "Black/White",
+      "stockQuantity": 1
+    },
+    {
+      "id": "var-1-9.5-blue-gray",
+      "productId": 1,
+      "sku": "STEP-0001-9.5-BLUE",
+      "size": 9.5,
+      "color": "Blue/Gray",
+      "stockQuantity": 1
+    },
+    {
+      "id": "var-1-9.5-red-black",
+      "productId": 1,
+      "sku": "STEP-0001-9.5-RED-",
+      "size": 9.5,
+      "color": "Red/Black",
+      "stockQuantity": 1
+    },
+    {
+      "id": "var-1-10-black-white",
+      "productId": 1,
+      "sku": "STEP-0001-10-BLAC",
+      "size": 10,
+      "color": "Black/White",
+      "stockQuantity": 1
+    },
+    {
+      "id": "var-1-10-blue-gray",
+      "productId": 1,
+      "sku": "STEP-0001-10-BLUE",
+      "size": 10,
+      "color": "Blue/Gray",
+      "stockQuantity": 1
+    },
+    {
+      "id": "var-1-10-red-black",
+      "productId": 1,
+      "sku": "STEP-0001-10-RED-",
+      "size": 10,
+      "color": "Red/Black",
+      "stockQuantity": 1
+    },
+    {
+      "id": "var-1-10.5-black-white",
+      "productId": 1,
+      "sku": "STEP-0001-10.5-BLAC",
+      "size": 10.5,
+      "color": "Black/White",
+      "stockQuantity": 1
+    },
+    {
+      "id": "var-1-10.5-blue-gray",
+      "productId": 1,
+      "sku": "STEP-0001-10.5-BLUE",
+      "size": 10.5,
+      "color": "Blue/Gray",
+      "stockQuantity": 1
+    },
+    {
+      "id": "var-1-10.5-red-black",
+      "productId": 1,
+      "sku": "STEP-0001-10.5-RED-",
+      "size": 10.5,
+      "color": "Red/Black",
+      "stockQuantity": 1
+    },
+    {
+      "id": "var-1-11-black-white",
+      "productId": 1,
+      "sku": "STEP-0001-11-BLAC",
+      "size": 11,
+      "color": "Black/White",
+      "stockQuantity": 1
+    },
+    {
+      "id": "var-1-11-blue-gray",
+      "productId": 1,
+      "sku": "STEP-0001-11-BLUE",
+      "size": 11,
+      "color": "Blue/Gray",
+      "stockQuantity": 1
+    },
+    {
+      "id": "var-1-11-red-black",
+      "productId": 1,
+      "sku": "STEP-0001-11-RED-",
+      "size": 11,
+      "color": "Red/Black",
+      "stockQuantity": 1
+    },
+    {
+      "id": "var-1-11.5-black-white",
+      "productId": 1,
+      "sku": "STEP-0001-11.5-BLAC",
+      "size": 11.5,
+      "color": "Black/White",
+      "stockQuantity": 1
+    },
+    {
+      "id": "var-1-11.5-blue-gray",
+      "productId": 1,
+      "sku": "STEP-0001-11.5-BLUE",
+      "size": 11.5,
+      "color": "Blue/Gray",
+      "stockQuantity": 1
+    },
+    {
+      "id": "var-1-11.5-red-black",
+      "productId": 1,
+      "sku": "STEP-0001-11.5-RED-",
+      "size": 11.5,
+      "color": "Red/Black",
+      "stockQuantity": 1
+    },
+    {
+      "id": "var-1-12-black-white",
+      "productId": 1,
+      "sku": "STEP-0001-12-BLAC",
+      "size": 12,
+      "color": "Black/White",
+      "stockQuantity": 1
+    },
+    {
+      "id": "var-1-12-blue-gray",
+      "productId": 1,
+      "sku": "STEP-0001-12-BLUE",
+      "size": 12,
+      "color": "Blue/Gray",
+      "stockQuantity": 1
+    },
+    {
+      "id": "var-1-12-red-black",
+      "productId": 1,
+      "sku": "STEP-0001-12-RED-",
+      "size": 12,
+      "color": "Red/Black",
+      "stockQuantity": 1
+    },
+    {
+      "id": "var-2-6-white",
+      "productId": 2,
+      "sku": "STEP-0002-6-WHIT",
+      "size": 6,
+      "color": "White",
+      "stockQuantity": 1
+    },
+    {
+      "id": "var-2-6-black",
+      "productId": 2,
+      "sku": "STEP-0002-6-BLAC",
+      "size": 6,
+      "color": "Black",
+      "stockQuantity": 1
+    },
+    {
+      "id": "var-2-6-navy",
+      "productId": 2,
+      "sku": "STEP-0002-6-NAVY",
+      "size": 6,
+      "color": "Navy",
+      "stockQuantity": 1
+    },
+    {
+      "id": "var-2-6-red",
+      "productId": 2,
+      "sku": "STEP-0002-6-RED",
+      "size": 6,
+      "color": "Red",
+      "stockQuantity": 1
+    },
+    {
+      "id": "var-2-7-white",
+      "productId": 2,
+      "sku": "STEP-0002-7-WHIT",
+      "size": 7,
+      "color": "White",
+      "stockQuantity": 1
+    },
+    {
+      "id": "var-2-7-black",
+      "productId": 2,
+      "sku": "STEP-0002-7-BLAC",
+      "size": 7,
+      "color": "Black",
+      "stockQuantity": 1
+    },
+    {
+      "id": "var-2-7-navy",
+      "productId": 2,
+      "sku": "STEP-0002-7-NAVY",
+      "size": 7,
+      "color": "Navy",
+      "stockQuantity": 1
+    },
+    {
+      "id": "var-2-7-red",
+      "productId": 2,
+      "sku": "STEP-0002-7-RED",
+      "size": 7,
+      "color": "Red",
+      "stockQuantity": 1
+    },
+    {
+      "id": "var-2-8-white",
+      "productId": 2,
+      "sku": "STEP-0002-8-WHIT",
+      "size": 8,
+      "color": "White",
+      "stockQuantity": 1
+    },
+    {
+      "id": "var-2-8-black",
+      "productId": 2,
+      "sku": "STEP-0002-8-BLAC",
+      "size": 8,
+      "color": "Black",
+      "stockQuantity": 1
+    },
+    {
+      "id": "var-2-8-navy",
+      "productId": 2,
+      "sku": "STEP-0002-8-NAVY",
+      "size": 8,
+      "color": "Navy",
+      "stockQuantity": 1
+    },
+    {
+      "id": "var-2-8-red",
+      "productId": 2,
+      "sku": "STEP-0002-8-RED",
+      "size": 8,
+      "color": "Red",
+      "stockQuantity": 1
+    },
+    {
+      "id": "var-2-9-white",
+      "productId": 2,
+      "sku": "STEP-0002-9-WHIT",
+      "size": 9,
+      "color": "White",
+      "stockQuantity": 1
+    },
+    {
+      "id": "var-2-9-black",
+      "productId": 2,
+      "sku": "STEP-0002-9-BLAC",
+      "size": 9,
+      "color": "Black",
+      "stockQuantity": 1
+    },
+    {
+      "id": "var-2-9-navy",
+      "productId": 2,
+      "sku": "STEP-0002-9-NAVY",
+      "size": 9,
+      "color": "Navy",
+      "stockQuantity": 1
+    },
+    {
+      "id": "var-2-9-red",
+      "productId": 2,
+      "sku": "STEP-0002-9-RED",
+      "size": 9,
+      "color": "Red",
+      "stockQuantity": 1
+    },
+    {
+      "id": "var-2-10-white",
+      "productId": 2,
+      "sku": "STEP-0002-10-WHIT",
+      "size": 10,
+      "color": "White",
+      "stockQuantity": 1
+    },
+    {
+      "id": "var-2-10-black",
+      "productId": 2,
+      "sku": "STEP-0002-10-BLAC",
+      "size": 10,
+      "color": "Black",
+      "stockQuantity": 1
+    },
+    {
+      "id": "var-2-10-navy",
+      "productId": 2,
+      "sku": "STEP-0002-10-NAVY",
+      "size": 10,
+      "color": "Navy",
+      "stockQuantity": 1
+    },
+    {
+      "id": "var-2-10-red",
+      "productId": 2,
+      "sku": "STEP-0002-10-RED",
+      "size": 10,
+      "color": "Red",
+      "stockQuantity": 1
+    },
+    {
+      "id": "var-2-11-white",
+      "productId": 2,
+      "sku": "STEP-0002-11-WHIT",
+      "size": 11,
+      "color": "White",
+      "stockQuantity": 1
+    },
+    {
+      "id": "var-2-11-black",
+      "productId": 2,
+      "sku": "STEP-0002-11-BLAC",
+      "size": 11,
+      "color": "Black",
+      "stockQuantity": 1
+    },
+    {
+      "id": "var-2-11-navy",
+      "productId": 2,
+      "sku": "STEP-0002-11-NAVY",
+      "size": 11,
+      "color": "Navy",
+      "stockQuantity": 1
+    },
+    {
+      "id": "var-2-11-red",
+      "productId": 2,
+      "sku": "STEP-0002-11-RED",
+      "size": 11,
+      "color": "Red",
+      "stockQuantity": 1
+    },
+    {
+      "id": "var-2-12-white",
+      "productId": 2,
+      "sku": "STEP-0002-12-WHIT",
+      "size": 12,
+      "color": "White",
+      "stockQuantity": 1
+    },
+    {
+      "id": "var-2-12-black",
+      "productId": 2,
+      "sku": "STEP-0002-12-BLAC",
+      "size": 12,
+      "color": "Black",
+      "stockQuantity": 1
+    },
+    {
+      "id": "var-2-12-navy",
+      "productId": 2,
+      "sku": "STEP-0002-12-NAVY",
+      "size": 12,
+      "color": "Navy",
+      "stockQuantity": 1
+    },
+    {
+      "id": "var-2-12-red",
+      "productId": 2,
+      "sku": "STEP-0002-12-RED",
+      "size": 12,
+      "color": "Red",
+      "stockQuantity": 1
+    },
+    {
+      "id": "var-3-8-brown-black",
+      "productId": 3,
+      "sku": "STEP-0003-8-BROW",
+      "size": 8,
+      "color": "Brown/Black",
+      "stockQuantity": 3
+    },
+    {
+      "id": "var-3-8-gray-orange",
+      "productId": 3,
+      "sku": "STEP-0003-8-GRAY",
+      "size": 8,
+      "color": "Gray/Orange",
+      "stockQuantity": 3
+    },
+    {
+      "id": "var-3-9-brown-black",
+      "productId": 3,
+      "sku": "STEP-0003-9-BROW",
+      "size": 9,
+      "color": "Brown/Black",
+      "stockQuantity": 3
+    },
+    {
+      "id": "var-3-9-gray-orange",
+      "productId": 3,
+      "sku": "STEP-0003-9-GRAY",
+      "size": 9,
+      "color": "Gray/Orange",
+      "stockQuantity": 3
+    },
+    {
+      "id": "var-3-10-brown-black",
+      "productId": 3,
+      "sku": "STEP-0003-10-BROW",
+      "size": 10,
+      "color": "Brown/Black",
+      "stockQuantity": 3
+    },
+    {
+      "id": "var-3-10-gray-orange",
+      "productId": 3,
+      "sku": "STEP-0003-10-GRAY",
+      "size": 10,
+      "color": "Gray/Orange",
+      "stockQuantity": 3
+    },
+    {
+      "id": "var-3-11-brown-black",
+      "productId": 3,
+      "sku": "STEP-0003-11-BROW",
+      "size": 11,
+      "color": "Brown/Black",
+      "stockQuantity": 3
+    },
+    {
+      "id": "var-3-11-gray-orange",
+      "productId": 3,
+      "sku": "STEP-0003-11-GRAY",
+      "size": 11,
+      "color": "Gray/Orange",
+      "stockQuantity": 3
+    },
+    {
+      "id": "var-3-12-brown-black",
+      "productId": 3,
+      "sku": "STEP-0003-12-BROW",
+      "size": 12,
+      "color": "Brown/Black",
+      "stockQuantity": 3
+    },
+    {
+      "id": "var-3-12-gray-orange",
+      "productId": 3,
+      "sku": "STEP-0003-12-GRAY",
+      "size": 12,
+      "color": "Gray/Orange",
+      "stockQuantity": 3
+    },
+    {
+      "id": "var-4-7-neon-yellow-black",
+      "productId": 4,
+      "sku": "STEP-0004-7-NEON",
+      "size": 7,
+      "color": "Neon Yellow/Black",
+      "stockQuantity": 1
+    },
+    {
+      "id": "var-4-7-red-white",
+      "productId": 4,
+      "sku": "STEP-0004-7-RED-",
+      "size": 7,
+      "color": "Red/White",
+      "stockQuantity": 1
+    },
+    {
+      "id": "var-4-7-blue-silver",
+      "productId": 4,
+      "sku": "STEP-0004-7-BLUE",
+      "size": 7,
+      "color": "Blue/Silver",
+      "stockQuantity": 1
+    },
+    {
+      "id": "var-4-8-neon-yellow-black",
+      "productId": 4,
+      "sku": "STEP-0004-8-NEON",
+      "size": 8,
+      "color": "Neon Yellow/Black",
+      "stockQuantity": 1
+    },
+    {
+      "id": "var-4-8-red-white",
+      "productId": 4,
+      "sku": "STEP-0004-8-RED-",
+      "size": 8,
+      "color": "Red/White",
+      "stockQuantity": 1
+    },
+    {
+      "id": "var-4-8-blue-silver",
+      "productId": 4,
+      "sku": "STEP-0004-8-BLUE",
+      "size": 8,
+      "color": "Blue/Silver",
+      "stockQuantity": 1
+    },
+    {
+      "id": "var-4-9-neon-yellow-black",
+      "productId": 4,
+      "sku": "STEP-0004-9-NEON",
+      "size": 9,
+      "color": "Neon Yellow/Black",
+      "stockQuantity": 1
+    },
+    {
+      "id": "var-4-9-red-white",
+      "productId": 4,
+      "sku": "STEP-0004-9-RED-",
+      "size": 9,
+      "color": "Red/White",
+      "stockQuantity": 1
+    },
+    {
+      "id": "var-4-9-blue-silver",
+      "productId": 4,
+      "sku": "STEP-0004-9-BLUE",
+      "size": 9,
+      "color": "Blue/Silver",
+      "stockQuantity": 1
+    },
+    {
+      "id": "var-4-10-neon-yellow-black",
+      "productId": 4,
+      "sku": "STEP-0004-10-NEON",
+      "size": 10,
+      "color": "Neon Yellow/Black",
+      "stockQuantity": 1
+    },
+    {
+      "id": "var-4-10-red-white",
+      "productId": 4,
+      "sku": "STEP-0004-10-RED-",
+      "size": 10,
+      "color": "Red/White",
+      "stockQuantity": 1
+    },
+    {
+      "id": "var-4-10-blue-silver",
+      "productId": 4,
+      "sku": "STEP-0004-10-BLUE",
+      "size": 10,
+      "color": "Blue/Silver",
+      "stockQuantity": 1
+    },
+    {
+      "id": "var-4-11-neon-yellow-black",
+      "productId": 4,
+      "sku": "STEP-0004-11-NEON",
+      "size": 11,
+      "color": "Neon Yellow/Black",
+      "stockQuantity": 1
+    },
+    {
+      "id": "var-4-11-red-white",
+      "productId": 4,
+      "sku": "STEP-0004-11-RED-",
+      "size": 11,
+      "color": "Red/White",
+      "stockQuantity": 1
+    },
+    {
+      "id": "var-4-11-blue-silver",
+      "productId": 4,
+      "sku": "STEP-0004-11-BLUE",
+      "size": 11,
+      "color": "Blue/Silver",
+      "stockQuantity": 1
+    },
+    {
+      "id": "var-4-12-neon-yellow-black",
+      "productId": 4,
+      "sku": "STEP-0004-12-NEON",
+      "size": 12,
+      "color": "Neon Yellow/Black",
+      "stockQuantity": 1
+    },
+    {
+      "id": "var-4-12-red-white",
+      "productId": 4,
+      "sku": "STEP-0004-12-RED-",
+      "size": 12,
+      "color": "Red/White",
+      "stockQuantity": 1
+    },
+    {
+      "id": "var-4-12-blue-silver",
+      "productId": 4,
+      "sku": "STEP-0004-12-BLUE",
+      "size": 12,
+      "color": "Blue/Silver",
+      "stockQuantity": 1
+    },
+    {
+      "id": "var-5-7-white-black",
+      "productId": 5,
+      "sku": "STEP-0005-7-WHIT",
+      "size": 7,
+      "color": "White/Black",
+      "stockQuantity": 1
+    },
+    {
+      "id": "var-5-7-all-black",
+      "productId": 5,
+      "sku": "STEP-0005-7-ALL-",
+      "size": 7,
+      "color": "All Black",
+      "stockQuantity": 1
+    },
+    {
+      "id": "var-5-7-gray-white",
+      "productId": 5,
+      "sku": "STEP-0005-7-GRAY",
+      "size": 7,
+      "color": "Gray/White",
+      "stockQuantity": 1
+    },
+    {
+      "id": "var-5-8-white-black",
+      "productId": 5,
+      "sku": "STEP-0005-8-WHIT",
+      "size": 8,
+      "color": "White/Black",
+      "stockQuantity": 1
+    },
+    {
+      "id": "var-5-8-all-black",
+      "productId": 5,
+      "sku": "STEP-0005-8-ALL-",
+      "size": 8,
+      "color": "All Black",
+      "stockQuantity": 1
+    },
+    {
+      "id": "var-5-8-gray-white",
+      "productId": 5,
+      "sku": "STEP-0005-8-GRAY",
+      "size": 8,
+      "color": "Gray/White",
+      "stockQuantity": 1
+    },
+    {
+      "id": "var-5-9-white-black",
+      "productId": 5,
+      "sku": "STEP-0005-9-WHIT",
+      "size": 9,
+      "color": "White/Black",
+      "stockQuantity": 1
+    },
+    {
+      "id": "var-5-9-all-black",
+      "productId": 5,
+      "sku": "STEP-0005-9-ALL-",
+      "size": 9,
+      "color": "All Black",
+      "stockQuantity": 1
+    },
+    {
+      "id": "var-5-9-gray-white",
+      "productId": 5,
+      "sku": "STEP-0005-9-GRAY",
+      "size": 9,
+      "color": "Gray/White",
+      "stockQuantity": 1
+    },
+    {
+      "id": "var-5-10-white-black",
+      "productId": 5,
+      "sku": "STEP-0005-10-WHIT",
+      "size": 10,
+      "color": "White/Black",
+      "stockQuantity": 1
+    },
+    {
+      "id": "var-5-10-all-black",
+      "productId": 5,
+      "sku": "STEP-0005-10-ALL-",
+      "size": 10,
+      "color": "All Black",
+      "stockQuantity": 1
+    },
+    {
+      "id": "var-5-10-gray-white",
+      "productId": 5,
+      "sku": "STEP-0005-10-GRAY",
+      "size": 10,
+      "color": "Gray/White",
+      "stockQuantity": 1
+    },
+    {
+      "id": "var-5-11-white-black",
+      "productId": 5,
+      "sku": "STEP-0005-11-WHIT",
+      "size": 11,
+      "color": "White/Black",
+      "stockQuantity": 1
+    },
+    {
+      "id": "var-5-11-all-black",
+      "productId": 5,
+      "sku": "STEP-0005-11-ALL-",
+      "size": 11,
+      "color": "All Black",
+      "stockQuantity": 1
+    },
+    {
+      "id": "var-5-11-gray-white",
+      "productId": 5,
+      "sku": "STEP-0005-11-GRAY",
+      "size": 11,
+      "color": "Gray/White",
+      "stockQuantity": 1
+    },
+    {
+      "id": "var-5-12-white-black",
+      "productId": 5,
+      "sku": "STEP-0005-12-WHIT",
+      "size": 12,
+      "color": "White/Black",
+      "stockQuantity": 1
+    },
+    {
+      "id": "var-5-12-all-black",
+      "productId": 5,
+      "sku": "STEP-0005-12-ALL-",
+      "size": 12,
+      "color": "All Black",
+      "stockQuantity": 1
+    },
+    {
+      "id": "var-5-12-gray-white",
+      "productId": 5,
+      "sku": "STEP-0005-12-GRAY",
+      "size": 12,
+      "color": "Gray/White",
+      "stockQuantity": 1
+    },
+    {
+      "id": "var-6-7-white-green",
+      "productId": 6,
+      "sku": "STEP-0006-7-WHIT",
+      "size": 7,
+      "color": "White/Green",
+      "stockQuantity": 2
+    },
+    {
+      "id": "var-6-7-white-blue",
+      "productId": 6,
+      "sku": "STEP-0006-7-WHIT",
+      "size": 7,
+      "color": "White/Blue",
+      "stockQuantity": 2
+    },
+    {
+      "id": "var-6-8-white-green",
+      "productId": 6,
+      "sku": "STEP-0006-8-WHIT",
+      "size": 8,
+      "color": "White/Green",
+      "stockQuantity": 2
+    },
+    {
+      "id": "var-6-8-white-blue",
+      "productId": 6,
+      "sku": "STEP-0006-8-WHIT",
+      "size": 8,
+      "color": "White/Blue",
+      "stockQuantity": 2
+    },
+    {
+      "id": "var-6-9-white-green",
+      "productId": 6,
+      "sku": "STEP-0006-9-WHIT",
+      "size": 9,
+      "color": "White/Green",
+      "stockQuantity": 2
+    },
+    {
+      "id": "var-6-9-white-blue",
+      "productId": 6,
+      "sku": "STEP-0006-9-WHIT",
+      "size": 9,
+      "color": "White/Blue",
+      "stockQuantity": 2
+    },
+    {
+      "id": "var-6-10-white-green",
+      "productId": 6,
+      "sku": "STEP-0006-10-WHIT",
+      "size": 10,
+      "color": "White/Green",
+      "stockQuantity": 2
+    },
+    {
+      "id": "var-6-10-white-blue",
+      "productId": 6,
+      "sku": "STEP-0006-10-WHIT",
+      "size": 10,
+      "color": "White/Blue",
+      "stockQuantity": 2
+    },
+    {
+      "id": "var-6-11-white-green",
+      "productId": 6,
+      "sku": "STEP-0006-11-WHIT",
+      "size": 11,
+      "color": "White/Green",
+      "stockQuantity": 2
+    },
+    {
+      "id": "var-6-11-white-blue",
+      "productId": 6,
+      "sku": "STEP-0006-11-WHIT",
+      "size": 11,
+      "color": "White/Blue",
+      "stockQuantity": 2
+    },
+    {
+      "id": "var-6-12-white-green",
+      "productId": 6,
+      "sku": "STEP-0006-12-WHIT",
+      "size": 12,
+      "color": "White/Green",
+      "stockQuantity": 2
+    },
+    {
+      "id": "var-6-12-white-blue",
+      "productId": 6,
+      "sku": "STEP-0006-12-WHIT",
+      "size": 12,
+      "color": "White/Blue",
+      "stockQuantity": 2
+    },
+    {
+      "id": "var-7-8-green-brown",
+      "productId": 7,
+      "sku": "STEP-0007-8-GREE",
+      "size": 8,
+      "color": "Green/Brown",
+      "stockQuantity": 3
+    },
+    {
+      "id": "var-7-8-gray-black",
+      "productId": 7,
+      "sku": "STEP-0007-8-GRAY",
+      "size": 8,
+      "color": "Gray/Black",
+      "stockQuantity": 3
+    },
+    {
+      "id": "var-7-9-green-brown",
+      "productId": 7,
+      "sku": "STEP-0007-9-GREE",
+      "size": 9,
+      "color": "Green/Brown",
+      "stockQuantity": 3
+    },
+    {
+      "id": "var-7-9-gray-black",
+      "productId": 7,
+      "sku": "STEP-0007-9-GRAY",
+      "size": 9,
+      "color": "Gray/Black",
+      "stockQuantity": 3
+    },
+    {
+      "id": "var-7-10-green-brown",
+      "productId": 7,
+      "sku": "STEP-0007-10-GREE",
+      "size": 10,
+      "color": "Green/Brown",
+      "stockQuantity": 3
+    },
+    {
+      "id": "var-7-10-gray-black",
+      "productId": 7,
+      "sku": "STEP-0007-10-GRAY",
+      "size": 10,
+      "color": "Gray/Black",
+      "stockQuantity": 3
+    },
+    {
+      "id": "var-7-11-green-brown",
+      "productId": 7,
+      "sku": "STEP-0007-11-GREE",
+      "size": 11,
+      "color": "Green/Brown",
+      "stockQuantity": 3
+    },
+    {
+      "id": "var-7-11-gray-black",
+      "productId": 7,
+      "sku": "STEP-0007-11-GRAY",
+      "size": 11,
+      "color": "Gray/Black",
+      "stockQuantity": 3
+    },
+    {
+      "id": "var-7-12-green-brown",
+      "productId": 7,
+      "sku": "STEP-0007-12-GREE",
+      "size": 12,
+      "color": "Green/Brown",
+      "stockQuantity": 3
+    },
+    {
+      "id": "var-7-12-gray-black",
+      "productId": 7,
+      "sku": "STEP-0007-12-GRAY",
+      "size": 12,
+      "color": "Gray/Black",
+      "stockQuantity": 3
+    },
+    {
+      "id": "var-8-7-black-red",
+      "productId": 8,
+      "sku": "STEP-0008-7-BLAC",
+      "size": 7,
+      "color": "Black/Red",
+      "stockQuantity": 1
+    },
+    {
+      "id": "var-8-7-blue-white",
+      "productId": 8,
+      "sku": "STEP-0008-7-BLUE",
+      "size": 7,
+      "color": "Blue/White",
+      "stockQuantity": 1
+    },
+    {
+      "id": "var-8-7-gray-green",
+      "productId": 8,
+      "sku": "STEP-0008-7-GRAY",
+      "size": 7,
+      "color": "Gray/Green",
+      "stockQuantity": 1
+    },
+    {
+      "id": "var-8-8-black-red",
+      "productId": 8,
+      "sku": "STEP-0008-8-BLAC",
+      "size": 8,
+      "color": "Black/Red",
+      "stockQuantity": 1
+    },
+    {
+      "id": "var-8-8-blue-white",
+      "productId": 8,
+      "sku": "STEP-0008-8-BLUE",
+      "size": 8,
+      "color": "Blue/White",
+      "stockQuantity": 1
+    },
+    {
+      "id": "var-8-8-gray-green",
+      "productId": 8,
+      "sku": "STEP-0008-8-GRAY",
+      "size": 8,
+      "color": "Gray/Green",
+      "stockQuantity": 1
+    },
+    {
+      "id": "var-8-9-black-red",
+      "productId": 8,
+      "sku": "STEP-0008-9-BLAC",
+      "size": 9,
+      "color": "Black/Red",
+      "stockQuantity": 1
+    },
+    {
+      "id": "var-8-9-blue-white",
+      "productId": 8,
+      "sku": "STEP-0008-9-BLUE",
+      "size": 9,
+      "color": "Blue/White",
+      "stockQuantity": 1
+    },
+    {
+      "id": "var-8-9-gray-green",
+      "productId": 8,
+      "sku": "STEP-0008-9-GRAY",
+      "size": 9,
+      "color": "Gray/Green",
+      "stockQuantity": 1
+    },
+    {
+      "id": "var-8-10-black-red",
+      "productId": 8,
+      "sku": "STEP-0008-10-BLAC",
+      "size": 10,
+      "color": "Black/Red",
+      "stockQuantity": 1
+    },
+    {
+      "id": "var-8-10-blue-white",
+      "productId": 8,
+      "sku": "STEP-0008-10-BLUE",
+      "size": 10,
+      "color": "Blue/White",
+      "stockQuantity": 1
+    },
+    {
+      "id": "var-8-10-gray-green",
+      "productId": 8,
+      "sku": "STEP-0008-10-GRAY",
+      "size": 10,
+      "color": "Gray/Green",
+      "stockQuantity": 1
+    },
+    {
+      "id": "var-8-11-black-red",
+      "productId": 8,
+      "sku": "STEP-0008-11-BLAC",
+      "size": 11,
+      "color": "Black/Red",
+      "stockQuantity": 1
+    },
+    {
+      "id": "var-8-11-blue-white",
+      "productId": 8,
+      "sku": "STEP-0008-11-BLUE",
+      "size": 11,
+      "color": "Blue/White",
+      "stockQuantity": 1
+    },
+    {
+      "id": "var-8-11-gray-green",
+      "productId": 8,
+      "sku": "STEP-0008-11-GRAY",
+      "size": 11,
+      "color": "Gray/Green",
+      "stockQuantity": 1
+    },
+    {
+      "id": "var-8-12-black-red",
+      "productId": 8,
+      "sku": "STEP-0008-12-BLAC",
+      "size": 12,
+      "color": "Black/Red",
+      "stockQuantity": 1
+    },
+    {
+      "id": "var-8-12-blue-white",
+      "productId": 8,
+      "sku": "STEP-0008-12-BLUE",
+      "size": 12,
+      "color": "Blue/White",
+      "stockQuantity": 1
+    },
+    {
+      "id": "var-8-12-gray-green",
+      "productId": 8,
+      "sku": "STEP-0008-12-GRAY",
+      "size": 12,
+      "color": "Gray/Green",
+      "stockQuantity": 1
+    },
+    {
+      "id": "var-9-7-black-white",
+      "productId": 9,
+      "sku": "STEP-0009-7-BLAC",
+      "size": 7,
+      "color": "Black/White",
+      "stockQuantity": 1
+    },
+    {
+      "id": "var-9-7-navy-gum",
+      "productId": 9,
+      "sku": "STEP-0009-7-NAVY",
+      "size": 7,
+      "color": "Navy/Gum",
+      "stockQuantity": 1
+    },
+    {
+      "id": "var-9-7-burgundy-white",
+      "productId": 9,
+      "sku": "STEP-0009-7-BURG",
+      "size": 7,
+      "color": "Burgundy/White",
+      "stockQuantity": 1
+    },
+    {
+      "id": "var-9-8-black-white",
+      "productId": 9,
+      "sku": "STEP-0009-8-BLAC",
+      "size": 8,
+      "color": "Black/White",
+      "stockQuantity": 1
+    },
+    {
+      "id": "var-9-8-navy-gum",
+      "productId": 9,
+      "sku": "STEP-0009-8-NAVY",
+      "size": 8,
+      "color": "Navy/Gum",
+      "stockQuantity": 1
+    },
+    {
+      "id": "var-9-8-burgundy-white",
+      "productId": 9,
+      "sku": "STEP-0009-8-BURG",
+      "size": 8,
+      "color": "Burgundy/White",
+      "stockQuantity": 1
+    },
+    {
+      "id": "var-9-9-black-white",
+      "productId": 9,
+      "sku": "STEP-0009-9-BLAC",
+      "size": 9,
+      "color": "Black/White",
+      "stockQuantity": 1
+    },
+    {
+      "id": "var-9-9-navy-gum",
+      "productId": 9,
+      "sku": "STEP-0009-9-NAVY",
+      "size": 9,
+      "color": "Navy/Gum",
+      "stockQuantity": 1
+    },
+    {
+      "id": "var-9-9-burgundy-white",
+      "productId": 9,
+      "sku": "STEP-0009-9-BURG",
+      "size": 9,
+      "color": "Burgundy/White",
+      "stockQuantity": 1
+    },
+    {
+      "id": "var-9-10-black-white",
+      "productId": 9,
+      "sku": "STEP-0009-10-BLAC",
+      "size": 10,
+      "color": "Black/White",
+      "stockQuantity": 1
+    },
+    {
+      "id": "var-9-10-navy-gum",
+      "productId": 9,
+      "sku": "STEP-0009-10-NAVY",
+      "size": 10,
+      "color": "Navy/Gum",
+      "stockQuantity": 1
+    },
+    {
+      "id": "var-9-10-burgundy-white",
+      "productId": 9,
+      "sku": "STEP-0009-10-BURG",
+      "size": 10,
+      "color": "Burgundy/White",
+      "stockQuantity": 1
+    },
+    {
+      "id": "var-9-11-black-white",
+      "productId": 9,
+      "sku": "STEP-0009-11-BLAC",
+      "size": 11,
+      "color": "Black/White",
+      "stockQuantity": 1
+    },
+    {
+      "id": "var-9-11-navy-gum",
+      "productId": 9,
+      "sku": "STEP-0009-11-NAVY",
+      "size": 11,
+      "color": "Navy/Gum",
+      "stockQuantity": 1
+    },
+    {
+      "id": "var-9-11-burgundy-white",
+      "productId": 9,
+      "sku": "STEP-0009-11-BURG",
+      "size": 11,
+      "color": "Burgundy/White",
+      "stockQuantity": 1
+    },
+    {
+      "id": "var-9-12-black-white",
+      "productId": 9,
+      "sku": "STEP-0009-12-BLAC",
+      "size": 12,
+      "color": "Black/White",
+      "stockQuantity": 1
+    },
+    {
+      "id": "var-9-12-navy-gum",
+      "productId": 9,
+      "sku": "STEP-0009-12-NAVY",
+      "size": 12,
+      "color": "Navy/Gum",
+      "stockQuantity": 1
+    },
+    {
+      "id": "var-9-12-burgundy-white",
+      "productId": 9,
+      "sku": "STEP-0009-12-BURG",
+      "size": 12,
+      "color": "Burgundy/White",
+      "stockQuantity": 1
+    },
+    {
+      "id": "var-9-13-black-white",
+      "productId": 9,
+      "sku": "STEP-0009-13-BLAC",
+      "size": 13,
+      "color": "Black/White",
+      "stockQuantity": 1
+    },
+    {
+      "id": "var-9-13-navy-gum",
+      "productId": 9,
+      "sku": "STEP-0009-13-NAVY",
+      "size": 13,
+      "color": "Navy/Gum",
+      "stockQuantity": 1
+    },
+    {
+      "id": "var-9-13-burgundy-white",
+      "productId": 9,
+      "sku": "STEP-0009-13-BURG",
+      "size": 13,
+      "color": "Burgundy/White",
+      "stockQuantity": 1
+    },
+    {
+      "id": "var-10-8-black",
+      "productId": 10,
+      "sku": "STEP-0010-8-BLAC",
+      "size": 8,
+      "color": "Black",
+      "stockQuantity": 2
+    },
+    {
+      "id": "var-10-8-brown",
+      "productId": 10,
+      "sku": "STEP-0010-8-BROW",
+      "size": 8,
+      "color": "Brown",
+      "stockQuantity": 2
+    },
+    {
+      "id": "var-10-8-tan",
+      "productId": 10,
+      "sku": "STEP-0010-8-TAN",
+      "size": 8,
+      "color": "Tan",
+      "stockQuantity": 2
+    },
+    {
+      "id": "var-10-9-black",
+      "productId": 10,
+      "sku": "STEP-0010-9-BLAC",
+      "size": 9,
+      "color": "Black",
+      "stockQuantity": 2
+    },
+    {
+      "id": "var-10-9-brown",
+      "productId": 10,
+      "sku": "STEP-0010-9-BROW",
+      "size": 9,
+      "color": "Brown",
+      "stockQuantity": 2
+    },
+    {
+      "id": "var-10-9-tan",
+      "productId": 10,
+      "sku": "STEP-0010-9-TAN",
+      "size": 9,
+      "color": "Tan",
+      "stockQuantity": 2
+    },
+    {
+      "id": "var-10-10-black",
+      "productId": 10,
+      "sku": "STEP-0010-10-BLAC",
+      "size": 10,
+      "color": "Black",
+      "stockQuantity": 2
+    },
+    {
+      "id": "var-10-10-brown",
+      "productId": 10,
+      "sku": "STEP-0010-10-BROW",
+      "size": 10,
+      "color": "Brown",
+      "stockQuantity": 2
+    },
+    {
+      "id": "var-10-10-tan",
+      "productId": 10,
+      "sku": "STEP-0010-10-TAN",
+      "size": 10,
+      "color": "Tan",
+      "stockQuantity": 2
+    },
+    {
+      "id": "var-10-11-black",
+      "productId": 10,
+      "sku": "STEP-0010-11-BLAC",
+      "size": 11,
+      "color": "Black",
+      "stockQuantity": 2
+    },
+    {
+      "id": "var-10-11-brown",
+      "productId": 10,
+      "sku": "STEP-0010-11-BROW",
+      "size": 11,
+      "color": "Brown",
+      "stockQuantity": 2
+    },
+    {
+      "id": "var-10-11-tan",
+      "productId": 10,
+      "sku": "STEP-0010-11-TAN",
+      "size": 11,
+      "color": "Tan",
+      "stockQuantity": 2
+    },
+    {
+      "id": "var-10-12-black",
+      "productId": 10,
+      "sku": "STEP-0010-12-BLAC",
+      "size": 12,
+      "color": "Black",
+      "stockQuantity": 2
+    },
+    {
+      "id": "var-10-12-brown",
+      "productId": 10,
+      "sku": "STEP-0010-12-BROW",
+      "size": 12,
+      "color": "Brown",
+      "stockQuantity": 2
+    },
+    {
+      "id": "var-10-12-tan",
+      "productId": 10,
+      "sku": "STEP-0010-12-TAN",
+      "size": 12,
+      "color": "Tan",
+      "stockQuantity": 2
+    },
+    {
+      "id": "var-11-8-black",
+      "productId": 11,
+      "sku": "STEP-0011-8-BLAC",
+      "size": 8,
+      "color": "Black",
+      "stockQuantity": 3
+    },
+    {
+      "id": "var-11-8-brown",
+      "productId": 11,
+      "sku": "STEP-0011-8-BROW",
+      "size": 8,
+      "color": "Brown",
+      "stockQuantity": 3
+    },
+    {
+      "id": "var-11-9-black",
+      "productId": 11,
+      "sku": "STEP-0011-9-BLAC",
+      "size": 9,
+      "color": "Black",
+      "stockQuantity": 3
+    },
+    {
+      "id": "var-11-9-brown",
+      "productId": 11,
+      "sku": "STEP-0011-9-BROW",
+      "size": 9,
+      "color": "Brown",
+      "stockQuantity": 3
+    },
+    {
+      "id": "var-11-10-black",
+      "productId": 11,
+      "sku": "STEP-0011-10-BLAC",
+      "size": 10,
+      "color": "Black",
+      "stockQuantity": 3
+    },
+    {
+      "id": "var-11-10-brown",
+      "productId": 11,
+      "sku": "STEP-0011-10-BROW",
+      "size": 10,
+      "color": "Brown",
+      "stockQuantity": 3
+    },
+    {
+      "id": "var-11-11-black",
+      "productId": 11,
+      "sku": "STEP-0011-11-BLAC",
+      "size": 11,
+      "color": "Black",
+      "stockQuantity": 3
+    },
+    {
+      "id": "var-11-11-brown",
+      "productId": 11,
+      "sku": "STEP-0011-11-BROW",
+      "size": 11,
+      "color": "Brown",
+      "stockQuantity": 3
+    },
+    {
+      "id": "var-11-12-black",
+      "productId": 11,
+      "sku": "STEP-0011-12-BLAC",
+      "size": 12,
+      "color": "Black",
+      "stockQuantity": 3
+    },
+    {
+      "id": "var-11-12-brown",
+      "productId": 11,
+      "sku": "STEP-0011-12-BROW",
+      "size": 12,
+      "color": "Brown",
+      "stockQuantity": 3
+    },
+    {
+      "id": "var-12-7-black-blue",
+      "productId": 12,
+      "sku": "STEP-0012-7-BLAC",
+      "size": 7,
+      "color": "Black/Blue",
+      "stockQuantity": 2
+    },
+    {
+      "id": "var-12-7-gray-yellow",
+      "productId": 12,
+      "sku": "STEP-0012-7-GRAY",
+      "size": 7,
+      "color": "Gray/Yellow",
+      "stockQuantity": 2
+    },
+    {
+      "id": "var-12-8-black-blue",
+      "productId": 12,
+      "sku": "STEP-0012-8-BLAC",
+      "size": 8,
+      "color": "Black/Blue",
+      "stockQuantity": 2
+    },
+    {
+      "id": "var-12-8-gray-yellow",
+      "productId": 12,
+      "sku": "STEP-0012-8-GRAY",
+      "size": 8,
+      "color": "Gray/Yellow",
+      "stockQuantity": 2
+    },
+    {
+      "id": "var-12-9-black-blue",
+      "productId": 12,
+      "sku": "STEP-0012-9-BLAC",
+      "size": 9,
+      "color": "Black/Blue",
+      "stockQuantity": 2
+    },
+    {
+      "id": "var-12-9-gray-yellow",
+      "productId": 12,
+      "sku": "STEP-0012-9-GRAY",
+      "size": 9,
+      "color": "Gray/Yellow",
+      "stockQuantity": 2
+    },
+    {
+      "id": "var-12-10-black-blue",
+      "productId": 12,
+      "sku": "STEP-0012-10-BLAC",
+      "size": 10,
+      "color": "Black/Blue",
+      "stockQuantity": 2
+    },
+    {
+      "id": "var-12-10-gray-yellow",
+      "productId": 12,
+      "sku": "STEP-0012-10-GRAY",
+      "size": 10,
+      "color": "Gray/Yellow",
+      "stockQuantity": 2
+    },
+    {
+      "id": "var-12-11-black-blue",
+      "productId": 12,
+      "sku": "STEP-0012-11-BLAC",
+      "size": 11,
+      "color": "Black/Blue",
+      "stockQuantity": 2
+    },
+    {
+      "id": "var-12-11-gray-yellow",
+      "productId": 12,
+      "sku": "STEP-0012-11-GRAY",
+      "size": 11,
+      "color": "Gray/Yellow",
+      "stockQuantity": 2
+    },
+    {
+      "id": "var-12-12-black-blue",
+      "productId": 12,
+      "sku": "STEP-0012-12-BLAC",
+      "size": 12,
+      "color": "Black/Blue",
+      "stockQuantity": 2
+    },
+    {
+      "id": "var-12-12-gray-yellow",
+      "productId": 12,
+      "sku": "STEP-0012-12-GRAY",
+      "size": 12,
+      "color": "Gray/Yellow",
+      "stockQuantity": 2
+    },
+    {
+      "id": "var-13-7-core-black",
+      "productId": 13,
+      "sku": "STEP-0013-7-CORE",
+      "size": 7,
+      "color": "Core Black",
+      "stockQuantity": 1
+    },
+    {
+      "id": "var-13-7-cloud-white",
+      "productId": 13,
+      "sku": "STEP-0013-7-CLOU",
+      "size": 7,
+      "color": "Cloud White",
+      "stockQuantity": 1
+    },
+    {
+      "id": "var-13-7-solar-red",
+      "productId": 13,
+      "sku": "STEP-0013-7-SOLA",
+      "size": 7,
+      "color": "Solar Red",
+      "stockQuantity": 1
+    },
+    {
+      "id": "var-13-8-core-black",
+      "productId": 13,
+      "sku": "STEP-0013-8-CORE",
+      "size": 8,
+      "color": "Core Black",
+      "stockQuantity": 1
+    },
+    {
+      "id": "var-13-8-cloud-white",
+      "productId": 13,
+      "sku": "STEP-0013-8-CLOU",
+      "size": 8,
+      "color": "Cloud White",
+      "stockQuantity": 1
+    },
+    {
+      "id": "var-13-8-solar-red",
+      "productId": 13,
+      "sku": "STEP-0013-8-SOLA",
+      "size": 8,
+      "color": "Solar Red",
+      "stockQuantity": 1
+    },
+    {
+      "id": "var-13-9-core-black",
+      "productId": 13,
+      "sku": "STEP-0013-9-CORE",
+      "size": 9,
+      "color": "Core Black",
+      "stockQuantity": 1
+    },
+    {
+      "id": "var-13-9-cloud-white",
+      "productId": 13,
+      "sku": "STEP-0013-9-CLOU",
+      "size": 9,
+      "color": "Cloud White",
+      "stockQuantity": 1
+    },
+    {
+      "id": "var-13-9-solar-red",
+      "productId": 13,
+      "sku": "STEP-0013-9-SOLA",
+      "size": 9,
+      "color": "Solar Red",
+      "stockQuantity": 1
+    },
+    {
+      "id": "var-13-10-core-black",
+      "productId": 13,
+      "sku": "STEP-0013-10-CORE",
+      "size": 10,
+      "color": "Core Black",
+      "stockQuantity": 1
+    },
+    {
+      "id": "var-13-10-cloud-white",
+      "productId": 13,
+      "sku": "STEP-0013-10-CLOU",
+      "size": 10,
+      "color": "Cloud White",
+      "stockQuantity": 1
+    },
+    {
+      "id": "var-13-10-solar-red",
+      "productId": 13,
+      "sku": "STEP-0013-10-SOLA",
+      "size": 10,
+      "color": "Solar Red",
+      "stockQuantity": 1
+    },
+    {
+      "id": "var-13-11-core-black",
+      "productId": 13,
+      "sku": "STEP-0013-11-CORE",
+      "size": 11,
+      "color": "Core Black",
+      "stockQuantity": 1
+    },
+    {
+      "id": "var-13-11-cloud-white",
+      "productId": 13,
+      "sku": "STEP-0013-11-CLOU",
+      "size": 11,
+      "color": "Cloud White",
+      "stockQuantity": 1
+    },
+    {
+      "id": "var-13-11-solar-red",
+      "productId": 13,
+      "sku": "STEP-0013-11-SOLA",
+      "size": 11,
+      "color": "Solar Red",
+      "stockQuantity": 1
+    },
+    {
+      "id": "var-13-12-core-black",
+      "productId": 13,
+      "sku": "STEP-0013-12-CORE",
+      "size": 12,
+      "color": "Core Black",
+      "stockQuantity": 1
+    },
+    {
+      "id": "var-13-12-cloud-white",
+      "productId": 13,
+      "sku": "STEP-0013-12-CLOU",
+      "size": 12,
+      "color": "Cloud White",
+      "stockQuantity": 1
+    },
+    {
+      "id": "var-13-12-solar-red",
+      "productId": 13,
+      "sku": "STEP-0013-12-SOLA",
+      "size": 12,
+      "color": "Solar Red",
+      "stockQuantity": 1
+    },
+    {
+      "id": "var-14-8-black-gold",
+      "productId": 14,
+      "sku": "STEP-0014-8-BLAC",
+      "size": 8,
+      "color": "Black/Gold",
+      "stockQuantity": 1
+    },
+    {
+      "id": "var-14-8-white-red",
+      "productId": 14,
+      "sku": "STEP-0014-8-WHIT",
+      "size": 8,
+      "color": "White/Red",
+      "stockQuantity": 1
+    },
+    {
+      "id": "var-14-8-blue-orange",
+      "productId": 14,
+      "sku": "STEP-0014-8-BLUE",
+      "size": 8,
+      "color": "Blue/Orange",
+      "stockQuantity": 1
+    },
+    {
+      "id": "var-14-9-black-gold",
+      "productId": 14,
+      "sku": "STEP-0014-9-BLAC",
+      "size": 9,
+      "color": "Black/Gold",
+      "stockQuantity": 1
+    },
+    {
+      "id": "var-14-9-white-red",
+      "productId": 14,
+      "sku": "STEP-0014-9-WHIT",
+      "size": 9,
+      "color": "White/Red",
+      "stockQuantity": 1
+    },
+    {
+      "id": "var-14-9-blue-orange",
+      "productId": 14,
+      "sku": "STEP-0014-9-BLUE",
+      "size": 9,
+      "color": "Blue/Orange",
+      "stockQuantity": 1
+    },
+    {
+      "id": "var-14-10-black-gold",
+      "productId": 14,
+      "sku": "STEP-0014-10-BLAC",
+      "size": 10,
+      "color": "Black/Gold",
+      "stockQuantity": 1
+    },
+    {
+      "id": "var-14-10-white-red",
+      "productId": 14,
+      "sku": "STEP-0014-10-WHIT",
+      "size": 10,
+      "color": "White/Red",
+      "stockQuantity": 1
+    },
+    {
+      "id": "var-14-10-blue-orange",
+      "productId": 14,
+      "sku": "STEP-0014-10-BLUE",
+      "size": 10,
+      "color": "Blue/Orange",
+      "stockQuantity": 1
+    },
+    {
+      "id": "var-14-11-black-gold",
+      "productId": 14,
+      "sku": "STEP-0014-11-BLAC",
+      "size": 11,
+      "color": "Black/Gold",
+      "stockQuantity": 1
+    },
+    {
+      "id": "var-14-11-white-red",
+      "productId": 14,
+      "sku": "STEP-0014-11-WHIT",
+      "size": 11,
+      "color": "White/Red",
+      "stockQuantity": 1
+    },
+    {
+      "id": "var-14-11-blue-orange",
+      "productId": 14,
+      "sku": "STEP-0014-11-BLUE",
+      "size": 11,
+      "color": "Blue/Orange",
+      "stockQuantity": 1
+    },
+    {
+      "id": "var-14-12-black-gold",
+      "productId": 14,
+      "sku": "STEP-0014-12-BLAC",
+      "size": 12,
+      "color": "Black/Gold",
+      "stockQuantity": 1
+    },
+    {
+      "id": "var-14-12-white-red",
+      "productId": 14,
+      "sku": "STEP-0014-12-WHIT",
+      "size": 12,
+      "color": "White/Red",
+      "stockQuantity": 1
+    },
+    {
+      "id": "var-14-12-blue-orange",
+      "productId": 14,
+      "sku": "STEP-0014-12-BLUE",
+      "size": 12,
+      "color": "Blue/Orange",
+      "stockQuantity": 1
+    },
+    {
+      "id": "var-14-13-black-gold",
+      "productId": 14,
+      "sku": "STEP-0014-13-BLAC",
+      "size": 13,
+      "color": "Black/Gold",
+      "stockQuantity": 1
+    },
+    {
+      "id": "var-14-13-white-red",
+      "productId": 14,
+      "sku": "STEP-0014-13-WHIT",
+      "size": 13,
+      "color": "White/Red",
+      "stockQuantity": 1
+    },
+    {
+      "id": "var-14-13-blue-orange",
+      "productId": 14,
+      "sku": "STEP-0014-13-BLUE",
+      "size": 13,
+      "color": "Blue/Orange",
+      "stockQuantity": 1
+    },
+    {
+      "id": "var-15-6-white-navy",
+      "productId": 15,
+      "sku": "STEP-0015-6-WHIT",
+      "size": 6,
+      "color": "White/Navy",
+      "stockQuantity": 1
+    },
+    {
+      "id": "var-15-6-gray-green",
+      "productId": 15,
+      "sku": "STEP-0015-6-GRAY",
+      "size": 6,
+      "color": "Gray/Green",
+      "stockQuantity": 1
+    },
+    {
+      "id": "var-15-6-beige-brown",
+      "productId": 15,
+      "sku": "STEP-0015-6-BEIG",
+      "size": 6,
+      "color": "Beige/Brown",
+      "stockQuantity": 1
+    },
+    {
+      "id": "var-15-7-white-navy",
+      "productId": 15,
+      "sku": "STEP-0015-7-WHIT",
+      "size": 7,
+      "color": "White/Navy",
+      "stockQuantity": 1
+    },
+    {
+      "id": "var-15-7-gray-green",
+      "productId": 15,
+      "sku": "STEP-0015-7-GRAY",
+      "size": 7,
+      "color": "Gray/Green",
+      "stockQuantity": 1
+    },
+    {
+      "id": "var-15-7-beige-brown",
+      "productId": 15,
+      "sku": "STEP-0015-7-BEIG",
+      "size": 7,
+      "color": "Beige/Brown",
+      "stockQuantity": 1
+    },
+    {
+      "id": "var-15-8-white-navy",
+      "productId": 15,
+      "sku": "STEP-0015-8-WHIT",
+      "size": 8,
+      "color": "White/Navy",
+      "stockQuantity": 1
+    },
+    {
+      "id": "var-15-8-gray-green",
+      "productId": 15,
+      "sku": "STEP-0015-8-GRAY",
+      "size": 8,
+      "color": "Gray/Green",
+      "stockQuantity": 1
+    },
+    {
+      "id": "var-15-8-beige-brown",
+      "productId": 15,
+      "sku": "STEP-0015-8-BEIG",
+      "size": 8,
+      "color": "Beige/Brown",
+      "stockQuantity": 1
+    },
+    {
+      "id": "var-15-9-white-navy",
+      "productId": 15,
+      "sku": "STEP-0015-9-WHIT",
+      "size": 9,
+      "color": "White/Navy",
+      "stockQuantity": 1
+    },
+    {
+      "id": "var-15-9-gray-green",
+      "productId": 15,
+      "sku": "STEP-0015-9-GRAY",
+      "size": 9,
+      "color": "Gray/Green",
+      "stockQuantity": 1
+    },
+    {
+      "id": "var-15-9-beige-brown",
+      "productId": 15,
+      "sku": "STEP-0015-9-BEIG",
+      "size": 9,
+      "color": "Beige/Brown",
+      "stockQuantity": 1
+    },
+    {
+      "id": "var-15-10-white-navy",
+      "productId": 15,
+      "sku": "STEP-0015-10-WHIT",
+      "size": 10,
+      "color": "White/Navy",
+      "stockQuantity": 1
+    },
+    {
+      "id": "var-15-10-gray-green",
+      "productId": 15,
+      "sku": "STEP-0015-10-GRAY",
+      "size": 10,
+      "color": "Gray/Green",
+      "stockQuantity": 1
+    },
+    {
+      "id": "var-15-10-beige-brown",
+      "productId": 15,
+      "sku": "STEP-0015-10-BEIG",
+      "size": 10,
+      "color": "Beige/Brown",
+      "stockQuantity": 1
+    },
+    {
+      "id": "var-15-11-white-navy",
+      "productId": 15,
+      "sku": "STEP-0015-11-WHIT",
+      "size": 11,
+      "color": "White/Navy",
+      "stockQuantity": 1
+    },
+    {
+      "id": "var-15-11-gray-green",
+      "productId": 15,
+      "sku": "STEP-0015-11-GRAY",
+      "size": 11,
+      "color": "Gray/Green",
+      "stockQuantity": 1
+    },
+    {
+      "id": "var-15-11-beige-brown",
+      "productId": 15,
+      "sku": "STEP-0015-11-BEIG",
+      "size": 11,
+      "color": "Beige/Brown",
+      "stockQuantity": 1
+    },
+    {
+      "id": "var-15-12-white-navy",
+      "productId": 15,
+      "sku": "STEP-0015-12-WHIT",
+      "size": 12,
+      "color": "White/Navy",
+      "stockQuantity": 1
+    },
+    {
+      "id": "var-15-12-gray-green",
+      "productId": 15,
+      "sku": "STEP-0015-12-GRAY",
+      "size": 12,
+      "color": "Gray/Green",
+      "stockQuantity": 1
+    },
+    {
+      "id": "var-15-12-beige-brown",
+      "productId": 15,
+      "sku": "STEP-0015-12-BEIG",
+      "size": 12,
+      "color": "Beige/Brown",
+      "stockQuantity": 1
+    },
+    {
+      "id": "var-16-7-black-white",
+      "productId": 16,
+      "sku": "STEP-0016-7-BLAC",
+      "size": 7,
+      "color": "Black/White",
+      "stockQuantity": 1
+    },
+    {
+      "id": "var-16-7-blue-yellow",
+      "productId": 16,
+      "sku": "STEP-0016-7-BLUE",
+      "size": 7,
+      "color": "Blue/Yellow",
+      "stockQuantity": 1
+    },
+    {
+      "id": "var-16-7-red-black",
+      "productId": 16,
+      "sku": "STEP-0016-7-RED-",
+      "size": 7,
+      "color": "Red/Black",
+      "stockQuantity": 1
+    },
+    {
+      "id": "var-16-8-black-white",
+      "productId": 16,
+      "sku": "STEP-0016-8-BLAC",
+      "size": 8,
+      "color": "Black/White",
+      "stockQuantity": 1
+    },
+    {
+      "id": "var-16-8-blue-yellow",
+      "productId": 16,
+      "sku": "STEP-0016-8-BLUE",
+      "size": 8,
+      "color": "Blue/Yellow",
+      "stockQuantity": 1
+    },
+    {
+      "id": "var-16-8-red-black",
+      "productId": 16,
+      "sku": "STEP-0016-8-RED-",
+      "size": 8,
+      "color": "Red/Black",
+      "stockQuantity": 1
+    },
+    {
+      "id": "var-16-9-black-white",
+      "productId": 16,
+      "sku": "STEP-0016-9-BLAC",
+      "size": 9,
+      "color": "Black/White",
+      "stockQuantity": 1
+    },
+    {
+      "id": "var-16-9-blue-yellow",
+      "productId": 16,
+      "sku": "STEP-0016-9-BLUE",
+      "size": 9,
+      "color": "Blue/Yellow",
+      "stockQuantity": 1
+    },
+    {
+      "id": "var-16-9-red-black",
+      "productId": 16,
+      "sku": "STEP-0016-9-RED-",
+      "size": 9,
+      "color": "Red/Black",
+      "stockQuantity": 1
+    },
+    {
+      "id": "var-16-10-black-white",
+      "productId": 16,
+      "sku": "STEP-0016-10-BLAC",
+      "size": 10,
+      "color": "Black/White",
+      "stockQuantity": 1
+    },
+    {
+      "id": "var-16-10-blue-yellow",
+      "productId": 16,
+      "sku": "STEP-0016-10-BLUE",
+      "size": 10,
+      "color": "Blue/Yellow",
+      "stockQuantity": 1
+    },
+    {
+      "id": "var-16-10-red-black",
+      "productId": 16,
+      "sku": "STEP-0016-10-RED-",
+      "size": 10,
+      "color": "Red/Black",
+      "stockQuantity": 1
+    },
+    {
+      "id": "var-16-11-black-white",
+      "productId": 16,
+      "sku": "STEP-0016-11-BLAC",
+      "size": 11,
+      "color": "Black/White",
+      "stockQuantity": 1
+    },
+    {
+      "id": "var-16-11-blue-yellow",
+      "productId": 16,
+      "sku": "STEP-0016-11-BLUE",
+      "size": 11,
+      "color": "Blue/Yellow",
+      "stockQuantity": 1
+    },
+    {
+      "id": "var-16-11-red-black",
+      "productId": 16,
+      "sku": "STEP-0016-11-RED-",
+      "size": 11,
+      "color": "Red/Black",
+      "stockQuantity": 1
+    },
+    {
+      "id": "var-16-12-black-white",
+      "productId": 16,
+      "sku": "STEP-0016-12-BLAC",
+      "size": 12,
+      "color": "Black/White",
+      "stockQuantity": 1
+    },
+    {
+      "id": "var-16-12-blue-yellow",
+      "productId": 16,
+      "sku": "STEP-0016-12-BLUE",
+      "size": 12,
+      "color": "Blue/Yellow",
+      "stockQuantity": 1
+    },
+    {
+      "id": "var-16-12-red-black",
+      "productId": 16,
+      "sku": "STEP-0016-12-RED-",
+      "size": 12,
+      "color": "Red/Black",
+      "stockQuantity": 1
+    },
+    {
+      "id": "var-17-8-white-green",
+      "productId": 17,
+      "sku": "STEP-0017-8-WHIT",
+      "size": 8,
+      "color": "White/Green",
+      "stockQuantity": 2
+    },
+    {
+      "id": "var-17-8-black-gray",
+      "productId": 17,
+      "sku": "STEP-0017-8-BLAC",
+      "size": 8,
+      "color": "Black/Gray",
+      "stockQuantity": 2
+    },
+    {
+      "id": "var-17-8-brown-tan",
+      "productId": 17,
+      "sku": "STEP-0017-8-BROW",
+      "size": 8,
+      "color": "Brown/Tan",
+      "stockQuantity": 2
+    },
+    {
+      "id": "var-17-9-white-green",
+      "productId": 17,
+      "sku": "STEP-0017-9-WHIT",
+      "size": 9,
+      "color": "White/Green",
+      "stockQuantity": 2
+    },
+    {
+      "id": "var-17-9-black-gray",
+      "productId": 17,
+      "sku": "STEP-0017-9-BLAC",
+      "size": 9,
+      "color": "Black/Gray",
+      "stockQuantity": 2
+    },
+    {
+      "id": "var-17-9-brown-tan",
+      "productId": 17,
+      "sku": "STEP-0017-9-BROW",
+      "size": 9,
+      "color": "Brown/Tan",
+      "stockQuantity": 2
+    },
+    {
+      "id": "var-17-10-white-green",
+      "productId": 17,
+      "sku": "STEP-0017-10-WHIT",
+      "size": 10,
+      "color": "White/Green",
+      "stockQuantity": 2
+    },
+    {
+      "id": "var-17-10-black-gray",
+      "productId": 17,
+      "sku": "STEP-0017-10-BLAC",
+      "size": 10,
+      "color": "Black/Gray",
+      "stockQuantity": 2
+    },
+    {
+      "id": "var-17-10-brown-tan",
+      "productId": 17,
+      "sku": "STEP-0017-10-BROW",
+      "size": 10,
+      "color": "Brown/Tan",
+      "stockQuantity": 2
+    },
+    {
+      "id": "var-17-11-white-green",
+      "productId": 17,
+      "sku": "STEP-0017-11-WHIT",
+      "size": 11,
+      "color": "White/Green",
+      "stockQuantity": 2
+    },
+    {
+      "id": "var-17-11-black-gray",
+      "productId": 17,
+      "sku": "STEP-0017-11-BLAC",
+      "size": 11,
+      "color": "Black/Gray",
+      "stockQuantity": 2
+    },
+    {
+      "id": "var-17-11-brown-tan",
+      "productId": 17,
+      "sku": "STEP-0017-11-BROW",
+      "size": 11,
+      "color": "Brown/Tan",
+      "stockQuantity": 2
+    },
+    {
+      "id": "var-17-12-white-green",
+      "productId": 17,
+      "sku": "STEP-0017-12-WHIT",
+      "size": 12,
+      "color": "White/Green",
+      "stockQuantity": 2
+    },
+    {
+      "id": "var-17-12-black-gray",
+      "productId": 17,
+      "sku": "STEP-0017-12-BLAC",
+      "size": 12,
+      "color": "Black/Gray",
+      "stockQuantity": 2
+    },
+    {
+      "id": "var-17-12-brown-tan",
+      "productId": 17,
+      "sku": "STEP-0017-12-BROW",
+      "size": 12,
+      "color": "Brown/Tan",
+      "stockQuantity": 2
+    },
+    {
+      "id": "var-18-6-gray-blue",
+      "productId": 18,
+      "sku": "STEP-0018-6-GRAY",
+      "size": 6,
+      "color": "Gray/Blue",
+      "stockQuantity": 1
+    },
+    {
+      "id": "var-18-6-black-pink",
+      "productId": 18,
+      "sku": "STEP-0018-6-BLAC",
+      "size": 6,
+      "color": "Black/Pink",
+      "stockQuantity": 1
+    },
+    {
+      "id": "var-18-6-navy-white",
+      "productId": 18,
+      "sku": "STEP-0018-6-NAVY",
+      "size": 6,
+      "color": "Navy/White",
+      "stockQuantity": 1
+    },
+    {
+      "id": "var-18-7-gray-blue",
+      "productId": 18,
+      "sku": "STEP-0018-7-GRAY",
+      "size": 7,
+      "color": "Gray/Blue",
+      "stockQuantity": 1
+    },
+    {
+      "id": "var-18-7-black-pink",
+      "productId": 18,
+      "sku": "STEP-0018-7-BLAC",
+      "size": 7,
+      "color": "Black/Pink",
+      "stockQuantity": 1
+    },
+    {
+      "id": "var-18-7-navy-white",
+      "productId": 18,
+      "sku": "STEP-0018-7-NAVY",
+      "size": 7,
+      "color": "Navy/White",
+      "stockQuantity": 1
+    },
+    {
+      "id": "var-18-8-gray-blue",
+      "productId": 18,
+      "sku": "STEP-0018-8-GRAY",
+      "size": 8,
+      "color": "Gray/Blue",
+      "stockQuantity": 1
+    },
+    {
+      "id": "var-18-8-black-pink",
+      "productId": 18,
+      "sku": "STEP-0018-8-BLAC",
+      "size": 8,
+      "color": "Black/Pink",
+      "stockQuantity": 1
+    },
+    {
+      "id": "var-18-8-navy-white",
+      "productId": 18,
+      "sku": "STEP-0018-8-NAVY",
+      "size": 8,
+      "color": "Navy/White",
+      "stockQuantity": 1
+    },
+    {
+      "id": "var-18-9-gray-blue",
+      "productId": 18,
+      "sku": "STEP-0018-9-GRAY",
+      "size": 9,
+      "color": "Gray/Blue",
+      "stockQuantity": 1
+    },
+    {
+      "id": "var-18-9-black-pink",
+      "productId": 18,
+      "sku": "STEP-0018-9-BLAC",
+      "size": 9,
+      "color": "Black/Pink",
+      "stockQuantity": 1
+    },
+    {
+      "id": "var-18-9-navy-white",
+      "productId": 18,
+      "sku": "STEP-0018-9-NAVY",
+      "size": 9,
+      "color": "Navy/White",
+      "stockQuantity": 1
+    },
+    {
+      "id": "var-18-10-gray-blue",
+      "productId": 18,
+      "sku": "STEP-0018-10-GRAY",
+      "size": 10,
+      "color": "Gray/Blue",
+      "stockQuantity": 1
+    },
+    {
+      "id": "var-18-10-black-pink",
+      "productId": 18,
+      "sku": "STEP-0018-10-BLAC",
+      "size": 10,
+      "color": "Black/Pink",
+      "stockQuantity": 1
+    },
+    {
+      "id": "var-18-10-navy-white",
+      "productId": 18,
+      "sku": "STEP-0018-10-NAVY",
+      "size": 10,
+      "color": "Navy/White",
+      "stockQuantity": 1
+    },
+    {
+      "id": "var-18-11-gray-blue",
+      "productId": 18,
+      "sku": "STEP-0018-11-GRAY",
+      "size": 11,
+      "color": "Gray/Blue",
+      "stockQuantity": 1
+    },
+    {
+      "id": "var-18-11-black-pink",
+      "productId": 18,
+      "sku": "STEP-0018-11-BLAC",
+      "size": 11,
+      "color": "Black/Pink",
+      "stockQuantity": 1
+    },
+    {
+      "id": "var-18-11-navy-white",
+      "productId": 18,
+      "sku": "STEP-0018-11-NAVY",
+      "size": 11,
+      "color": "Navy/White",
+      "stockQuantity": 1
+    },
+    {
+      "id": "var-18-12-gray-blue",
+      "productId": 18,
+      "sku": "STEP-0018-12-GRAY",
+      "size": 12,
+      "color": "Gray/Blue",
+      "stockQuantity": 1
+    },
+    {
+      "id": "var-18-12-black-pink",
+      "productId": 18,
+      "sku": "STEP-0018-12-BLAC",
+      "size": 12,
+      "color": "Black/Pink",
+      "stockQuantity": 1
+    },
+    {
+      "id": "var-18-12-navy-white",
+      "productId": 18,
+      "sku": "STEP-0018-12-NAVY",
+      "size": 12,
+      "color": "Navy/White",
+      "stockQuantity": 1
+    },
+    {
+      "id": "var-19-7-brown-orange",
+      "productId": 19,
+      "sku": "STEP-0019-7-BROW",
+      "size": 7,
+      "color": "Brown/Orange",
+      "stockQuantity": 1
+    },
+    {
+      "id": "var-19-7-green-black",
+      "productId": 19,
+      "sku": "STEP-0019-7-GREE",
+      "size": 7,
+      "color": "Green/Black",
+      "stockQuantity": 1
+    },
+    {
+      "id": "var-19-7-gray-blue",
+      "productId": 19,
+      "sku": "STEP-0019-7-GRAY",
+      "size": 7,
+      "color": "Gray/Blue",
+      "stockQuantity": 1
+    },
+    {
+      "id": "var-19-8-brown-orange",
+      "productId": 19,
+      "sku": "STEP-0019-8-BROW",
+      "size": 8,
+      "color": "Brown/Orange",
+      "stockQuantity": 1
+    },
+    {
+      "id": "var-19-8-green-black",
+      "productId": 19,
+      "sku": "STEP-0019-8-GREE",
+      "size": 8,
+      "color": "Green/Black",
+      "stockQuantity": 1
+    },
+    {
+      "id": "var-19-8-gray-blue",
+      "productId": 19,
+      "sku": "STEP-0019-8-GRAY",
+      "size": 8,
+      "color": "Gray/Blue",
+      "stockQuantity": 1
+    },
+    {
+      "id": "var-19-9-brown-orange",
+      "productId": 19,
+      "sku": "STEP-0019-9-BROW",
+      "size": 9,
+      "color": "Brown/Orange",
+      "stockQuantity": 1
+    },
+    {
+      "id": "var-19-9-green-black",
+      "productId": 19,
+      "sku": "STEP-0019-9-GREE",
+      "size": 9,
+      "color": "Green/Black",
+      "stockQuantity": 1
+    },
+    {
+      "id": "var-19-9-gray-blue",
+      "productId": 19,
+      "sku": "STEP-0019-9-GRAY",
+      "size": 9,
+      "color": "Gray/Blue",
+      "stockQuantity": 1
+    },
+    {
+      "id": "var-19-10-brown-orange",
+      "productId": 19,
+      "sku": "STEP-0019-10-BROW",
+      "size": 10,
+      "color": "Brown/Orange",
+      "stockQuantity": 1
+    },
+    {
+      "id": "var-19-10-green-black",
+      "productId": 19,
+      "sku": "STEP-0019-10-GREE",
+      "size": 10,
+      "color": "Green/Black",
+      "stockQuantity": 1
+    },
+    {
+      "id": "var-19-10-gray-blue",
+      "productId": 19,
+      "sku": "STEP-0019-10-GRAY",
+      "size": 10,
+      "color": "Gray/Blue",
+      "stockQuantity": 1
+    },
+    {
+      "id": "var-19-11-brown-orange",
+      "productId": 19,
+      "sku": "STEP-0019-11-BROW",
+      "size": 11,
+      "color": "Brown/Orange",
+      "stockQuantity": 1
+    },
+    {
+      "id": "var-19-11-green-black",
+      "productId": 19,
+      "sku": "STEP-0019-11-GREE",
+      "size": 11,
+      "color": "Green/Black",
+      "stockQuantity": 1
+    },
+    {
+      "id": "var-19-11-gray-blue",
+      "productId": 19,
+      "sku": "STEP-0019-11-GRAY",
+      "size": 11,
+      "color": "Gray/Blue",
+      "stockQuantity": 1
+    },
+    {
+      "id": "var-19-12-brown-orange",
+      "productId": 19,
+      "sku": "STEP-0019-12-BROW",
+      "size": 12,
+      "color": "Brown/Orange",
+      "stockQuantity": 1
+    },
+    {
+      "id": "var-19-12-green-black",
+      "productId": 19,
+      "sku": "STEP-0019-12-GREE",
+      "size": 12,
+      "color": "Green/Black",
+      "stockQuantity": 1
+    },
+    {
+      "id": "var-19-12-gray-blue",
+      "productId": 19,
+      "sku": "STEP-0019-12-GRAY",
+      "size": 12,
+      "color": "Gray/Blue",
+      "stockQuantity": 1
+    },
+    {
+      "id": "var-20-7-black",
+      "productId": 20,
+      "sku": "STEP-0020-7-BLAC",
+      "size": 7,
+      "color": "Black",
+      "stockQuantity": 1
+    },
+    {
+      "id": "var-20-7-navy",
+      "productId": 20,
+      "sku": "STEP-0020-7-NAVY",
+      "size": 7,
+      "color": "Navy",
+      "stockQuantity": 1
+    },
+    {
+      "id": "var-20-7-burgundy",
+      "productId": 20,
+      "sku": "STEP-0020-7-BURG",
+      "size": 7,
+      "color": "Burgundy",
+      "stockQuantity": 1
+    },
+    {
+      "id": "var-20-8-black",
+      "productId": 20,
+      "sku": "STEP-0020-8-BLAC",
+      "size": 8,
+      "color": "Black",
+      "stockQuantity": 1
+    },
+    {
+      "id": "var-20-8-navy",
+      "productId": 20,
+      "sku": "STEP-0020-8-NAVY",
+      "size": 8,
+      "color": "Navy",
+      "stockQuantity": 1
+    },
+    {
+      "id": "var-20-8-burgundy",
+      "productId": 20,
+      "sku": "STEP-0020-8-BURG",
+      "size": 8,
+      "color": "Burgundy",
+      "stockQuantity": 1
+    },
+    {
+      "id": "var-20-9-black",
+      "productId": 20,
+      "sku": "STEP-0020-9-BLAC",
+      "size": 9,
+      "color": "Black",
+      "stockQuantity": 1
+    },
+    {
+      "id": "var-20-9-navy",
+      "productId": 20,
+      "sku": "STEP-0020-9-NAVY",
+      "size": 9,
+      "color": "Navy",
+      "stockQuantity": 1
+    },
+    {
+      "id": "var-20-9-burgundy",
+      "productId": 20,
+      "sku": "STEP-0020-9-BURG",
+      "size": 9,
+      "color": "Burgundy",
+      "stockQuantity": 1
+    },
+    {
+      "id": "var-20-10-black",
+      "productId": 20,
+      "sku": "STEP-0020-10-BLAC",
+      "size": 10,
+      "color": "Black",
+      "stockQuantity": 1
+    },
+    {
+      "id": "var-20-10-navy",
+      "productId": 20,
+      "sku": "STEP-0020-10-NAVY",
+      "size": 10,
+      "color": "Navy",
+      "stockQuantity": 1
+    },
+    {
+      "id": "var-20-10-burgundy",
+      "productId": 20,
+      "sku": "STEP-0020-10-BURG",
+      "size": 10,
+      "color": "Burgundy",
+      "stockQuantity": 1
+    },
+    {
+      "id": "var-20-11-black",
+      "productId": 20,
+      "sku": "STEP-0020-11-BLAC",
+      "size": 11,
+      "color": "Black",
+      "stockQuantity": 1
+    },
+    {
+      "id": "var-20-11-navy",
+      "productId": 20,
+      "sku": "STEP-0020-11-NAVY",
+      "size": 11,
+      "color": "Navy",
+      "stockQuantity": 1
+    },
+    {
+      "id": "var-20-11-burgundy",
+      "productId": 20,
+      "sku": "STEP-0020-11-BURG",
+      "size": 11,
+      "color": "Burgundy",
+      "stockQuantity": 1
+    },
+    {
+      "id": "var-20-12-black",
+      "productId": 20,
+      "sku": "STEP-0020-12-BLAC",
+      "size": 12,
+      "color": "Black",
+      "stockQuantity": 1
+    },
+    {
+      "id": "var-20-12-navy",
+      "productId": 20,
+      "sku": "STEP-0020-12-NAVY",
+      "size": 12,
+      "color": "Navy",
+      "stockQuantity": 1
+    },
+    {
+      "id": "var-20-12-burgundy",
+      "productId": 20,
+      "sku": "STEP-0020-12-BURG",
+      "size": 12,
+      "color": "Burgundy",
+      "stockQuantity": 1
+    }
+  ],
+  "orders": [
+    {
+      "id": "ord-step-3764-8032",
+      "orderNumber": "STEP-3764-8032",
+      "userId": "usr-8830422747",
+      "customerName": "Soyab Shaikh",
+      "customerPhone": "8830422747",
+      "customerEmail": "",
+      "deliveryAddress": "Zar Complex Vasai East - 401208",
+      "pincode": "401208",
+      "subtotal": 13498,
+      "shippingFee": 0,
+      "totalAmount": 13498,
+      "status": "Delivered",
+      "paymentStatus": "Pending",
+      "paymentMethod": "Cash on Delivery",
+      "stockDeducted": false,
+      "estimatedDelivery": "Sunday, 29 November 2026",
+      "createdAt": "2026-11-23T18:18:23.739Z",
+      "updatedAt": "2026-11-23T18:19:48.108Z"
+    }
+  ],
+  "orderItems": [
+    {
+      "id": "oi-ord-step-3764-8032-1",
+      "orderId": "ord-step-3764-8032",
+      "productId": 1,
+      "sku": "STEP-0001",
+      "name": "Air Max Comfort",
+      "imagePath": "/images/Product1/HomeProduct.jpeg",
+      "brand": "StepStyle",
+      "category": "Running",
+      "selectedSize": 7,
+      "selectedColor": "Black/White",
+      "quantity": 1,
+      "unitPrice": 12999,
+      "lineTotal": 12999
+    }
+  ],
+  "orderStatusHistory": [
+    {
+      "id": "hist-ord-step-3764-8032-1",
+      "orderId": "ord-step-3764-8032",
+      "status": "Order Placed",
+      "note": "Order created at checkout",
+      "updatedByAdminName": "System",
+      "updatedByRole": "Checkout",
+      "timestamp": "2026-11-23T18:18:23.739Z"
+    },
+    {
+      "id": "hist-ord-step-3764-8032-2",
+      "orderId": "ord-step-3764-8032",
+      "status": "Delivered",
+      "previousStatus": "Order Placed",
+      "note": "Order recorded",
+      "updatedByAdminName": "System",
+      "updatedByRole": "System",
+      "timestamp": "2026-11-23T18:19:48.108Z"
+    }
+  ],
+  "payments": [
+    {
+      "id": "pay-ord-step-3764-8032",
+      "orderId": "ord-step-3764-8032",
+      "method": "Cash on Delivery",
+      "status": "Pending",
+      "amount": 13498,
+      "transactionId": "COD327780455",
+      "utrNumber": "N/A",
+      "updatedAt": "2026-11-23T18:18:23.739Z"
+    }
+  ],
+  "shipping": [
+    {
+      "id": "ship-ord-step-3764-8032",
+      "orderId": "ord-step-3764-8032",
+      "carrier": "BlueDart Express",
+      "trackingNumber": "BD-IN-37648032",
+      "estimatedDelivery": "Sunday, 29 November 2026",
+      "updatedAt": "2026-11-23T18:18:23.739Z"
+    }
+  ],
+  "returns": [],
+  "refunds": [],
+  "adminNotes": [],
+  "notifications": []
+}

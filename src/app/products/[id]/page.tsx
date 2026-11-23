@@ -53,7 +53,10 @@ export default async function ProductDetailPage({ params }: ProductDetailPagePro
     }
 
     // 3. Fallback to default catalog mapping
-    const productFormats: Record<number, { [key: string]: string; slide3NoHyphen?: boolean }> = {
+    const productFormats: Record<
+      number,
+      { home: string; slide1: string; slide2: string; slide3: string; slide3NoHyphen?: boolean }
+    > = {
       1: { home: '.jpeg', slide1: '.webp', slide2: '.webp', slide3: '.webp' },
       2: { home: '.webp', slide1: '.webp', slide2: '.webp', slide3: '.jpg' },
       3: { home: '.webp', slide1: '.webp', slide2: '.jpg', slide3: '.jpg' },

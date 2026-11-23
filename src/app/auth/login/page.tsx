@@ -16,6 +16,14 @@ export default function LoginPage() {
   const [otp, setOtp] = useState('');
   const [countdown, setCountdown] = useState(0);
   const [isValidIdentifier, setIsValidIdentifier] = useState(false);
+  const [redirectPath, setRedirectPath] = useState<string>('/');
+
+  useEffect(() => {
+    const raw = new URLSearchParams(window.location.search).get('redirect');
+    if (raw && raw.startsWith('/') && !raw.startsWith('//')) {
+      setRedirectPath(raw);
+    }
+  }, []);
 
   // Validate email or phone number
   useEffect(() => {
@@ -79,10 +87,10 @@ export default function LoginPage() {
         loginMethod: 'otp',
         loginTime: new Date().toISOString()
       }));
+      window.dispatchEvent(new Event('authUpdated'));
       
-      // Here, we're pretending any 6-digit OTP is valid for demo purposes
-      // Navigate to home page after successful login
-      router.push('/');
+      // Navigate to requested redirect or home page after successful login
+      router.push(redirectPath);
     }, 1500);
   };
 
@@ -114,9 +122,10 @@ export default function LoginPage() {
         loginMethod: 'password',
         loginTime: new Date().toISOString()
       }));
+      window.dispatchEvent(new Event('authUpdated'));
       
-      // For demo, accept any valid format with password >= 6 chars
-      router.push('/');
+      // Navigate to requested redirect or home page
+      router.push(redirectPath);
     }, 1500);
   };
 
@@ -358,7 +367,10 @@ export default function LoginPage() {
         <div className="text-center">
           <p className="text-xs sm:text-sm text-gray-600">
             Don't have an account?{' '}
-            <Link href="/auth/signup" className="text-indigo-600 hover:text-indigo-800 font-medium">
+            <Link
+              href={redirectPath !== '/' ? `/auth/signup?redirect=${encodeURIComponent(redirectPath)}` : '/auth/signup'}
+              className="text-indigo-600 hover:text-indigo-800 font-medium"
+            >
               Sign up
             </Link>
           </p>

@@ -19,7 +19,7 @@ export default function Footer() {
         <div>
           <h3 className="mb-3 md:mb-4 text-xs sm:text-sm font-bold tracking-wider uppercase text-gray-200">GET HELP</h3>
           <ul className="space-y-2 text-xs sm:text-sm text-gray-400">
-            <li><Link href="/account" className="hover:text-white transition-colors">Order Status</Link></li>
+            <li><Link href="/track-order" className="hover:text-white transition-colors">Order Tracking</Link></li>
             <li><Link href="/about" className="hover:text-white transition-colors">Delivery</Link></li>
             <li><Link href="/about" className="hover:text-white transition-colors">Returns</Link></li>
             <li><Link href="/cart" className="hover:text-white transition-colors">Payment Options</Link></li>

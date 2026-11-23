@@ -4,6 +4,7 @@ import { useState, useMemo } from 'react';
 import Image from 'next/image';
 import Link from 'next/link';
 import { Product } from '@/lib/data';
+import { getAdminAuthHeaders } from '@/lib/adminAuth';
 import { toast } from 'react-hot-toast';
 import {
   Search,
@@ -19,7 +20,9 @@ import {
   List,
   Sparkles,
   Tag,
-  AlertTriangle,
+  CheckSquare,
+  Square,
+  X,
 } from 'lucide-react';
 
 interface ProductListProps {
@@ -28,6 +31,13 @@ interface ProductListProps {
   onEdit: (product: Product) => void;
   onRefresh: () => void;
 }
+
+type BulkActionType =
+  | 'bulk_edit_price'
+  | 'bulk_update_stock'
+  | 'bulk_assign_category'
+  | 'bulk_assign_brand'
+  | 'bulk_update_discount';
 
 export default function ProductList({
   products,
@@ -38,46 +48,49 @@ export default function ProductList({
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedCategory, setSelectedCategory] = useState('All');
   const [stockFilter, setStockFilter] = useState<'All' | 'inStock' | 'outOfStock'>('All');
+  const [statusFilter, setStatusFilter] = useState<'All' | 'active' | 'inactive'>('All');
   const [sortBy, setSortBy] = useState<'newest' | 'priceAsc' | 'priceDesc' | 'discountDesc'>('newest');
   const [viewMode, setViewMode] = useState<'grid' | 'table'>('table');
   const [deletingId, setDeletingId] = useState<number | null>(null);
   const [isUpdatingStock, setIsUpdatingStock] = useState<number | null>(null);
 
-  // Filter & Sort Logic
+  // Bulk selection & modal states
+  const [selectedIds, setSelectedIds] = useState<number[]>([]);
+  const [isBulkRunning, setIsBulkRunning] = useState(false);
+  const [bulkModal, setBulkModal] = useState<BulkActionType | null>(null);
+  const [confirmDeleteOpen, setConfirmDeleteOpen] = useState(false);
+
+  // Bulk modal form values
+  const [priceMode, setPriceMode] = useState<'fixed' | 'percent_increase' | 'percent_decrease'>('percent_decrease');
+  const [priceValue, setPriceValue] = useState('10');
+  const [bulkStockVal, setBulkStockVal] = useState('35');
+  const [bulkCategoryVal, setBulkCategoryVal] = useState(categories[0] || 'Running');
+  const [bulkBrandVal, setBulkBrandVal] = useState('StepStyle');
+  const [bulkDiscountVal, setBulkDiscountVal] = useState('15');
+
   const filteredProducts = useMemo(() => {
     return products
       .filter((p) => {
-        // Search
         if (searchTerm) {
           const q = searchTerm.toLowerCase();
           const matchName = p.name.toLowerCase().includes(q);
           const matchBrand = p.brand?.toLowerCase().includes(q);
           const matchCat = p.category.toLowerCase().includes(q);
+          const matchSku = p.sku?.toLowerCase().includes(q);
           const matchId = String(p.id).includes(q);
-          if (!matchName && !matchBrand && !matchCat && !matchId) return false;
+          if (!matchName && !matchBrand && !matchCat && !matchSku && !matchId) return false;
         }
-
-        // Category
-        if (selectedCategory !== 'All' && p.category !== selectedCategory) {
-          return false;
-        }
-
-        // Stock
+        if (selectedCategory !== 'All' && p.category !== selectedCategory) return false;
         if (stockFilter === 'inStock' && !p.inStock) return false;
         if (stockFilter === 'outOfStock' && p.inStock) return false;
-
+        if (statusFilter === 'active' && p.status === 'inactive') return false;
+        if (statusFilter === 'inactive' && p.status !== 'inactive') return false;
         return true;
       })
       .sort((a, b) => {
-        if (sortBy === 'newest') {
-          return (b.id || 0) - (a.id || 0);
-        }
-        if (sortBy === 'priceAsc') {
-          return (a.price || 0) - (b.price || 0);
-        }
-        if (sortBy === 'priceDesc') {
-          return (b.price || 0) - (a.price || 0);
-        }
+        if (sortBy === 'newest') return (b.id || 0) - (a.id || 0);
+        if (sortBy === 'priceAsc') return (a.price || 0) - (b.price || 0);
+        if (sortBy === 'priceDesc') return (b.price || 0) - (a.price || 0);
         if (sortBy === 'discountDesc') {
           const discA = a.mrp && a.mrp > a.price ? (a.mrp - a.price) / a.mrp : 0;
           const discB = b.mrp && b.mrp > b.price ? (b.mrp - b.price) / b.mrp : 0;
@@ -85,9 +98,26 @@ export default function ProductList({
         }
         return 0;
       });
-  }, [products, searchTerm, selectedCategory, stockFilter, sortBy]);
+  }, [products, searchTerm, selectedCategory, stockFilter, statusFilter, sortBy]);
 
-  // Image helper
+  const allFilteredSelected =
+    filteredProducts.length > 0 &&
+    filteredProducts.every((p) => selectedIds.includes(p.id));
+
+  const toggleSelectAll = () => {
+    if (allFilteredSelected) {
+      setSelectedIds([]);
+    } else {
+      setSelectedIds(filteredProducts.map((p) => p.id));
+    }
+  };
+
+  const toggleSelectOne = (id: number) => {
+    setSelectedIds((prev) =>
+      prev.includes(id) ? prev.filter((item) => item !== id) : [...prev, id]
+    );
+  };
+
   const getProductImage = (product: Product) => {
     if (product.images && product.images.length > 0 && product.images[0]) {
       return product.images[0];
@@ -95,11 +125,16 @@ export default function ProductList({
     if (
       product.imagePath &&
       (product.imagePath.startsWith('/uploads/') ||
+        product.imagePath.startsWith('/images/') ||
         product.imagePath.startsWith('http') ||
         product.imagePath.startsWith('data:') ||
-        /\.(jpg|jpeg|png|webp|svg)$/i.test(product.imagePath))
+        /\.(jpg|jpeg|png|webp|svg|gif)$/i.test(product.imagePath))
     ) {
-      return product.imagePath;
+      if (product.imagePath.startsWith('/images/Product') && !/\.\w+$/.test(product.imagePath)) {
+        // Handle folder path below
+      } else {
+        return product.imagePath;
+      }
     }
     const productFormats: Record<number, string> = {
       1: '.jpeg',
@@ -127,33 +162,69 @@ export default function ProductList({
     return `${product.imagePath}/HomeProduct${format}`;
   };
 
-  // Toggle inStock status inline
+  const runBulkAction = async (payload: Record<string, unknown>) => {
+    if (selectedIds.length === 0) return;
+    setIsBulkRunning(true);
+    const toastId = toast.loading(`Applying bulk update to ${selectedIds.length} product(s)...`);
+
+    try {
+      const res = await fetch('/api/admin/products/bulk', {
+        method: 'POST',
+        credentials: 'include',
+        headers: getAdminAuthHeaders({ 'Content-Type': 'application/json' }),
+        body: JSON.stringify({ ...payload, ids: selectedIds }),
+      });
+      const data = await res.json();
+      if (!res.ok || !data.success) {
+        throw new Error(data.error || 'Bulk action failed');
+      }
+      toast.success(data.message || 'Bulk update completed', { id: toastId });
+      setBulkModal(null);
+      setConfirmDeleteOpen(false);
+      setSelectedIds([]);
+      onRefresh();
+    } catch (err: unknown) {
+      toast.error(err instanceof Error ? err.message : 'Bulk update failed', {
+        id: toastId,
+      });
+    } finally {
+      setIsBulkRunning(false);
+    }
+  };
+
   const handleToggleStock = async (product: Product) => {
     setIsUpdatingStock(product.id);
     const newStock = !product.inStock;
     try {
       const res = await fetch(`/api/admin/products/${product.id}`, {
         method: 'PUT',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ inStock: newStock }),
+        credentials: 'include',
+        headers: getAdminAuthHeaders({ 'Content-Type': 'application/json' }),
+        body: JSON.stringify({
+          inStock: newStock,
+          stockQuantity: newStock ? Math.max(1, product.stockQuantity || 20) : 0,
+        }),
       });
       const data = await res.json();
       if (!res.ok || !data.success) throw new Error(data.error || 'Failed to update stock');
 
       toast.success(
-        `#${product.id} ${product.name} is now ${newStock ? 'In Stock' : 'Out of Stock'}`
+        `${product.sku || `#${product.id}`} is now ${newStock ? 'In Stock' : 'Out of Stock'}`
       );
       onRefresh();
-    } catch (err: any) {
-      toast.error(err.message || 'Failed to update stock status');
+    } catch (err: unknown) {
+      toast.error(err instanceof Error ? err.message : 'Failed to update stock status');
     } finally {
       setIsUpdatingStock(null);
     }
   };
 
-  // Delete product
   const handleDelete = async (id: number, name: string) => {
-    if (!window.confirm(`Are you sure you want to permanently delete "${name}" (ID #${id}) from the catalog?`)) {
+    if (
+      !window.confirm(
+        `Are you sure you want to permanently delete "${name}" (ID #${id}) from the catalog?`
+      )
+    ) {
       return;
     }
 
@@ -163,32 +234,38 @@ export default function ProductList({
     try {
       const res = await fetch(`/api/admin/products/${id}`, {
         method: 'DELETE',
+        credentials: 'include',
+        headers: getAdminAuthHeaders(),
       });
       const data = await res.json();
       if (!res.ok || !data.success) throw new Error(data.error || 'Failed to delete');
 
       toast.success(`Shoe #${id} deleted successfully`, { id: toastId });
+      setSelectedIds((prev) => prev.filter((item) => item !== id));
       onRefresh();
-    } catch (err: any) {
-      toast.error(err.message || 'Failed to delete shoe', { id: toastId });
+    } catch (err: unknown) {
+      toast.error(err instanceof Error ? err.message : 'Failed to delete shoe', {
+        id: toastId,
+      });
     } finally {
       setDeletingId(null);
     }
   };
 
-  // Duplicate product
   const handleDuplicate = async (product: Product) => {
     const toastId = toast.loading(`Cloning "${product.name}"...`);
     try {
-      const { id, ...copyData } = product;
+      const { id: _id, sku: origSku, ...copyData } = product;
       const payload = {
         ...copyData,
+        sku: origSku ? `${origSku}-COPY-${Math.floor(10 + Math.random() * 89)}` : undefined,
         name: `${product.name} (Copy)`,
       };
 
       const res = await fetch('/api/admin/products', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        credentials: 'include',
+        headers: getAdminAuthHeaders({ 'Content-Type': 'application/json' }),
         body: JSON.stringify(payload),
       });
 
@@ -197,45 +274,57 @@ export default function ProductList({
 
       toast.success(`Duplicated as "${data.product.name}"!`, { id: toastId });
       onRefresh();
-    } catch (err: any) {
-      toast.error(err.message || 'Failed to duplicate product', { id: toastId });
+    } catch (err: unknown) {
+      toast.error(err instanceof Error ? err.message : 'Failed to duplicate product', {
+        id: toastId,
+      });
     }
   };
 
   return (
-    <div className="space-y-6">
-      {/* Control Bar: Search, Filters, Sorters */}
-      <div className="bg-white p-4 sm:p-5 rounded-2xl border border-gray-200 shadow-sm space-y-4">
+    <div className="space-y-4">
+      {/* Control Bar */}
+      <div className="bg-white p-4 sm:p-5 rounded-xl border border-slate-200 space-y-4">
         <div className="flex flex-col md:flex-row gap-3 items-stretch md:items-center justify-between">
-          {/* Search Bar */}
           <div className="relative flex-1">
-            <Search className="w-4 h-4 text-gray-400 absolute left-3.5 top-1/2 -translate-y-1/2" />
+            <Search className="w-4 h-4 text-slate-400 absolute left-3.5 top-1/2 -translate-y-1/2" />
             <input
               type="text"
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
-              placeholder="Search by shoe name, category, brand, or ID..."
-              className="w-full text-sm bg-gray-50 border border-gray-200 rounded-xl pl-10 pr-4 py-2.5 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:bg-white transition-all"
+              placeholder="Search by shoe name, SKU, category, brand, or ID..."
+              className="w-full text-sm bg-slate-50 border border-slate-200 rounded-lg pl-10 pr-4 py-2.5 focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-600 focus:bg-white transition-colors"
             />
             {searchTerm && (
               <button
                 type="button"
                 onClick={() => setSearchTerm('')}
-                className="absolute right-3 top-1/2 -translate-y-1/2 text-xs text-gray-400 hover:text-gray-600"
+                className="absolute right-3 top-1/2 -translate-y-1/2 text-xs text-slate-400 hover:text-slate-700 cursor-pointer"
               >
                 Clear
               </button>
             )}
           </div>
 
-          {/* Sort & View Mode controls */}
-          <div className="flex items-center gap-2">
-            <div className="flex items-center gap-1.5 bg-gray-50 border border-gray-200 rounded-xl px-3 py-1.5">
-              <ArrowUpDown className="w-3.5 h-3.5 text-gray-500" />
+          <div className="flex flex-wrap items-center gap-2">
+            <select
+              value={statusFilter}
+              onChange={(e) => setStatusFilter(e.target.value as 'All' | 'active' | 'inactive')}
+              className="text-xs bg-slate-50 border border-slate-200 rounded-lg px-3 py-2 text-slate-700 font-medium cursor-pointer focus:outline-none"
+            >
+              <option value="All">Status: All</option>
+              <option value="active">Active Only</option>
+              <option value="inactive">Inactive Only</option>
+            </select>
+
+            <div className="flex items-center gap-1.5 bg-slate-50 border border-slate-200 rounded-lg px-3 py-2">
+              <ArrowUpDown className="w-3.5 h-3.5 text-slate-500" />
               <select
                 value={sortBy}
-                onChange={(e: any) => setSortBy(e.target.value)}
-                className="text-xs bg-transparent border-none focus:outline-none text-gray-700 font-medium cursor-pointer"
+                onChange={(e) =>
+                  setSortBy(e.target.value as 'newest' | 'priceAsc' | 'priceDesc' | 'discountDesc')
+                }
+                className="text-xs bg-transparent border-none focus:outline-none text-slate-700 font-medium cursor-pointer"
               >
                 <option value="newest">Sort: Newest First</option>
                 <option value="priceAsc">Sort: Price (Low → High)</option>
@@ -244,14 +333,15 @@ export default function ProductList({
               </select>
             </div>
 
-            {/* View Mode Toggle */}
-            <div className="flex items-center border border-gray-200 rounded-xl p-1 bg-gray-50">
+            <div className="flex items-center border border-slate-200 rounded-lg p-1 bg-slate-50">
               <button
                 type="button"
                 onClick={() => setViewMode('table')}
                 title="Table view"
-                className={`p-1.5 rounded-lg transition-colors ${
-                  viewMode === 'table' ? 'bg-white shadow-sm text-indigo-600' : 'text-gray-500 hover:text-gray-800'
+                className={`p-1.5 rounded-md transition-colors cursor-pointer ${
+                  viewMode === 'table'
+                    ? 'bg-white text-indigo-600 shadow-xs'
+                    : 'text-slate-500 hover:text-slate-800'
                 }`}
               >
                 <List className="w-4 h-4" />
@@ -260,8 +350,10 @@ export default function ProductList({
                 type="button"
                 onClick={() => setViewMode('grid')}
                 title="Cards grid view"
-                className={`p-1.5 rounded-lg transition-colors ${
-                  viewMode === 'grid' ? 'bg-white shadow-sm text-indigo-600' : 'text-gray-500 hover:text-gray-800'
+                className={`p-1.5 rounded-md transition-colors cursor-pointer ${
+                  viewMode === 'grid'
+                    ? 'bg-white text-indigo-600 shadow-xs'
+                    : 'text-slate-500 hover:text-slate-800'
                 }`}
               >
                 <LayoutGrid className="w-4 h-4" />
@@ -270,20 +362,19 @@ export default function ProductList({
           </div>
         </div>
 
-        {/* Filter Pills */}
-        <div className="flex flex-wrap items-center justify-between gap-3 pt-3 border-t border-gray-100 text-xs">
-          {/* Category Chips */}
+        {/* Filter Chips */}
+        <div className="flex flex-wrap items-center justify-between gap-3 pt-3 border-t border-slate-100 text-xs">
           <div className="flex flex-wrap items-center gap-1.5">
-            <span className="text-gray-500 font-medium mr-1 flex items-center gap-1">
+            <span className="text-slate-500 font-medium mr-1 flex items-center gap-1">
               <Filter className="w-3 h-3" /> Category:
             </span>
             <button
               type="button"
               onClick={() => setSelectedCategory('All')}
-              className={`px-2.5 py-1 rounded-full transition-all ${
+              className={`px-2.5 py-1 rounded-md border transition-colors cursor-pointer ${
                 selectedCategory === 'All'
-                  ? 'bg-indigo-600 text-white font-medium shadow-sm'
-                  : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+                  ? 'bg-slate-900 text-white border-slate-900 font-medium'
+                  : 'bg-slate-50 text-slate-700 border-slate-200 hover:bg-slate-100'
               }`}
             >
               All ({products.length})
@@ -295,10 +386,10 @@ export default function ProductList({
                   key={cat}
                   type="button"
                   onClick={() => setSelectedCategory(cat)}
-                  className={`px-2.5 py-1 rounded-full transition-all ${
+                  className={`px-2.5 py-1 rounded-md border transition-colors cursor-pointer ${
                     selectedCategory === cat
-                      ? 'bg-indigo-600 text-white font-medium shadow-sm'
-                      : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+                      ? 'bg-slate-900 text-white border-slate-900 font-medium'
+                      : 'bg-slate-50 text-slate-700 border-slate-200 hover:bg-slate-100'
                   }`}
                 >
                   {cat} ({count})
@@ -307,14 +398,15 @@ export default function ProductList({
             })}
           </div>
 
-          {/* Stock Filter Chips */}
           <div className="flex items-center gap-1.5">
-            <span className="text-gray-500 font-medium mr-1">Stock:</span>
+            <span className="text-slate-500 font-medium mr-1">Stock:</span>
             <button
               type="button"
               onClick={() => setStockFilter('All')}
-              className={`px-2 py-0.5 rounded-md ${
-                stockFilter === 'All' ? 'bg-gray-800 text-white font-medium' : 'text-gray-600 hover:bg-gray-100'
+              className={`px-2.5 py-1 rounded-md cursor-pointer ${
+                stockFilter === 'All'
+                  ? 'bg-slate-800 text-white font-medium'
+                  : 'text-slate-600 hover:bg-slate-100'
               }`}
             >
               All
@@ -322,8 +414,10 @@ export default function ProductList({
             <button
               type="button"
               onClick={() => setStockFilter('inStock')}
-              className={`px-2 py-0.5 rounded-md ${
-                stockFilter === 'inStock' ? 'bg-emerald-600 text-white font-medium' : 'text-emerald-700 hover:bg-emerald-50'
+              className={`px-2.5 py-1 rounded-md cursor-pointer ${
+                stockFilter === 'inStock'
+                  ? 'bg-emerald-600 text-white font-medium'
+                  : 'text-emerald-700 hover:bg-emerald-50'
               }`}
             >
               In Stock
@@ -331,8 +425,10 @@ export default function ProductList({
             <button
               type="button"
               onClick={() => setStockFilter('outOfStock')}
-              className={`px-2 py-0.5 rounded-md ${
-                stockFilter === 'outOfStock' ? 'bg-rose-600 text-white font-medium' : 'text-rose-700 hover:bg-rose-50'
+              className={`px-2.5 py-1 rounded-md cursor-pointer ${
+                stockFilter === 'outOfStock'
+                  ? 'bg-rose-600 text-white font-medium'
+                  : 'text-rose-700 hover:bg-rose-50'
               }`}
             >
               Out of Stock
@@ -341,12 +437,96 @@ export default function ProductList({
         </div>
       </div>
 
+      {/* Bulk Product Management Action Bar */}
+      {selectedIds.length > 0 && (
+        <div className="bg-slate-900 text-white px-4 py-3 rounded-xl flex flex-wrap items-center justify-between gap-3">
+          <div className="flex items-center gap-2.5 text-xs sm:text-sm font-semibold">
+            <CheckSquare className="w-4 h-4 text-indigo-400" />
+            <span className="tabular-nums">{selectedIds.length} shoe(s) selected</span>
+            <button
+              type="button"
+              onClick={() => setSelectedIds([])}
+              className="text-xs text-slate-400 hover:text-white underline cursor-pointer ml-1"
+            >
+              Clear
+            </button>
+          </div>
+
+          <div className="flex flex-wrap items-center gap-2 text-xs">
+            <button
+              type="button"
+              disabled={isBulkRunning}
+              onClick={() => setBulkModal('bulk_edit_price')}
+              className="px-3 py-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 border border-slate-700 font-medium cursor-pointer whitespace-nowrap"
+            >
+              Edit Price
+            </button>
+            <button
+              type="button"
+              disabled={isBulkRunning}
+              onClick={() => setBulkModal('bulk_update_stock')}
+              className="px-3 py-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 border border-slate-700 font-medium cursor-pointer whitespace-nowrap"
+            >
+              Update Stock
+            </button>
+            <button
+              type="button"
+              disabled={isBulkRunning}
+              onClick={() => setBulkModal('bulk_update_discount')}
+              className="px-3 py-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 border border-slate-700 font-medium cursor-pointer whitespace-nowrap"
+            >
+              Set Discount
+            </button>
+            <button
+              type="button"
+              disabled={isBulkRunning}
+              onClick={() => setBulkModal('bulk_assign_category')}
+              className="px-3 py-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 border border-slate-700 font-medium cursor-pointer whitespace-nowrap"
+            >
+              Assign Category
+            </button>
+            <button
+              type="button"
+              disabled={isBulkRunning}
+              onClick={() => setBulkModal('bulk_assign_brand')}
+              className="px-3 py-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 border border-slate-700 font-medium cursor-pointer whitespace-nowrap"
+            >
+              Assign Brand
+            </button>
+            <button
+              type="button"
+              disabled={isBulkRunning}
+              onClick={() => runBulkAction({ action: 'bulk_activate' })}
+              className="px-3 py-1.5 rounded-lg bg-emerald-600 hover:bg-emerald-700 font-semibold cursor-pointer whitespace-nowrap"
+            >
+              Activate
+            </button>
+            <button
+              type="button"
+              disabled={isBulkRunning}
+              onClick={() => runBulkAction({ action: 'bulk_deactivate' })}
+              className="px-3 py-1.5 rounded-lg bg-amber-600 hover:bg-amber-700 font-semibold cursor-pointer whitespace-nowrap"
+            >
+              Deactivate
+            </button>
+            <button
+              type="button"
+              disabled={isBulkRunning}
+              onClick={() => setConfirmDeleteOpen(true)}
+              className="px-3 py-1.5 rounded-lg bg-rose-600 hover:bg-rose-700 font-semibold cursor-pointer whitespace-nowrap"
+            >
+              Delete ({selectedIds.length})
+            </button>
+          </div>
+        </div>
+      )}
+
       {/* Product Display */}
       {filteredProducts.length === 0 ? (
-        <div className="bg-white rounded-2xl border border-gray-200 p-12 text-center">
-          <Tag className="w-12 h-12 text-gray-300 mx-auto mb-3" />
-          <h3 className="text-lg font-bold text-gray-900 mb-1">No shoes found</h3>
-          <p className="text-sm text-gray-500 mb-4">
+        <div className="bg-white rounded-xl border border-slate-200 p-12 text-center">
+          <Tag className="w-10 h-10 text-slate-300 mx-auto mb-3" />
+          <h3 className="text-base font-bold text-slate-900 mb-1">No shoes found</h3>
+          <p className="text-sm text-slate-500 mb-4">
             Try adjusting your search query, category filter, or stock status.
           </p>
           <button
@@ -355,122 +535,143 @@ export default function ProductList({
               setSearchTerm('');
               setSelectedCategory('All');
               setStockFilter('All');
+              setStatusFilter('All');
             }}
-            className="text-xs font-semibold text-indigo-600 hover:text-indigo-800 bg-indigo-50 px-3 py-1.5 rounded-lg"
+            className="text-xs font-semibold text-indigo-600 hover:text-indigo-800 bg-indigo-50 px-3 py-1.5 rounded-lg cursor-pointer"
           >
             Clear all filters
           </button>
         </div>
       ) : viewMode === 'table' ? (
-        /* TABLE VIEW */
-        <div className="bg-white rounded-2xl border border-gray-200 shadow-sm overflow-hidden">
+        <div className="bg-white rounded-xl border border-slate-200 overflow-hidden">
           <div className="overflow-x-auto">
-            <table className="w-full text-left text-sm text-gray-600">
-              <thead className="bg-gray-50/75 border-b border-gray-200 text-xs font-semibold uppercase tracking-wider text-gray-500">
+            <table className="w-full text-left text-sm text-slate-600">
+              <thead className="bg-slate-50 border-b border-slate-200 text-xs font-semibold uppercase tracking-wider text-slate-500">
                 <tr>
-                  <th scope="col" className="py-3.5 px-4">Shoe</th>
-                  <th scope="col" className="py-3.5 px-4">Category</th>
-                  <th scope="col" className="py-3.5 px-4">Selling Price & MRP</th>
-                  <th scope="col" className="py-3.5 px-4">Discount</th>
-                  <th scope="col" className="py-3.5 px-4">Stock</th>
-                  <th scope="col" className="py-3.5 px-4 text-right">Actions</th>
+                  <th scope="col" className="py-3 pl-4 pr-2 w-10">
+                    <button
+                      type="button"
+                      onClick={toggleSelectAll}
+                      title="Select all visible shoes"
+                      className="text-slate-500 hover:text-indigo-600 cursor-pointer"
+                    >
+                      {allFilteredSelected ? (
+                        <CheckSquare className="w-4 h-4 text-indigo-600" />
+                      ) : (
+                        <Square className="w-4 h-4" />
+                      )}
+                    </button>
+                  </th>
+                  <th scope="col" className="py-3 px-4">Shoe & SKU</th>
+                  <th scope="col" className="py-3 px-4">Category / Gender</th>
+                  <th scope="col" className="py-3 px-4">Price & MRP</th>
+                  <th scope="col" className="py-3 px-4">Discount</th>
+                  <th scope="col" className="py-3 px-4">Inventory</th>
+                  <th scope="col" className="py-3 px-4">Visibility</th>
+                  <th scope="col" className="py-3 px-4 text-right">Actions</th>
                 </tr>
               </thead>
-              <tbody className="divide-y divide-gray-100">
+              <tbody className="divide-y divide-slate-100">
                 {filteredProducts.map((product) => {
                   const hasDiscount = product.mrp && product.mrp > product.price;
                   const discountPercent = hasDiscount
                     ? Math.round(((product.mrp! - product.price) / product.mrp!) * 100)
                     : 0;
+                  const isSelected = selectedIds.includes(product.id);
+                  const isInactive = product.status === 'inactive';
 
                   return (
                     <tr
                       key={product.id}
-                      className="hover:bg-gray-50/60 transition-colors group"
+                      className={`hover:bg-slate-50/80 transition-colors ${
+                        isSelected ? 'bg-indigo-50/40' : ''
+                      }`}
                     >
-                      {/* Product Thumbnail & Title */}
-                      <td className="py-3.5 px-4">
+                      <td className="py-3 pl-4 pr-2">
+                        <input
+                          type="checkbox"
+                          checked={isSelected}
+                          onChange={() => toggleSelectOne(product.id)}
+                          aria-label={`Select ${product.name}`}
+                          className="h-4 w-4 rounded border-slate-300 text-indigo-600 focus:ring-indigo-500 cursor-pointer"
+                        />
+                      </td>
+
+                      <td className="py-3 px-4">
                         <div className="flex items-center gap-3">
-                          <div className="relative w-14 h-14 rounded-xl border border-gray-200 overflow-hidden bg-gray-50 flex-shrink-0 flex items-center justify-center">
+                          <div className="relative w-12 h-12 rounded-lg border border-slate-200 overflow-hidden bg-slate-50 shrink-0 flex items-center justify-center">
                             <Image
                               src={getProductImage(product)}
                               alt={product.name}
                               fill
+                              referrerPolicy="no-referrer"
                               className="object-contain p-1"
                               unoptimized={getProductImage(product).startsWith('data:')}
                             />
                             {product.featured && (
-                              <div className="absolute top-1 left-1 bg-amber-500 text-white rounded-full p-0.5">
+                              <div className="absolute top-0.5 left-0.5 bg-amber-500 text-white rounded p-0.5">
                                 <Sparkles className="w-2.5 h-2.5" />
                               </div>
                             )}
                           </div>
                           <div className="min-w-0">
-                            <div className="flex items-center gap-1.5">
-                              <span className="text-xs font-medium text-gray-400">#{product.id}</span>
-                              <span className="font-semibold text-gray-900 truncate hover:text-indigo-600">
-                                {product.name}
-                              </span>
+                            <div className="font-semibold text-slate-900 truncate max-w-[240px]">
+                              {product.name}
                             </div>
-                            <div className="text-xs text-gray-500 truncate">
-                              {product.brand || 'StepStyle'} • {product.sizes?.length || 0} sizes • {product.colors?.length || 0} colors
+                            <div className="text-xs text-slate-500 font-mono truncate">
+                              {product.sku || `STEP-${String(product.id).padStart(4, '0')}`} ·{' '}
+                              <span className="font-sans">{product.brand || 'StepStyle'}</span>
                             </div>
                           </div>
                         </div>
                       </td>
 
-                      {/* Category */}
-                      <td className="py-3.5 px-4">
-                        <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-gray-100 text-gray-800">
-                          {product.category}
-                        </span>
+                      <td className="py-3 px-4 whitespace-nowrap text-xs">
+                        <div className="font-medium text-slate-900">{product.category}</div>
+                        <div className="text-slate-500">
+                          {product.gender || 'Men'} · {product.shoeType || product.category}
+                        </div>
                       </td>
 
-                      {/* Pricing with MRP */}
-                      <td className="py-3.5 px-4 whitespace-nowrap">
+                      <td className="py-3 px-4 whitespace-nowrap tabular-nums">
                         <div className="flex items-baseline gap-2">
-                          <span className="font-bold text-gray-900 text-base">
+                          <span className="font-bold text-slate-900">
                             ₹{product.price.toLocaleString('en-IN')}
                           </span>
                           {hasDiscount && (
-                            <span className="text-xs text-gray-400 line-through">
+                            <span className="text-xs text-slate-400 line-through">
                               ₹{product.mrp!.toLocaleString('en-IN')}
                             </span>
                           )}
                         </div>
-                        <div className="text-[11px] text-gray-400">
-                          MRP: ₹{(product.mrp || product.price).toLocaleString('en-IN')}
-                        </div>
                       </td>
 
-                      {/* Discount Badge */}
-                      <td className="py-3.5 px-4 whitespace-nowrap">
+                      <td className="py-3 px-4 whitespace-nowrap tabular-nums">
                         {discountPercent > 0 ? (
-                          <span className="inline-flex items-center px-2 py-0.5 rounded-md text-xs font-bold bg-rose-50 text-rose-700 border border-rose-200">
+                          <span className="text-xs font-semibold text-rose-700">
                             {discountPercent}% OFF
                           </span>
                         ) : (
-                          <span className="text-xs text-gray-400">—</span>
+                          <span className="text-xs text-slate-400">—</span>
                         )}
                       </td>
 
-                      {/* Stock Status with quick toggle */}
-                      <td className="py-3.5 px-4 whitespace-nowrap">
+                      <td className="py-3 px-4 whitespace-nowrap">
                         <button
                           type="button"
                           disabled={isUpdatingStock === product.id}
                           onClick={() => handleToggleStock(product)}
-                          className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-medium transition-all ${
+                          className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md text-xs font-medium border cursor-pointer transition-colors tabular-nums ${
                             product.inStock
-                              ? 'bg-emerald-50 text-emerald-700 border border-emerald-200 hover:bg-emerald-100'
-                              : 'bg-rose-50 text-rose-700 border border-rose-200 hover:bg-rose-100'
+                              ? 'bg-emerald-50 text-emerald-700 border-emerald-200 hover:bg-emerald-100'
+                              : 'bg-rose-50 text-rose-700 border-rose-200 hover:bg-rose-100'
                           }`}
                           title="Click to toggle stock status"
                         >
                           {product.inStock ? (
                             <>
                               <CheckCircle className="w-3.5 h-3.5 text-emerald-600" />
-                              <span>In Stock</span>
+                              <span>{product.stockQuantity ?? 25} qty</span>
                             </>
                           ) : (
                             <>
@@ -481,14 +682,23 @@ export default function ProductList({
                         </button>
                       </td>
 
-                      {/* Actions */}
-                      <td className="py-3.5 px-4 whitespace-nowrap text-right">
+                      <td className="py-3 px-4 whitespace-nowrap text-xs">
+                        <span
+                          className={`font-semibold ${
+                            isInactive ? 'text-slate-400' : 'text-emerald-700'
+                          }`}
+                        >
+                          {isInactive ? 'Inactive' : 'Active'}
+                        </span>
+                      </td>
+
+                      <td className="py-3 px-4 whitespace-nowrap text-right">
                         <div className="flex items-center justify-end gap-1">
                           <Link
                             href={`/products/${product.id}`}
                             target="_blank"
                             title="Preview on Storefront"
-                            className="p-1.5 text-gray-400 hover:text-indigo-600 rounded-lg hover:bg-indigo-50 transition-colors"
+                            className="p-1.5 text-slate-400 hover:text-indigo-600 rounded-md hover:bg-indigo-50 transition-colors"
                           >
                             <ExternalLink className="w-4 h-4" />
                           </Link>
@@ -496,7 +706,7 @@ export default function ProductList({
                             type="button"
                             onClick={() => handleDuplicate(product)}
                             title="Duplicate Shoe"
-                            className="p-1.5 text-gray-400 hover:text-gray-700 rounded-lg hover:bg-gray-100 transition-colors"
+                            className="p-1.5 text-slate-400 hover:text-slate-700 rounded-md hover:bg-slate-100 transition-colors cursor-pointer"
                           >
                             <Copy className="w-4 h-4" />
                           </button>
@@ -504,7 +714,7 @@ export default function ProductList({
                             type="button"
                             onClick={() => onEdit(product)}
                             title="Edit Shoe Details"
-                            className="p-1.5 text-indigo-600 hover:text-indigo-800 rounded-lg hover:bg-indigo-50 transition-colors"
+                            className="p-1.5 text-indigo-600 hover:text-indigo-800 rounded-md hover:bg-indigo-50 transition-colors cursor-pointer"
                           >
                             <Edit2 className="w-4 h-4" />
                           </button>
@@ -513,7 +723,7 @@ export default function ProductList({
                             disabled={deletingId === product.id}
                             onClick={() => handleDelete(product.id, product.name)}
                             title="Delete Shoe"
-                            className="p-1.5 text-gray-400 hover:text-rose-600 rounded-lg hover:bg-rose-50 transition-colors"
+                            className="p-1.5 text-slate-400 hover:text-rose-600 rounded-md hover:bg-rose-50 transition-colors cursor-pointer"
                           >
                             <Trash2 className="w-4 h-4" />
                           </button>
@@ -527,117 +737,107 @@ export default function ProductList({
           </div>
         </div>
       ) : (
-        /* GRID CARDS VIEW */
-        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-5">
+        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
           {filteredProducts.map((product) => {
             const hasDiscount = product.mrp && product.mrp > product.price;
             const discountPercent = hasDiscount
               ? Math.round(((product.mrp! - product.price) / product.mrp!) * 100)
               : 0;
+            const isSelected = selectedIds.includes(product.id);
 
             return (
               <div
                 key={product.id}
-                className="bg-white rounded-2xl border border-gray-200 overflow-hidden shadow-sm hover:shadow-md transition-all flex flex-col justify-between"
+                className={`bg-white rounded-xl border overflow-hidden flex flex-col justify-between transition-colors ${
+                  isSelected ? 'border-indigo-500 ring-2 ring-indigo-500/20' : 'border-slate-200'
+                }`}
               >
                 <div>
-                  <div className="relative aspect-square bg-gray-50 flex items-center justify-center p-3 border-b border-gray-100">
+                  <div className="relative aspect-square bg-slate-50 flex items-center justify-center p-3 border-b border-slate-100">
                     <Image
                       src={getProductImage(product)}
                       alt={product.name}
                       fill
+                      referrerPolicy="no-referrer"
                       className="object-contain p-2"
                       unoptimized={getProductImage(product).startsWith('data:')}
                     />
-
-                    {/* Top Badges */}
-                    <div className="absolute top-2 left-2 flex flex-col gap-1 z-10">
-                      {discountPercent > 0 && (
-                        <span className="bg-rose-600 text-white text-[10px] font-bold px-1.5 py-0.5 rounded shadow">
-                          {discountPercent}% OFF
-                        </span>
-                      )}
-                      {product.featured && (
-                        <span className="bg-amber-500 text-white text-[10px] font-bold px-1.5 py-0.5 rounded shadow">
-                          Featured
-                        </span>
-                      )}
+                    <div className="absolute top-2 left-2 z-10">
+                      <input
+                        type="checkbox"
+                        checked={isSelected}
+                        onChange={() => toggleSelectOne(product.id)}
+                        className="h-4 w-4 rounded border-slate-300 text-indigo-600 focus:ring-indigo-500 cursor-pointer"
+                      />
                     </div>
-
                     <div className="absolute top-2 right-2">
                       <button
                         type="button"
                         onClick={() => handleToggleStock(product)}
-                        className={`text-[10px] font-bold px-2 py-0.5 rounded-full shadow border transition-colors ${
+                        className={`text-[11px] font-semibold px-2 py-0.5 rounded border cursor-pointer tabular-nums ${
                           product.inStock
-                            ? 'bg-emerald-50 text-emerald-700 border-emerald-200 hover:bg-emerald-100'
-                            : 'bg-rose-50 text-rose-700 border-rose-200 hover:bg-rose-100'
+                            ? 'bg-emerald-50 text-emerald-700 border-emerald-200'
+                            : 'bg-rose-50 text-rose-700 border-rose-200'
                         }`}
                       >
-                        {product.inStock ? 'In Stock' : 'Out of Stock'}
+                        {product.inStock ? `${product.stockQuantity ?? 25} qty` : 'Out of Stock'}
                       </button>
                     </div>
                   </div>
 
                   <div className="p-4">
-                    <div className="flex items-center justify-between text-xs text-gray-500 mb-1">
-                      <span>#{product.id} • {product.brand || 'StepStyle'}</span>
-                      <span className="bg-gray-100 px-2 py-0.5 rounded text-gray-700 font-medium">
-                        {product.category}
-                      </span>
+                    <div className="text-xs text-slate-500 font-mono mb-1">
+                      {product.sku || `#${product.id}`} · {product.category}
                     </div>
-
-                    <h4 className="font-semibold text-gray-900 text-sm line-clamp-1 mb-2">
+                    <h4 className="font-semibold text-slate-900 text-sm line-clamp-1 mb-2">
                       {product.name}
                     </h4>
-
-                    {/* Price with MRP */}
-                    <div className="flex items-baseline gap-2 mb-2">
-                      <span className="text-lg font-bold text-gray-900">
+                    <div className="flex items-baseline gap-2 tabular-nums">
+                      <span className="text-base font-bold text-slate-900">
                         ₹{product.price.toLocaleString('en-IN')}
                       </span>
                       {hasDiscount && (
-                        <span className="text-xs text-gray-400 line-through">
-                          MRP ₹{product.mrp!.toLocaleString('en-IN')}
-                        </span>
+                        <>
+                          <span className="text-xs text-slate-400 line-through">
+                            ₹{product.mrp!.toLocaleString('en-IN')}
+                          </span>
+                          <span className="text-xs font-semibold text-rose-700">
+                            {discountPercent}% OFF
+                          </span>
+                        </>
                       )}
                     </div>
                   </div>
                 </div>
 
-                {/* Card Actions Footer */}
-                <div className="p-3 bg-gray-50 border-t border-gray-100 flex items-center justify-between gap-1">
+                <div className="p-3 bg-slate-50 border-t border-slate-100 flex items-center justify-between gap-1">
                   <Link
                     href={`/products/${product.id}`}
                     target="_blank"
-                    className="text-xs text-gray-500 hover:text-indigo-600 flex items-center gap-1 font-medium px-2 py-1 rounded hover:bg-white transition-colors"
+                    className="text-xs text-slate-600 hover:text-indigo-600 flex items-center gap-1 font-medium px-2 py-1 rounded hover:bg-white transition-colors"
                   >
                     <ExternalLink className="w-3.5 h-3.5" />
                     Preview
                   </Link>
-
                   <div className="flex items-center gap-1">
                     <button
                       type="button"
                       onClick={() => handleDuplicate(product)}
-                      title="Duplicate"
-                      className="p-1.5 text-gray-500 hover:text-gray-800 rounded hover:bg-white transition-colors"
+                      className="p-1.5 text-slate-500 hover:text-slate-800 rounded hover:bg-white cursor-pointer"
                     >
                       <Copy className="w-3.5 h-3.5" />
                     </button>
                     <button
                       type="button"
                       onClick={() => onEdit(product)}
-                      title="Edit"
-                      className="p-1.5 text-indigo-600 hover:text-indigo-800 rounded hover:bg-white transition-colors"
+                      className="p-1.5 text-indigo-600 hover:text-indigo-800 rounded hover:bg-white cursor-pointer"
                     >
                       <Edit2 className="w-3.5 h-3.5" />
                     </button>
                     <button
                       type="button"
                       onClick={() => handleDelete(product.id, product.name)}
-                      title="Delete"
-                      className="p-1.5 text-rose-500 hover:text-rose-700 rounded hover:bg-white transition-colors"
+                      className="p-1.5 text-rose-500 hover:text-rose-700 rounded hover:bg-white cursor-pointer"
                     >
                       <Trash2 className="w-3.5 h-3.5" />
                     </button>
@@ -646,6 +846,272 @@ export default function ProductList({
               </div>
             );
           })}
+        </div>
+      )}
+
+      {/* Bulk Action Modals */}
+      {bulkModal && (
+        <div className="fixed inset-0 z-50 bg-slate-950/60 flex items-center justify-center p-4">
+          <div className="bg-white rounded-xl border border-slate-200 max-w-md w-full p-6 space-y-4">
+            <div className="flex items-center justify-between">
+              <h3 className="text-base font-bold text-slate-900">
+                Bulk Update ({selectedIds.length} products)
+              </h3>
+              <button
+                type="button"
+                onClick={() => setBulkModal(null)}
+                className="p-1 rounded-md text-slate-400 hover:text-slate-700 cursor-pointer"
+              >
+                <X className="w-4 h-4" />
+              </button>
+            </div>
+
+            {bulkModal === 'bulk_edit_price' && (
+              <div className="space-y-3">
+                <div>
+                  <label className="block text-xs font-semibold text-slate-700 mb-1">
+                    Adjustment Mode
+                  </label>
+                  <select
+                    value={priceMode}
+                    onChange={(e) =>
+                      setPriceMode(
+                        e.target.value as 'fixed' | 'percent_increase' | 'percent_decrease'
+                      )
+                    }
+                    className="w-full px-3 py-2 text-sm border border-slate-300 rounded-lg"
+                  >
+                    <option value="percent_decrease">Decrease Price by %</option>
+                    <option value="percent_increase">Increase Price by %</option>
+                    <option value="fixed">Set Fixed Selling Price (₹)</option>
+                  </select>
+                </div>
+                <div>
+                  <label className="block text-xs font-semibold text-slate-700 mb-1">
+                    {priceMode === 'fixed' ? 'New Selling Price (₹)' : 'Percentage (%)'}
+                  </label>
+                  <input
+                    type="number"
+                    min="1"
+                    value={priceValue}
+                    onChange={(e) => setPriceValue(e.target.value)}
+                    className="w-full px-3 py-2 text-sm border border-slate-300 rounded-lg"
+                  />
+                </div>
+                <div className="flex justify-end gap-2 pt-2">
+                  <button
+                    type="button"
+                    onClick={() => setBulkModal(null)}
+                    className="px-4 py-2 text-xs font-semibold bg-slate-100 rounded-lg cursor-pointer"
+                  >
+                    Cancel
+                  </button>
+                  <button
+                    type="button"
+                    disabled={isBulkRunning}
+                    onClick={() =>
+                      runBulkAction({
+                        action: 'bulk_edit_price',
+                        mode: priceMode,
+                        value: Number(priceValue),
+                      })
+                    }
+                    className="px-4 py-2 text-xs font-semibold bg-slate-900 text-white rounded-lg cursor-pointer"
+                  >
+                    Apply Prices
+                  </button>
+                </div>
+              </div>
+            )}
+
+            {bulkModal === 'bulk_update_stock' && (
+              <div className="space-y-3">
+                <div>
+                  <label className="block text-xs font-semibold text-slate-700 mb-1">
+                    New Stock Quantity per Shoe
+                  </label>
+                  <input
+                    type="number"
+                    min="0"
+                    value={bulkStockVal}
+                    onChange={(e) => setBulkStockVal(e.target.value)}
+                    className="w-full px-3 py-2 text-sm border border-slate-300 rounded-lg"
+                  />
+                </div>
+                <div className="flex justify-end gap-2 pt-2">
+                  <button
+                    type="button"
+                    onClick={() => setBulkModal(null)}
+                    className="px-4 py-2 text-xs font-semibold bg-slate-100 rounded-lg cursor-pointer"
+                  >
+                    Cancel
+                  </button>
+                  <button
+                    type="button"
+                    disabled={isBulkRunning}
+                    onClick={() =>
+                      runBulkAction({
+                        action: 'bulk_update_stock',
+                        stockQuantity: Number(bulkStockVal),
+                      })
+                    }
+                    className="px-4 py-2 text-xs font-semibold bg-slate-900 text-white rounded-lg cursor-pointer"
+                  >
+                    Update Stock
+                  </button>
+                </div>
+              </div>
+            )}
+
+            {bulkModal === 'bulk_update_discount' && (
+              <div className="space-y-3">
+                <div>
+                  <label className="block text-xs font-semibold text-slate-700 mb-1">
+                    Discount % Off MRP (0 - 90%)
+                  </label>
+                  <input
+                    type="number"
+                    min="0"
+                    max="90"
+                    value={bulkDiscountVal}
+                    onChange={(e) => setBulkDiscountVal(e.target.value)}
+                    className="w-full px-3 py-2 text-sm border border-slate-300 rounded-lg"
+                  />
+                </div>
+                <div className="flex justify-end gap-2 pt-2">
+                  <button
+                    type="button"
+                    onClick={() => setBulkModal(null)}
+                    className="px-4 py-2 text-xs font-semibold bg-slate-100 rounded-lg cursor-pointer"
+                  >
+                    Cancel
+                  </button>
+                  <button
+                    type="button"
+                    disabled={isBulkRunning}
+                    onClick={() =>
+                      runBulkAction({
+                        action: 'bulk_update_discount',
+                        discountPercentage: Number(bulkDiscountVal),
+                      })
+                    }
+                    className="px-4 py-2 text-xs font-semibold bg-slate-900 text-white rounded-lg cursor-pointer"
+                  >
+                    Apply Discount
+                  </button>
+                </div>
+              </div>
+            )}
+
+            {bulkModal === 'bulk_assign_category' && (
+              <div className="space-y-3">
+                <div>
+                  <label className="block text-xs font-semibold text-slate-700 mb-1">
+                    Target Category
+                  </label>
+                  <input
+                    type="text"
+                    value={bulkCategoryVal}
+                    onChange={(e) => setBulkCategoryVal(e.target.value)}
+                    placeholder="e.g. Running, Basketball, Sneakers"
+                    className="w-full px-3 py-2 text-sm border border-slate-300 rounded-lg"
+                  />
+                </div>
+                <div className="flex justify-end gap-2 pt-2">
+                  <button
+                    type="button"
+                    onClick={() => setBulkModal(null)}
+                    className="px-4 py-2 text-xs font-semibold bg-slate-100 rounded-lg cursor-pointer"
+                  >
+                    Cancel
+                  </button>
+                  <button
+                    type="button"
+                    disabled={isBulkRunning}
+                    onClick={() =>
+                      runBulkAction({
+                        action: 'bulk_assign_category',
+                        category: bulkCategoryVal.trim(),
+                      })
+                    }
+                    className="px-4 py-2 text-xs font-semibold bg-slate-900 text-white rounded-lg cursor-pointer"
+                  >
+                    Assign Category
+                  </button>
+                </div>
+              </div>
+            )}
+
+            {bulkModal === 'bulk_assign_brand' && (
+              <div className="space-y-3">
+                <div>
+                  <label className="block text-xs font-semibold text-slate-700 mb-1">
+                    Target Brand
+                  </label>
+                  <input
+                    type="text"
+                    value={bulkBrandVal}
+                    onChange={(e) => setBulkBrandVal(e.target.value)}
+                    placeholder="e.g. StepStyle Elite"
+                    className="w-full px-3 py-2 text-sm border border-slate-300 rounded-lg"
+                  />
+                </div>
+                <div className="flex justify-end gap-2 pt-2">
+                  <button
+                    type="button"
+                    onClick={() => setBulkModal(null)}
+                    className="px-4 py-2 text-xs font-semibold bg-slate-100 rounded-lg cursor-pointer"
+                  >
+                    Cancel
+                  </button>
+                  <button
+                    type="button"
+                    disabled={isBulkRunning}
+                    onClick={() =>
+                      runBulkAction({
+                        action: 'bulk_assign_brand',
+                        brand: bulkBrandVal.trim(),
+                      })
+                    }
+                    className="px-4 py-2 text-xs font-semibold bg-slate-900 text-white rounded-lg cursor-pointer"
+                  >
+                    Assign Brand
+                  </button>
+                </div>
+              </div>
+            )}
+          </div>
+        </div>
+      )}
+
+      {/* Bulk Delete Confirmation Dialog */}
+      {confirmDeleteOpen && (
+        <div className="fixed inset-0 z-50 bg-slate-950/60 flex items-center justify-center p-4">
+          <div className="bg-white rounded-xl border border-slate-200 max-w-md w-full p-6 space-y-4">
+            <h3 className="text-base font-bold text-slate-900">
+              Delete {selectedIds.length} Selected Shoe(s)?
+            </h3>
+            <p className="text-sm text-slate-600">
+              This action permanently removes the selected shoes, their variant matrices, and catalog entries. It cannot be undone.
+            </p>
+            <div className="flex justify-end gap-2 pt-2">
+              <button
+                type="button"
+                onClick={() => setConfirmDeleteOpen(false)}
+                className="px-4 py-2 text-xs font-semibold bg-slate-100 hover:bg-slate-200 text-slate-800 rounded-lg cursor-pointer"
+              >
+                Cancel
+              </button>
+              <button
+                type="button"
+                disabled={isBulkRunning}
+                onClick={() => runBulkAction({ action: 'bulk_delete' })}
+                className="px-4 py-2 text-xs font-semibold bg-rose-600 hover:bg-rose-700 text-white rounded-lg cursor-pointer"
+              >
+                {isBulkRunning ? 'Deleting...' : 'Confirm Bulk Delete'}
+              </button>
+            </div>
+          </div>
         </div>
       )}
     </div>

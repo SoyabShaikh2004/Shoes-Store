@@ -1,0 +1,920 @@
+'use client';
+
+import { useCallback, useEffect, useState } from 'react';
+import Image from 'next/image';
+import { toast } from 'react-hot-toast';
+import {
+  Search,
+  Download,
+  RefreshCw,
+  Eye,
+  X,
+  Truck,
+  FileText,
+  Printer,
+  MessageSquarePlus,
+  CheckCircle2,
+  Clock,
+  XCircle,
+  RotateCcw,
+  Bell,
+  ChevronLeft,
+  ChevronRight,
+} from 'lucide-react';
+import { getAdminAuthHeaders } from '@/lib/adminAuth';
+import { generateTaxInvoicePDF } from '@/lib/invoiceGenerator';
+import { ALL_ORDER_STATUSES, OrderStatus, formatDateTimeIN } from '@/lib/orderTypes';
+import type { FullOrderView } from '@/lib/db/store';
+
+interface OrdersOverview {
+  totalOrders: number;
+  pendingOrders: number;
+  confirmedOrders: number;
+  processingOrders: number;
+  shippedOrders: number;
+  deliveredOrders: number;
+  cancelledOrders: number;
+  returnedOrRefundedOrders: number;
+  totalRevenue: number;
+}
+
+interface AdminOrdersManagerProps {
+  onOrdersUpdated?: () => void;
+}
+
+const PAGE_SIZE = 10;
+
+function statusBadgeStyle(status: OrderStatus): string {
+  if (status === 'Delivered' || status === 'Refunded') {
+    return 'bg-emerald-50 text-emerald-700 border-emerald-200';
+  }
+  if (status === 'Order Cancelled' || status === 'Payment Failed') {
+    return 'bg-rose-50 text-rose-700 border-rose-200';
+  }
+  if (
+    status === 'Return Requested' ||
+    status === 'Returned' ||
+    status === 'Refund Initiated'
+  ) {
+    return 'bg-amber-50 text-amber-800 border-amber-200';
+  }
+  return 'bg-indigo-50 text-indigo-700 border-indigo-200';
+}
+
+export default function AdminOrdersManager({ onOrdersUpdated }: AdminOrdersManagerProps) {
+  const [orders, setOrders] = useState<FullOrderView[]>([]);
+  const [overview, setOverview] = useState<OrdersOverview | null>(null);
+  const [isLoading, setIsLoading] = useState(true);
+
+  // Filters
+  const [search, setSearch] = useState('');
+  const [statusFilter, setStatusFilter] = useState('All');
+  const [paymentFilter, setPaymentFilter] = useState('All');
+  const [dateFrom, setDateFrom] = useState('');
+  const [dateTo, setDateTo] = useState('');
+  const [sortBy, setSortBy] = useState<'newest' | 'oldest' | 'amountDesc' | 'amountAsc'>('newest');
+  const [page, setPage] = useState(1);
+
+  // Selected order drawer/modal
+  const [selectedOrder, setSelectedOrder] = useState<FullOrderView | null>(null);
+  const [nextStatus, setNextStatus] = useState<OrderStatus>('Order Confirmed');
+  const [carrierInput, setCarrierInput] = useState('BlueDart Express');
+  const [trackingInput, setTrackingInput] = useState('');
+  const [estDeliveryInput, setEstDeliveryInput] = useState('');
+  const [statusNoteInput, setStatusNoteInput] = useState('');
+  const [cancelReasonInput, setCancelReasonInput] = useState('');
+  const [isUpdatingStatus, setIsUpdatingStatus] = useState(false);
+
+  // Admin note
+  const [newAdminNote, setNewAdminNote] = useState('');
+  const [isAddingNote, setIsAddingNote] = useState(false);
+
+  const fetchOrders = useCallback(async () => {
+    setIsLoading(true);
+    try {
+      const params = new URLSearchParams();
+      if (search.trim()) params.set('search', search.trim());
+      if (statusFilter !== 'All') params.set('status', statusFilter);
+      if (paymentFilter !== 'All') params.set('paymentStatus', paymentFilter);
+      if (dateFrom) params.set('dateFrom', dateFrom);
+      if (dateTo) params.set('dateTo', dateTo);
+      params.set('sort', sortBy);
+
+      const res = await fetch(`/api/admin/orders?${params.toString()}`, {
+        credentials: 'include',
+        headers: getAdminAuthHeaders(),
+        cache: 'no-store',
+      });
+      const data = await res.json();
+      if (!res.ok || !data.success) {
+        throw new Error(data.error || 'Failed to fetch orders');
+      }
+
+      setOrders(data.orders || []);
+      setOverview(data.overview || null);
+      setPage(1);
+
+      if (selectedOrder) {
+        const refreshed = (data.orders || []).find(
+          (o: FullOrderView) => o.order.orderNumber === selectedOrder.order.orderNumber
+        );
+        if (refreshed) setSelectedOrder(refreshed);
+      }
+    } catch (err: unknown) {
+      toast.error(err instanceof Error ? err.message : 'Failed to load orders');
+    } finally {
+      setIsLoading(false);
+    }
+  }, [search, statusFilter, paymentFilter, dateFrom, dateTo, sortBy, selectedOrder?.order.orderNumber]);
+
+  useEffect(() => {
+    fetchOrders();
+  }, [fetchOrders]);
+
+  const openOrderModal = (view: FullOrderView) => {
+    setSelectedOrder(view);
+    setNextStatus(view.order.status);
+    setCarrierInput(view.shipping?.carrier || 'BlueDart Express');
+    setTrackingInput(view.shipping?.trackingNumber || '');
+    setEstDeliveryInput(view.shipping?.estimatedDelivery || view.order.estimatedDelivery || '');
+    setStatusNoteInput('');
+    setCancelReasonInput(view.order.cancelReason || '');
+    setNewAdminNote('');
+  };
+
+  const handleUpdateOrderStatus = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!selectedOrder) return;
+
+    if (nextStatus === 'Order Cancelled' && !cancelReasonInput.trim() && !statusNoteInput.trim()) {
+      toast.error('Please enter a cancellation reason.');
+      return;
+    }
+
+    setIsUpdatingStatus(true);
+    const toastId = toast.loading(`Updating ${selectedOrder.order.orderNumber} to "${nextStatus}"...`);
+    try {
+      const res = await fetch('/api/admin/orders', {
+        method: 'PATCH',
+        credentials: 'include',
+        headers: getAdminAuthHeaders({ 'Content-Type': 'application/json' }),
+        body: JSON.stringify({
+          orderNumber: selectedOrder.order.orderNumber,
+          status: nextStatus,
+          carrier: carrierInput.trim(),
+          trackingNumber: trackingInput.trim(),
+          estimatedDelivery: estDeliveryInput.trim(),
+          note: statusNoteInput.trim(),
+          cancelReason: nextStatus === 'Order Cancelled' ? cancelReasonInput.trim() : undefined,
+        }),
+      });
+      const data = await res.json();
+      if (!res.ok || !data.success) {
+        throw new Error(data.error || 'Failed to update order');
+      }
+
+      toast.success(data.message || 'Order status updated!', { id: toastId });
+      if (data.order) setSelectedOrder(data.order);
+      setStatusNoteInput('');
+      await fetchOrders();
+      onOrdersUpdated?.();
+    } catch (err: unknown) {
+      toast.error(err instanceof Error ? err.message : 'Update failed', { id: toastId });
+    } finally {
+      setIsUpdatingStatus(false);
+    }
+  };
+
+  const handleAddNote = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!selectedOrder || !newAdminNote.trim()) return;
+
+    setIsAddingNote(true);
+    try {
+      const res = await fetch('/api/admin/orders', {
+        method: 'POST',
+        credentials: 'include',
+        headers: getAdminAuthHeaders({ 'Content-Type': 'application/json' }),
+        body: JSON.stringify({
+          orderNumber: selectedOrder.order.orderNumber,
+          note: newAdminNote.trim(),
+        }),
+      });
+      const data = await res.json();
+      if (!res.ok || !data.success) {
+        throw new Error(data.error || 'Could not add note');
+      }
+      toast.success('Admin note added');
+      setNewAdminNote('');
+      await fetchOrders();
+    } catch (err: unknown) {
+      toast.error(err instanceof Error ? err.message : 'Failed to save note');
+    } finally {
+      setIsAddingNote(false);
+    }
+  };
+
+  const handleExport = async (format: 'csv' | 'xlsx') => {
+    const toastId = toast.loading(`Exporting orders to ${format.toUpperCase()}...`);
+    try {
+      const params = new URLSearchParams();
+      if (search.trim()) params.set('search', search.trim());
+      if (statusFilter !== 'All') params.set('status', statusFilter);
+      if (paymentFilter !== 'All') params.set('paymentStatus', paymentFilter);
+      if (dateFrom) params.set('dateFrom', dateFrom);
+      if (dateTo) params.set('dateTo', dateTo);
+      params.set('sort', sortBy);
+      params.set('export', format);
+
+      const res = await fetch(`/api/admin/orders?${params.toString()}`, {
+        credentials: 'include',
+        headers: getAdminAuthHeaders(),
+      });
+      if (!res.ok) throw new Error('Export failed');
+
+      const blob = await res.blob();
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `stepstyle-orders-${Date.now()}.${format}`;
+      document.body.appendChild(a);
+      a.click();
+      a.remove();
+      URL.revokeObjectURL(url);
+      toast.success(`Orders exported (${format.toUpperCase()})`, { id: toastId });
+    } catch (err: unknown) {
+      toast.error(err instanceof Error ? err.message : 'Export failed', { id: toastId });
+    }
+  };
+
+  const totalPages = Math.max(1, Math.ceil(orders.length / PAGE_SIZE));
+  const paginatedOrders = orders.slice((page - 1) * PAGE_SIZE, page * PAGE_SIZE);
+
+  return (
+    <div className="space-y-6">
+      {/* 8 Overview KPIs */}
+      {overview && (
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-3 sm:gap-4">
+          <div className="bg-white p-4 rounded-xl border border-slate-200">
+            <div className="text-xs font-medium text-slate-500">Total Orders</div>
+            <div className="text-2xl font-bold text-slate-900 mt-1 tabular-nums">
+              {overview.totalOrders}
+            </div>
+          </div>
+          <div className="bg-white p-4 rounded-xl border border-slate-200">
+            <div className="text-xs font-medium text-slate-500">Total Revenue</div>
+            <div className="text-2xl font-bold text-emerald-700 mt-1 tabular-nums">
+              ₹{overview.totalRevenue.toLocaleString('en-IN')}
+            </div>
+          </div>
+          <div className="bg-white p-4 rounded-xl border border-slate-200">
+            <div className="text-xs font-medium text-slate-500">Pending · Confirmed</div>
+            <div className="text-xl font-bold text-slate-900 mt-1 tabular-nums">
+              {overview.pendingOrders} · {overview.confirmedOrders}
+            </div>
+          </div>
+          <div className="bg-white p-4 rounded-xl border border-slate-200">
+            <div className="text-xs font-medium text-slate-500">Processing · Shipped</div>
+            <div className="text-xl font-bold text-indigo-700 mt-1 tabular-nums">
+              {overview.processingOrders} · {overview.shippedOrders}
+            </div>
+          </div>
+          <div className="bg-white p-4 rounded-xl border border-slate-200">
+            <div className="text-xs font-medium text-slate-500">Delivered</div>
+            <div className="text-xl font-bold text-emerald-700 mt-1 tabular-nums">
+              {overview.deliveredOrders}
+            </div>
+          </div>
+          <div className="bg-white p-4 rounded-xl border border-slate-200">
+            <div className="text-xs font-medium text-slate-500">Cancelled</div>
+            <div className="text-xl font-bold text-rose-700 mt-1 tabular-nums">
+              {overview.cancelledOrders}
+            </div>
+          </div>
+          <div className="bg-white p-4 rounded-xl border border-slate-200 col-span-2">
+            <div className="text-xs font-medium text-slate-500">Returns & Refunds Active</div>
+            <div className="text-xl font-bold text-amber-700 mt-1 tabular-nums">
+              {overview.returnedOrRefundedOrders} order(s)
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Search, Filters & Export Controls */}
+      <div className="bg-white p-4 sm:p-5 rounded-xl border border-slate-200 space-y-4">
+        <div className="flex flex-col lg:flex-row gap-3 justify-between">
+          <div className="relative flex-1">
+            <Search className="w-4 h-4 text-slate-400 absolute left-3.5 top-1/2 -translate-y-1/2" />
+            <input
+              type="text"
+              value={search}
+              onChange={(e) => setSearch(e.target.value)}
+              placeholder="Search Order Number, customer name, phone, or email..."
+              className="w-full text-sm bg-slate-50 border border-slate-200 rounded-lg pl-10 pr-4 py-2.5 focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-600 focus:bg-white"
+            />
+          </div>
+
+          <div className="flex flex-wrap items-center gap-2">
+            <button
+              type="button"
+              onClick={fetchOrders}
+              className="min-h-[40px] px-3 py-2 rounded-lg border border-slate-200 hover:bg-slate-50 text-xs font-semibold text-slate-700 inline-flex items-center gap-1.5 cursor-pointer"
+            >
+              <RefreshCw className={`w-3.5 h-3.5 ${isLoading ? 'animate-spin' : ''}`} />
+              <span>Refresh</span>
+            </button>
+            <button
+              type="button"
+              onClick={() => handleExport('csv')}
+              className="min-h-[40px] px-3 py-2 rounded-lg border border-slate-200 hover:bg-slate-50 text-xs font-semibold text-slate-700 inline-flex items-center gap-1.5 cursor-pointer"
+            >
+              <Download className="w-3.5 h-3.5" />
+              <span>Export CSV</span>
+            </button>
+            <button
+              type="button"
+              onClick={() => handleExport('xlsx')}
+              className="min-h-[40px] px-3.5 py-2 rounded-lg bg-slate-900 hover:bg-slate-800 text-xs font-semibold text-white inline-flex items-center gap-1.5 cursor-pointer"
+            >
+              <Download className="w-3.5 h-3.5" />
+              <span>Export Excel</span>
+            </button>
+          </div>
+        </div>
+
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-3 pt-3 border-t border-slate-100 text-xs">
+          <div>
+            <label className="block font-semibold text-slate-500 mb-1">Order Status</label>
+            <select
+              value={statusFilter}
+              onChange={(e) => setStatusFilter(e.target.value)}
+              className="w-full bg-slate-50 border border-slate-200 rounded-lg px-2.5 py-2 text-slate-800"
+            >
+              <option value="All">All Statuses</option>
+              {ALL_ORDER_STATUSES.map((s) => (
+                <option key={s} value={s}>
+                  {s}
+                </option>
+              ))}
+            </select>
+          </div>
+
+          <div>
+            <label className="block font-semibold text-slate-500 mb-1">Payment Status</label>
+            <select
+              value={paymentFilter}
+              onChange={(e) => setPaymentFilter(e.target.value)}
+              className="w-full bg-slate-50 border border-slate-200 rounded-lg px-2.5 py-2 text-slate-800"
+            >
+              <option value="All">All Payments</option>
+              <option value="Paid">Paid</option>
+              <option value="Pending">Pending</option>
+              <option value="Failed">Failed</option>
+              <option value="Refund Initiated">Refund Initiated</option>
+              <option value="Refunded">Refunded</option>
+            </select>
+          </div>
+
+          <div>
+            <label className="block font-semibold text-slate-500 mb-1">From Date</label>
+            <input
+              type="date"
+              value={dateFrom}
+              onChange={(e) => setDateFrom(e.target.value)}
+              className="w-full bg-slate-50 border border-slate-200 rounded-lg px-2.5 py-2 text-slate-800"
+            />
+          </div>
+
+          <div>
+            <label className="block font-semibold text-slate-500 mb-1">To Date</label>
+            <input
+              type="date"
+              value={dateTo}
+              onChange={(e) => setDateTo(e.target.value)}
+              className="w-full bg-slate-50 border border-slate-200 rounded-lg px-2.5 py-2 text-slate-800"
+            />
+          </div>
+
+          <div>
+            <label className="block font-semibold text-slate-500 mb-1">Sort By</label>
+            <select
+              value={sortBy}
+              onChange={(e) =>
+                setSortBy(
+                  e.target.value as 'newest' | 'oldest' | 'amountDesc' | 'amountAsc'
+                )
+              }
+              className="w-full bg-slate-50 border border-slate-200 rounded-lg px-2.5 py-2 text-slate-800"
+            >
+              <option value="newest">Newest First</option>
+              <option value="oldest">Oldest First</option>
+              <option value="amountDesc">Amount (High → Low)</option>
+              <option value="amountAsc">Amount (Low → High)</option>
+            </select>
+          </div>
+        </div>
+      </div>
+
+      {/* Orders Table */}
+      <div className="bg-white rounded-xl border border-slate-200 overflow-hidden">
+        {isLoading ? (
+          <div className="p-8 space-y-3">
+            {[1, 2, 3, 4].map((n) => (
+              <div key={n} className="h-12 bg-slate-100 rounded-lg animate-pulse" />
+            ))}
+          </div>
+        ) : paginatedOrders.length === 0 ? (
+          <div className="p-12 text-center">
+            <Truck className="w-10 h-10 text-slate-300 mx-auto mb-3" />
+            <h3 className="text-base font-bold text-slate-900">No matching orders found</h3>
+            <p className="text-xs text-slate-500 mt-1">
+              Customer orders placed through checkout will appear here immediately.
+            </p>
+          </div>
+        ) : (
+          <div className="overflow-x-auto">
+            <table className="w-full text-left text-xs sm:text-sm text-slate-600">
+              <thead className="bg-slate-50 border-b border-slate-200 text-xs font-semibold uppercase tracking-wider text-slate-500">
+                <tr>
+                  <th className="py-3 px-4">Order</th>
+                  <th className="py-3 px-4">Customer</th>
+                  <th className="py-3 px-4">Items</th>
+                  <th className="py-3 px-4">Total</th>
+                  <th className="py-3 px-4">Payment</th>
+                  <th className="py-3 px-4">Status</th>
+                  <th className="py-3 px-4 text-right">Manage</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-slate-100">
+                {paginatedOrders.map((view) => {
+                  const { order, items, shipping } = view;
+                  const qtySum = items.reduce((s, i) => s + i.quantity, 0);
+                  return (
+                    <tr key={order.id} className="hover:bg-slate-50/70 transition-colors">
+                      <td className="py-3 px-4 whitespace-nowrap">
+                        <div className="font-mono font-bold text-slate-900">
+                          {order.orderNumber}
+                        </div>
+                        <div className="text-[11px] text-slate-500 tabular-nums">
+                          {formatDateTimeIN(order.createdAt)}
+                        </div>
+                      </td>
+                      <td className="py-3 px-4">
+                        <div className="font-semibold text-slate-900">
+                          {order.customerName}
+                        </div>
+                        <div className="text-[11px] text-slate-500">
+                          {order.customerPhone} {order.customerEmail ? `· ${order.customerEmail}` : ''}
+                        </div>
+                      </td>
+                      <td className="py-3 px-4 whitespace-nowrap tabular-nums">
+                        <div className="font-medium text-slate-900">
+                          {qtySum} pair{qtySum === 1 ? '' : 's'}
+                        </div>
+                        <div className="text-[11px] text-slate-500 truncate max-w-[160px]">
+                          {items[0]?.name}
+                        </div>
+                      </td>
+                      <td className="py-3 px-4 whitespace-nowrap font-bold text-slate-900 tabular-nums">
+                        ₹{order.totalAmount.toLocaleString('en-IN')}
+                      </td>
+                      <td className="py-3 px-4 whitespace-nowrap text-xs">
+                        <div className="font-semibold text-slate-800">{order.paymentStatus}</div>
+                        <div className="text-[11px] text-slate-500">{order.paymentMethod}</div>
+                      </td>
+                      <td className="py-3 px-4 whitespace-nowrap">
+                        <span
+                          className={`inline-flex items-center px-2.5 py-1 rounded-md border text-xs font-semibold ${statusBadgeStyle(
+                            order.status
+                          )}`}
+                        >
+                          {order.status}
+                        </span>
+                        {shipping?.trackingNumber && (
+                          <div className="text-[11px] font-mono text-slate-400 mt-0.5">
+                            {shipping.carrier}: {shipping.trackingNumber}
+                          </div>
+                        )}
+                      </td>
+                      <td className="py-3 px-4 whitespace-nowrap text-right">
+                        <button
+                          type="button"
+                          onClick={() => openOrderModal(view)}
+                          className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-indigo-50 hover:bg-indigo-100 text-indigo-700 border border-indigo-200 text-xs font-semibold cursor-pointer"
+                        >
+                          <Eye className="w-3.5 h-3.5" />
+                          <span>Inspect / Update</span>
+                        </button>
+                      </td>
+                    </tr>
+                  );
+                })}
+              </tbody>
+            </table>
+          </div>
+        )}
+
+        {/* Pagination */}
+        {orders.length > PAGE_SIZE && (
+          <div className="px-4 py-3 border-t border-slate-100 bg-slate-50 flex items-center justify-between text-xs text-slate-600">
+            <span className="tabular-nums">
+              Showing {(page - 1) * PAGE_SIZE + 1}–{Math.min(page * PAGE_SIZE, orders.length)} of{' '}
+              {orders.length} orders
+            </span>
+            <div className="flex items-center gap-1.5">
+              <button
+                type="button"
+                disabled={page <= 1}
+                onClick={() => setPage((p) => p - 1)}
+                className="p-1.5 rounded-lg border border-slate-200 bg-white disabled:opacity-40 cursor-pointer"
+              >
+                <ChevronLeft className="w-4 h-4" />
+              </button>
+              <span className="px-2 font-semibold tabular-nums">
+                {page} / {totalPages}
+              </span>
+              <button
+                type="button"
+                disabled={page >= totalPages}
+                onClick={() => setPage((p) => p + 1)}
+                className="p-1.5 rounded-lg border border-slate-200 bg-white disabled:opacity-40 cursor-pointer"
+              >
+                <ChevronRight className="w-4 h-4" />
+              </button>
+            </div>
+          </div>
+        )}
+      </div>
+
+      {/* Order Details & Workflow Drawer Modal */}
+      {selectedOrder && (
+        <div className="fixed inset-0 z-50 bg-slate-950/60 flex justify-end">
+          <div className="bg-white w-full max-w-3xl h-full overflow-y-auto border-l border-slate-200 flex flex-col">
+            {/* Modal Header */}
+            <div className="sticky top-0 z-10 bg-white border-b border-slate-200 px-6 py-4 flex items-center justify-between gap-4">
+              <div>
+                <div className="flex items-center gap-2">
+                  <h2 className="text-lg font-bold text-slate-900 font-mono">
+                    {selectedOrder.order.orderNumber}
+                  </h2>
+                  <span
+                    className={`px-2 py-0.5 rounded-md border text-xs font-semibold ${statusBadgeStyle(
+                      selectedOrder.order.status
+                    )}`}
+                  >
+                    {selectedOrder.order.status}
+                  </span>
+                </div>
+                <p className="text-xs text-slate-500 mt-0.5">
+                  Placed {formatDateTimeIN(selectedOrder.order.createdAt)} · Customer:{' '}
+                  {selectedOrder.order.customerName}
+                </p>
+              </div>
+
+              <div className="flex items-center gap-2">
+                <button
+                  type="button"
+                  onClick={() =>
+                    generateTaxInvoicePDF({
+                      orderId: selectedOrder.order.orderNumber,
+                      date: selectedOrder.order.createdAt,
+                      items: selectedOrder.items.map((i) => ({
+                        id: i.productId,
+                        name: i.name,
+                        price: i.unitPrice,
+                        quantity: i.quantity,
+                        selectedColor: i.selectedColor,
+                        selectedSize: i.selectedSize,
+                        brand: i.brand,
+                        category: i.category,
+                      })),
+                      totalAmount: selectedOrder.order.totalAmount,
+                      paymentStatus: selectedOrder.order.paymentStatus,
+                      paymentMethod: selectedOrder.order.paymentMethod,
+                      transactionId: selectedOrder.payment?.transactionId,
+                      utrNumber: selectedOrder.payment?.utrNumber,
+                      customer: {
+                        name: selectedOrder.order.customerName,
+                        phone: selectedOrder.order.customerPhone,
+                        address: selectedOrder.order.deliveryAddress,
+                        pincode: selectedOrder.order.pincode,
+                        email: selectedOrder.order.customerEmail,
+                      },
+                      estimatedDelivery: selectedOrder.order.estimatedDelivery,
+                    })
+                  }
+                  className="px-3 py-1.5 rounded-lg border border-slate-200 hover:bg-slate-50 text-xs font-semibold text-slate-700 inline-flex items-center gap-1.5 cursor-pointer"
+                >
+                  <FileText className="w-3.5 h-3.5" />
+                  <span>PDF Invoice</span>
+                </button>
+                <button
+                  type="button"
+                  onClick={() => window.print()}
+                  className="px-3 py-1.5 rounded-lg border border-slate-200 hover:bg-slate-50 text-xs font-semibold text-slate-700 inline-flex items-center gap-1.5 cursor-pointer"
+                >
+                  <Printer className="w-3.5 h-3.5" />
+                  <span>Print</span>
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setSelectedOrder(null)}
+                  className="p-1.5 rounded-lg text-slate-400 hover:text-slate-700 hover:bg-slate-100 cursor-pointer"
+                >
+                  <X className="w-5 h-5" />
+                </button>
+              </div>
+            </div>
+
+            <div className="p-6 space-y-6">
+              {/* Update Status & Shipping Form */}
+              <form
+                onSubmit={handleUpdateOrderStatus}
+                className="rounded-xl border border-slate-200 bg-slate-50/70 p-4 sm:p-5 space-y-4"
+              >
+                <h3 className="text-sm font-bold text-slate-900">
+                  Update Fulfillment Status & Logistics
+                </h3>
+
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                  <div>
+                    <label className="block text-xs font-semibold text-slate-700 mb-1">
+                      Order Status *
+                    </label>
+                    <select
+                      value={nextStatus}
+                      onChange={(e) => setNextStatus(e.target.value as OrderStatus)}
+                      className="w-full px-3 py-2 text-sm bg-white border border-slate-300 rounded-lg font-medium"
+                    >
+                      {ALL_ORDER_STATUSES.map((st) => (
+                        <option key={st} value={st}>
+                          {st}
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+
+                  <div>
+                    <label className="block text-xs font-semibold text-slate-700 mb-1">
+                      Shipping Company
+                    </label>
+                    <input
+                      type="text"
+                      value={carrierInput}
+                      onChange={(e) => setCarrierInput(e.target.value)}
+                      placeholder="BlueDart Express, Delhivery..."
+                      className="w-full px-3 py-2 text-sm bg-white border border-slate-300 rounded-lg"
+                    />
+                  </div>
+
+                  <div>
+                    <label className="block text-xs font-semibold text-slate-700 mb-1">
+                      Tracking / AWB Number
+                    </label>
+                    <input
+                      type="text"
+                      value={trackingInput}
+                      onChange={(e) => setTrackingInput(e.target.value)}
+                      placeholder="BD-IN-12345678"
+                      className="w-full px-3 py-2 text-sm font-mono bg-white border border-slate-300 rounded-lg"
+                    />
+                  </div>
+
+                  <div>
+                    <label className="block text-xs font-semibold text-slate-700 mb-1">
+                      Estimated Delivery
+                    </label>
+                    <input
+                      type="text"
+                      value={estDeliveryInput}
+                      onChange={(e) => setEstDeliveryInput(e.target.value)}
+                      placeholder="e.g. Friday, 27 Nov"
+                      className="w-full px-3 py-2 text-sm bg-white border border-slate-300 rounded-lg"
+                    />
+                  </div>
+
+                  {nextStatus === 'Order Cancelled' && (
+                    <div className="sm:col-span-2">
+                      <label className="block text-xs font-semibold text-rose-700 mb-1">
+                        Cancellation Reason * (Restores inventory if deducted)
+                      </label>
+                      <input
+                        type="text"
+                        required
+                        value={cancelReasonInput}
+                        onChange={(e) => setCancelReasonInput(e.target.value)}
+                        placeholder="Customer requested cancellation / Out of warehouse stock..."
+                        className="w-full px-3 py-2 text-sm bg-white border border-rose-300 rounded-lg"
+                      />
+                    </div>
+                  )}
+
+                  <div className="sm:col-span-2">
+                    <label className="block text-xs font-semibold text-slate-700 mb-1">
+                      Status Update Note (Visible in Customer Timeline)
+                    </label>
+                    <input
+                      type="text"
+                      value={statusNoteInput}
+                      onChange={(e) => setStatusNoteInput(e.target.value)}
+                      placeholder="e.g. Dispatched from Mumbai hub"
+                      className="w-full px-3 py-2 text-sm bg-white border border-slate-300 rounded-lg"
+                    />
+                  </div>
+                </div>
+
+                <div className="flex flex-wrap items-center justify-between gap-3 pt-1">
+                  <p className="text-[11px] text-slate-500">
+                    Saving automatically logs admin identity, updates customer tracker & notifications, and enforces stock rules.
+                  </p>
+                  <button
+                    type="submit"
+                    disabled={isUpdatingStatus}
+                    className="px-4 py-2 rounded-lg bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-semibold cursor-pointer disabled:opacity-60"
+                  >
+                    {isUpdatingStatus ? 'Saving...' : 'Save Order Update'}
+                  </button>
+                </div>
+              </form>
+
+              {/* Customer & Payment Details */}
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 text-xs">
+                <div className="p-4 rounded-xl border border-slate-200 space-y-1.5">
+                  <div className="font-bold text-slate-900 mb-1">Customer & Shipping Address</div>
+                  <p className="font-semibold text-slate-800">{selectedOrder.order.customerName}</p>
+                  <p className="text-slate-600">
+                    Phone: <span className="font-mono">{selectedOrder.order.customerPhone}</span>
+                  </p>
+                  {selectedOrder.order.customerEmail && (
+                    <p className="text-slate-600">Email: {selectedOrder.order.customerEmail}</p>
+                  )}
+                  <p className="text-slate-600">
+                    {selectedOrder.order.deliveryAddress} (Pincode: {selectedOrder.order.pincode})
+                  </p>
+                </div>
+
+                <div className="p-4 rounded-xl border border-slate-200 space-y-1.5 tabular-nums">
+                  <div className="font-bold text-slate-900 mb-1">Payment & Stock Accounting</div>
+                  <p className="text-slate-600">
+                    Payment Status:{' '}
+                    <strong className="text-slate-900">{selectedOrder.order.paymentStatus}</strong>
+                  </p>
+                  <p className="text-slate-600">Method: {selectedOrder.order.paymentMethod}</p>
+                  {selectedOrder.payment?.transactionId && (
+                    <p className="text-slate-600">
+                      Txn ID: <span className="font-mono">{selectedOrder.payment.transactionId}</span>
+                    </p>
+                  )}
+                  <p className="text-slate-600">
+                    Inventory Reserved:{' '}
+                    <strong>{selectedOrder.order.stockDeducted ? 'Yes (Deducted)' : 'No'}</strong>
+                  </p>
+                  <p className="text-sm font-bold text-slate-900 pt-1">
+                    Total: ₹{selectedOrder.order.totalAmount.toLocaleString('en-IN')}
+                  </p>
+                </div>
+              </div>
+
+              {/* Ordered Footwear Items */}
+              <div className="rounded-xl border border-slate-200 overflow-hidden">
+                <div className="px-4 py-3 bg-slate-50 border-b border-slate-200 text-xs font-bold text-slate-700">
+                  Purchased Items ({selectedOrder.items.length})
+                </div>
+                <div className="divide-y divide-slate-100">
+                  {selectedOrder.items.map((item) => (
+                    <div key={item.id} className="p-3.5 flex items-center gap-3 text-xs">
+                      <div className="relative w-12 h-12 rounded-lg bg-slate-50 border border-slate-200 overflow-hidden shrink-0">
+                        <Image
+                          src={item.imagePath || '/images/Empty-cart.jpg'}
+                          alt={item.name}
+                          fill
+                          referrerPolicy="no-referrer"
+                          className="object-contain p-1"
+                        />
+                      </div>
+                      <div className="flex-1 min-w-0">
+                        <div className="font-semibold text-slate-900 truncate">{item.name}</div>
+                        <div className="text-slate-500">
+                          SKU {item.sku} · Size UK {item.selectedSize || 'Std'} · Qty {item.quantity}
+                        </div>
+                      </div>
+                      <div className="font-bold text-slate-900 tabular-nums">
+                        ₹{item.lineTotal.toLocaleString('en-IN')}
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+
+              {/* Returns & Refunds */}
+              {(selectedOrder.returns.length > 0 || selectedOrder.refunds.length > 0) && (
+                <div className="rounded-xl border border-amber-200 bg-amber-50/40 p-4 space-y-2 text-xs">
+                  <div className="font-bold text-amber-900 flex items-center gap-1.5">
+                    <RotateCcw className="w-4 h-4" />
+                    <span>Returns & Refunds History</span>
+                  </div>
+                  {selectedOrder.returns.map((r) => (
+                    <div key={r.id} className="text-slate-700">
+                      Return ({r.status}): {r.reason} · Requested {formatDateTimeIN(r.requestedAt)}
+                    </div>
+                  ))}
+                  {selectedOrder.refunds.map((rf) => (
+                    <div key={rf.id} className="text-slate-700 font-mono">
+                      Refund {rf.referenceId}: ₹{rf.amount.toLocaleString('en-IN')} ({rf.status})
+                    </div>
+                  ))}
+                </div>
+              )}
+
+              {/* Internal Admin Notes */}
+              <div className="rounded-xl border border-slate-200 p-4 space-y-3">
+                <div className="flex items-center gap-2 text-xs font-bold text-slate-900">
+                  <MessageSquarePlus className="w-4 h-4 text-indigo-600" />
+                  <span>Internal Admin Notes ({selectedOrder.adminNotes.length})</span>
+                </div>
+                <form onSubmit={handleAddNote} className="flex gap-2">
+                  <input
+                    type="text"
+                    value={newAdminNote}
+                    onChange={(e) => setNewAdminNote(e.target.value)}
+                    placeholder="Add private dispatch or customer support note..."
+                    className="flex-1 px-3 py-2 text-xs border border-slate-300 rounded-lg"
+                  />
+                  <button
+                    type="submit"
+                    disabled={isAddingNote || !newAdminNote.trim()}
+                    className="px-3.5 py-2 rounded-lg bg-slate-900 text-white text-xs font-semibold cursor-pointer disabled:opacity-50"
+                  >
+                    Add Note
+                  </button>
+                </form>
+                {selectedOrder.adminNotes.length > 0 && (
+                  <div className="space-y-2">
+                    {selectedOrder.adminNotes.map((n) => (
+                      <div key={n.id} className="p-2.5 rounded-lg bg-slate-50 border border-slate-100 text-xs">
+                        <div className="flex justify-between text-slate-500 mb-0.5">
+                          <span className="font-semibold text-slate-800">{n.adminName}</span>
+                          <span className="tabular-nums">{formatDateTimeIN(n.createdAt)}</span>
+                        </div>
+                        <p className="text-slate-700">{n.note}</p>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
+
+              {/* Permanent Status Audit History */}
+              <div className="rounded-xl border border-slate-200 overflow-hidden">
+                <div className="px-4 py-3 bg-slate-50 border-b border-slate-200 text-xs font-bold text-slate-700 flex items-center gap-1.5">
+                  <Clock className="w-3.5 h-3.5 text-indigo-600" />
+                  <span>Permanent Order Status History</span>
+                </div>
+                <div className="divide-y divide-slate-100">
+                  {[...selectedOrder.statusHistory].reverse().map((h) => (
+                    <div key={h.id} className="px-4 py-2.5 text-xs flex justify-between gap-4">
+                      <div>
+                        <span className="font-semibold text-slate-900">{h.status}</span>{' '}
+                        <span className="text-slate-500">
+                          by {h.updatedByAdminName} ({h.updatedByRole})
+                        </span>
+                        {h.note && <p className="text-slate-600 mt-0.5">{h.note}</p>}
+                      </div>
+                      <span className="font-mono text-slate-500 shrink-0 tabular-nums">
+                        {formatDateTimeIN(h.timestamp)}
+                      </span>
+                    </div>
+                  ))}
+                </div>
+              </div>
+
+              {/* Dispatched Customer Notifications */}
+              {selectedOrder.notifications.length > 0 && (
+                <div className="rounded-xl border border-slate-200 overflow-hidden">
+                  <div className="px-4 py-3 bg-slate-50 border-b border-slate-200 text-xs font-bold text-slate-700 flex items-center gap-1.5">
+                    <Bell className="w-3.5 h-3.5 text-indigo-600" />
+                    <span>Customer Notification Log ({selectedOrder.notifications.length})</span>
+                  </div>
+                  <div className="divide-y divide-slate-100 max-h-48 overflow-y-auto">
+                    {selectedOrder.notifications.map((n) => (
+                      <div key={n.id} className="px-4 py-2 text-xs flex justify-between gap-2">
+                        <div>
+                          <span className="font-semibold uppercase text-indigo-700">
+                            {n.channel}
+                          </span>{' '}
+                          <span className="text-slate-800">{n.message}</span>
+                        </div>
+                        <span className="font-mono text-slate-400 shrink-0 tabular-nums">
+                          {formatDateTimeIN(n.sentAt)}
+                        </span>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+            </div>
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}

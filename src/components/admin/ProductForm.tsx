@@ -4,19 +4,16 @@ import { useState, useEffect } from 'react';
 import { Product } from '@/lib/data';
 import ImageUploader from './ImageUploader';
 import { toast } from 'react-hot-toast';
+import { getAdminAuthHeaders } from '@/lib/adminAuth';
 import {
   Tag,
   DollarSign,
   Layers,
-  Sparkles,
   CheckCircle,
   AlertCircle,
-  Plus,
   X,
-  RotateCcw,
   Save,
   ArrowLeft,
-  Percent,
 } from 'lucide-react';
 
 interface ProductFormProps {
@@ -48,6 +45,7 @@ export default function ProductForm({
   const isEditing = Boolean(initialProduct);
 
   const [name, setName] = useState('');
+  const [sku, setSku] = useState('');
   const [brand, setBrand] = useState('StepStyle');
   const [category, setCategory] = useState('Running');
   const [customCategory, setCustomCategory] = useState('');
@@ -55,6 +53,11 @@ export default function ProductForm({
   const [description, setDescription] = useState('');
   const [price, setPrice] = useState<number | string>(7999);
   const [mrp, setMrp] = useState<number | string>(9999);
+  const [stockQuantity, setStockQuantity] = useState<number | string>(25);
+  const [gender, setGender] = useState<'Men' | 'Women' | 'Unisex' | 'Kids'>('Men');
+  const [shoeType, setShoeType] = useState('Sneakers');
+  const [status, setStatus] = useState<'active' | 'inactive'>('active');
+  const [tagsInput, setTagsInput] = useState('');
   const [inStock, setInStock] = useState(true);
   const [featured, setFeatured] = useState(false);
   const [colors, setColors] = useState<string[]>(['Black/White']);
@@ -67,16 +70,21 @@ export default function ProductForm({
   useEffect(() => {
     if (initialProduct) {
       setName(initialProduct.name || '');
+      setSku(initialProduct.sku || '');
       setBrand(initialProduct.brand || 'StepStyle');
       setDescription(initialProduct.description || '');
       setPrice(initialProduct.price ?? '');
       setMrp(initialProduct.mrp ?? initialProduct.price ?? '');
+      setStockQuantity(initialProduct.stockQuantity ?? (initialProduct.inStock ? 25 : 0));
+      setGender(initialProduct.gender || 'Men');
+      setShoeType(initialProduct.shoeType || initialProduct.category || 'Sneakers');
+      setStatus(initialProduct.status === 'inactive' ? 'inactive' : 'active');
+      setTagsInput((initialProduct.tags || []).join(', '));
       setInStock(initialProduct.inStock ?? true);
       setFeatured(initialProduct.featured ?? false);
       setColors(initialProduct.colors || ['Black/White']);
       setSizes(initialProduct.sizes || [7, 8, 9, 10, 11]);
 
-      // Category logic
       if (categories.includes(initialProduct.category)) {
         setCategory(initialProduct.category);
         setIsCustomCategory(false);
@@ -86,11 +94,9 @@ export default function ProductForm({
         setIsCustomCategory(true);
       }
 
-      // Images logic
       if (initialProduct.images && initialProduct.images.length > 0) {
         setImages(initialProduct.images);
       } else if (initialProduct.imagePath) {
-        // If imagePath is direct or needs fallback
         if (
           initialProduct.imagePath.startsWith('/uploads/') ||
           initialProduct.imagePath.startsWith('http') ||
@@ -98,15 +104,14 @@ export default function ProductForm({
         ) {
           setImages([initialProduct.imagePath]);
         } else {
-          // Default catalog image format
           setImages([`${initialProduct.imagePath}/HomeProduct.jpg`]);
         }
       } else {
         setImages([]);
       }
     } else {
-      // Reset defaults for Create mode
       setName('');
+      setSku('');
       setBrand('StepStyle');
       setCategory(categories[0] || 'Running');
       setIsCustomCategory(false);
@@ -114,6 +119,11 @@ export default function ProductForm({
       setDescription('');
       setPrice(6999);
       setMrp(8999);
+      setStockQuantity(30);
+      setGender('Men');
+      setShoeType('Running Shoes');
+      setStatus('active');
+      setTagsInput('');
       setInStock(true);
       setFeatured(false);
       setColors(['Black/White']);
@@ -207,15 +217,27 @@ export default function ProductForm({
     const toastId = toast.loading(isEditing ? 'Updating shoe...' : 'Adding new shoe to catalog...');
 
     try {
+      const parsedTags = tagsInput
+        .split(/[,;|]/)
+        .map((t) => t.trim())
+        .filter(Boolean);
+      const qtyNum = Math.max(0, Math.floor(Number(stockQuantity) || 0));
+
       const payload = {
         name: name.trim(),
+        sku: sku.trim() ? sku.trim().toUpperCase() : undefined,
         brand: brand.trim(),
         category: finalCategory,
         description: description.trim(),
         price: numPrice,
         mrp: numMrp,
-        inStock,
+        stockQuantity: qtyNum,
+        inStock: inStock && qtyNum > 0,
         featured,
+        status,
+        gender,
+        shoeType: shoeType.trim() || finalCategory,
+        tags: parsedTags.length > 0 ? parsedTags : [finalCategory, brand.trim()],
         colors: colors.length > 0 ? colors : ['Standard'],
         sizes,
         images,
@@ -230,7 +252,8 @@ export default function ProductForm({
 
       const res = await fetch(url, {
         method,
-        headers: { 'Content-Type': 'application/json' },
+        credentials: 'include',
+        headers: getAdminAuthHeaders({ 'Content-Type': 'application/json' }),
         body: JSON.stringify(payload),
       });
 
@@ -376,6 +399,98 @@ export default function ProductForm({
                 />
               </div>
             )}
+          </div>
+
+          {/* SKU */}
+          <div>
+            <label className="block text-xs font-semibold uppercase tracking-wider text-gray-700 mb-1">
+              Unique SKU
+            </label>
+            <input
+              type="text"
+              value={sku}
+              onChange={(e) => setSku(e.target.value.toUpperCase())}
+              placeholder="Auto-generated if left blank (e.g. STEP-RUN-101)"
+              className="w-full text-sm font-mono bg-white border border-gray-300 rounded-lg px-3.5 py-2.5 focus:outline-none focus:ring-2 focus:ring-indigo-500"
+            />
+          </div>
+
+          {/* Stock Quantity */}
+          <div>
+            <label className="block text-xs font-semibold uppercase tracking-wider text-gray-700 mb-1">
+              Stock Quantity *
+            </label>
+            <input
+              type="number"
+              min="0"
+              value={stockQuantity}
+              onChange={(e) => {
+                const v = e.target.value;
+                setStockQuantity(v);
+                if (Number(v) === 0) setInStock(false);
+                else if (Number(v) > 0) setInStock(true);
+              }}
+              className="w-full text-sm font-semibold bg-white border border-gray-300 rounded-lg px-3.5 py-2.5 focus:outline-none focus:ring-2 focus:ring-indigo-500"
+            />
+          </div>
+
+          {/* Gender */}
+          <div>
+            <label className="block text-xs font-semibold uppercase tracking-wider text-gray-700 mb-1">
+              Gender
+            </label>
+            <select
+              value={gender}
+              onChange={(e) => setGender(e.target.value as 'Men' | 'Women' | 'Unisex' | 'Kids')}
+              className="w-full text-sm bg-white border border-gray-300 rounded-lg px-3.5 py-2.5 focus:outline-none focus:ring-2 focus:ring-indigo-500"
+            >
+              <option value="Men">Men</option>
+              <option value="Women">Women</option>
+              <option value="Unisex">Unisex</option>
+              <option value="Kids">Kids</option>
+            </select>
+          </div>
+
+          {/* Shoe Type */}
+          <div>
+            <label className="block text-xs font-semibold uppercase tracking-wider text-gray-700 mb-1">
+              Shoe Type
+            </label>
+            <input
+              type="text"
+              value={shoeType}
+              onChange={(e) => setShoeType(e.target.value)}
+              placeholder="e.g. Running Shoes, Sneakers, High Tops"
+              className="w-full text-sm bg-white border border-gray-300 rounded-lg px-3.5 py-2.5 focus:outline-none focus:ring-2 focus:ring-indigo-500"
+            />
+          </div>
+
+          {/* Status & Tags */}
+          <div>
+            <label className="block text-xs font-semibold uppercase tracking-wider text-gray-700 mb-1">
+              Visibility Status
+            </label>
+            <select
+              value={status}
+              onChange={(e) => setStatus(e.target.value as 'active' | 'inactive')}
+              className="w-full text-sm bg-white border border-gray-300 rounded-lg px-3.5 py-2.5 focus:outline-none focus:ring-2 focus:ring-indigo-500"
+            >
+              <option value="active">Active (Visible on Storefront)</option>
+              <option value="inactive">Inactive (Hidden from Storefront)</option>
+            </select>
+          </div>
+
+          <div>
+            <label className="block text-xs font-semibold uppercase tracking-wider text-gray-700 mb-1">
+              Product Tags
+            </label>
+            <input
+              type="text"
+              value={tagsInput}
+              onChange={(e) => setTagsInput(e.target.value)}
+              placeholder="Comma separated: Breathable, Lightweight, Carbon"
+              className="w-full text-sm bg-white border border-gray-300 rounded-lg px-3.5 py-2.5 focus:outline-none focus:ring-2 focus:ring-indigo-500"
+            />
           </div>
 
           {/* Description */}

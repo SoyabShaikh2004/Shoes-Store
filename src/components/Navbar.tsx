@@ -126,7 +126,7 @@ export default function Navbar() {
       }`}
     >
       <div className="container mx-auto px-4">
-        <div className="flex h-16 sm:h-18 md:h-20 items-center justify-between">
+        <div className="flex h-14 sm:h-16 md:h-20 items-center justify-between">
           <div className="flex items-center">
             {/* Mobile menu button */}
             <button
@@ -149,9 +149,9 @@ export default function Navbar() {
               <Image
                 src="/images/logo.svg"
                 alt="StepStyle Logo"
-                width={50}
-                height={50}
-                className="mr-2"
+                width={48}
+                height={48}
+                className="mr-2 w-10 h-10 sm:w-12 sm:h-12"
               />
             </Link>
           </div>
@@ -258,6 +258,13 @@ export default function Navbar() {
                   >
                     Your Account
                   </Link>
+                  <Link
+                    href="/track-order"
+                    className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-50"
+                    onClick={() => setShowUserMenu(false)}
+                  >
+                    Order Tracking
+                  </Link>
 
                   <Link
                     href="/wishlist"
@@ -335,7 +342,7 @@ export default function Navbar() {
 
       {/* Mobile menu */}
       {isMenuOpen && (
-        <div className="mobile-menu-container md:hidden bg-white fixed top-16 left-0 w-full h-screen z-50 overflow-auto pb-20">
+        <div className="mobile-menu-container md:hidden bg-white fixed top-14 sm:top-16 left-0 w-full h-screen z-50 overflow-auto pb-24">
           <div className="divide-y divide-gray-200">
             <div className="space-y-1 px-4 py-4">
               <Link
@@ -400,6 +407,13 @@ export default function Navbar() {
                     onClick={() => setIsMenuOpen(false)}
                   >
                     Your Account
+                  </Link>
+                  <Link
+                    href="/track-order"
+                    className="block rounded-md px-3 py-2 text-base font-medium text-gray-900 hover:bg-gray-100"
+                    onClick={() => setIsMenuOpen(false)}
+                  >
+                    Order Tracking
                   </Link>
                   <Link
                     href="/wishlist"

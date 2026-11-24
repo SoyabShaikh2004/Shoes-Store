@@ -4,6 +4,8 @@ import Link from 'next/link';
 import { getProducts, getCategories } from '@/lib/data';
 import ProductCard from '@/components/ProductCard';
 
+export const dynamic = 'force-dynamic';
+
 export const metadata: Metadata = {
   title: 'All Products | StepStyle',
   description: 'Browse our collection of premium shoes',

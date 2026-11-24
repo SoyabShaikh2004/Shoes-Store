@@ -1,9 +1,11 @@
 'use client';
 
-import { useState, useEffect, useCallback, Suspense } from 'react';
+import { useState, useEffect, useCallback, useRef, Suspense } from 'react';
 import { useSearchParams, useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { Product } from '@/lib/data';
+import type { AdminNotificationRecord } from '@/lib/db/schema';
+import { formatDateTimeIN } from '@/lib/orderTypes';
 import CatalogStats from '@/components/admin/CatalogStats';
 import ProductList from '@/components/admin/ProductList';
 import ProductForm from '@/components/admin/ProductForm';
@@ -47,6 +49,9 @@ import {
   LogOut,
   Menu,
   X,
+  Bell,
+  CheckCheck,
+  ArrowRight,
 } from 'lucide-react';
 
 type AdminNavTab =
@@ -91,9 +96,16 @@ function AdminContent() {
   const [products, setProducts] = useState<Product[]>([]);
   const [categories, setCategories] = useState<string[]>([]);
   const [overviewData, setOverviewData] = useState<OverviewPayload | null>(null);
+  const [adminNotifications, setAdminNotifications] = useState<AdminNotificationRecord[]>([]);
+  const [unreadNotificationsCount, setUnreadNotificationsCount] = useState(0);
+  const [notifDropdownOpen, setNotifDropdownOpen] = useState(false);
+  const [pendingInspectOrderNumber, setPendingInspectOrderNumber] = useState<string | null>(null);
   const [activeTab, setActiveTab] = useState<AdminNavTab>('overview');
   const [editingProduct, setEditingProduct] = useState<Product | null>(null);
   const [mobileSidebarOpen, setMobileSidebarOpen] = useState(false);
+
+  const seenNotifIdsRef = useRef<Set<string> | null>(null);
+  const notifDropdownRef = useRef<HTMLDivElement | null>(null);
 
   const loadDashboardData = useCallback(async (showToast = false) => {
     try {
@@ -121,6 +133,14 @@ function AdminContent() {
         const ovJson = await ovRes.json();
         if (ovJson.success) {
           setOverviewData(ovJson);
+          if (Array.isArray(ovJson.adminNotifications)) {
+            const list = ovJson.adminNotifications as AdminNotificationRecord[];
+            setAdminNotifications(list);
+            setUnreadNotificationsCount(Number(ovJson.unreadNotificationsCount) || 0);
+            if (seenNotifIdsRef.current === null) {
+              seenNotifIdsRef.current = new Set(list.map((n) => n.id));
+            }
+          }
         }
       }
 
@@ -131,6 +151,81 @@ function AdminContent() {
       toast.error('Could not load dashboard data');
     }
   }, []);
+
+  const fetchAdminNotifications = useCallback(async () => {
+    try {
+      const res = await fetch('/api/admin/notifications', {
+        credentials: 'include',
+        headers: getAdminAuthHeaders(),
+        cache: 'no-store',
+      });
+      if (!res.ok) return;
+      const data = await res.json();
+      if (!data?.success || !Array.isArray(data.notifications)) return;
+
+      const list = data.notifications as AdminNotificationRecord[];
+      const count = Number(data.unreadCount) || 0;
+
+      if (seenNotifIdsRef.current === null) {
+        seenNotifIdsRef.current = new Set(list.map((n) => n.id));
+      } else {
+        const newUnread = list.filter(
+          (n) => !n.isRead && !seenNotifIdsRef.current!.has(n.id)
+        );
+        for (const n of list) {
+          seenNotifIdsRef.current.add(n.id);
+        }
+        if (newUnread.length > 0) {
+          toast.success(
+            newUnread.length === 1
+              ? newUnread[0].message
+              : `${newUnread.length} new customer order notifications received!`
+          );
+          void loadDashboardData();
+        }
+      }
+
+      setAdminNotifications(list);
+      setUnreadNotificationsCount(count);
+    } catch {
+      // silent background polling failure
+    }
+  }, [loadDashboardData]);
+
+  const handleMarkNotificationsRead = useCallback(
+    async (params: { id?: string; orderNumber?: string; all?: boolean }) => {
+      try {
+        const res = await fetch('/api/admin/notifications', {
+          method: 'PATCH',
+          credentials: 'include',
+          headers: getAdminAuthHeaders({ 'Content-Type': 'application/json' }),
+          body: JSON.stringify({
+            action: 'mark_read',
+            ...params,
+          }),
+        });
+        const data = await res.json();
+        if (res.ok && data?.success) {
+          setAdminNotifications(data.notifications || []);
+          setUnreadNotificationsCount(Number(data.unreadCount) || 0);
+        }
+      } catch {
+        // ignore mark-read error
+      }
+    },
+    []
+  );
+
+  const handleInspectOrderFromNotification = (notif: AdminNotificationRecord) => {
+    setNotifDropdownOpen(false);
+    setMobileSidebarOpen(false);
+    setEditingProduct(null);
+    setPendingInspectOrderNumber(notif.orderNumber);
+    setActiveTab('orders');
+    if (!notif.isRead) {
+      void handleMarkNotificationsRead({ orderNumber: notif.orderNumber });
+    }
+  };
 
   useEffect(() => {
     const verify = async () => {
@@ -145,9 +240,45 @@ function AdminContent() {
 
   useEffect(() => {
     if (currentAdmin) {
-      loadDashboardData();
+      void loadDashboardData();
     }
   }, [currentAdmin, loadDashboardData]);
+
+  useEffect(() => {
+    if (!currentAdmin) return;
+
+    const timer = setInterval(() => {
+      if (document.visibilityState === 'visible') {
+        void fetchAdminNotifications();
+      }
+    }, 5000);
+
+    const handleVisibility = () => {
+      if (document.visibilityState === 'visible') {
+        void fetchAdminNotifications();
+      }
+    };
+
+    document.addEventListener('visibilitychange', handleVisibility);
+    return () => {
+      clearInterval(timer);
+      document.removeEventListener('visibilitychange', handleVisibility);
+    };
+  }, [currentAdmin, fetchAdminNotifications]);
+
+  useEffect(() => {
+    if (!notifDropdownOpen) return;
+    const handleClickOutside = (e: MouseEvent) => {
+      if (
+        notifDropdownRef.current &&
+        !notifDropdownRef.current.contains(e.target as Node)
+      ) {
+        setNotifDropdownOpen(false);
+      }
+    };
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, [notifDropdownOpen]);
 
   useEffect(() => {
     const editId = searchParams.get('edit');
@@ -246,9 +377,18 @@ function AdminContent() {
                   <Icon className="w-4 h-4 shrink-0" />
                   <span>{item.label}</span>
                 </span>
-                {item.id === 'orders' && overviewData && (
-                  <span className="tabular-nums text-[11px] opacity-80">
-                    {overviewData.overview.totalOrders}
+                {item.id === 'orders' && (
+                  <span className="flex items-center gap-1.5">
+                    {unreadNotificationsCount > 0 && (
+                      <span className="px-1.5 py-0.5 rounded-md bg-rose-500 text-white text-[10px] font-bold tabular-nums leading-none">
+                        {unreadNotificationsCount > 99 ? '99+' : unreadNotificationsCount} new
+                      </span>
+                    )}
+                    {overviewData && (
+                      <span className="tabular-nums text-[11px] opacity-80">
+                        {overviewData.overview.totalOrders}
+                      </span>
+                    )}
                   </span>
                 )}
                 {item.id === 'products' && (
@@ -334,9 +474,18 @@ function AdminContent() {
                       <Icon className="w-4 h-4 shrink-0" />
                       <span>{item.label}</span>
                     </span>
-                    {item.id === 'orders' && overviewData && (
-                      <span className="tabular-nums text-[11px] opacity-80">
-                        {overviewData.overview.totalOrders}
+                    {item.id === 'orders' && (
+                      <span className="flex items-center gap-1.5">
+                        {unreadNotificationsCount > 0 && (
+                          <span className="px-1.5 py-0.5 rounded-md bg-rose-500 text-white text-[10px] font-bold tabular-nums leading-none">
+                            {unreadNotificationsCount > 99 ? '99+' : unreadNotificationsCount} new
+                          </span>
+                        )}
+                        {overviewData && (
+                          <span className="tabular-nums text-[11px] opacity-80">
+                            {overviewData.overview.totalOrders}
+                          </span>
+                        )}
                       </span>
                     )}
                     {item.id === 'products' && (
@@ -396,9 +545,121 @@ function AdminContent() {
           </div>
 
           <div className="flex items-center gap-2 shrink-0">
+            {/* Admin Order Notifications Bell */}
+            <div className="relative" ref={notifDropdownRef}>
+              <button
+                type="button"
+                onClick={() => setNotifDropdownOpen((prev) => !prev)}
+                aria-label={`Order notifications (${unreadNotificationsCount} unread)`}
+                className={`relative min-w-[44px] min-h-[44px] inline-flex items-center justify-center rounded-lg border transition-colors cursor-pointer ${
+                  unreadNotificationsCount > 0
+                    ? 'border-indigo-200 bg-indigo-50 text-indigo-700 hover:bg-indigo-100'
+                    : 'border-slate-200 hover:bg-slate-50 text-slate-600'
+                }`}
+              >
+                <Bell className="w-4 h-4" />
+                {unreadNotificationsCount > 0 && (
+                  <span className="absolute -top-1.5 -right-1.5 min-w-[20px] h-5 px-1 rounded-md bg-rose-600 text-white text-[10px] font-bold flex items-center justify-center tabular-nums shadow-xs">
+                    {unreadNotificationsCount > 99 ? '99+' : unreadNotificationsCount}
+                  </span>
+                )}
+              </button>
+
+              {notifDropdownOpen && (
+                <div className="absolute right-0 mt-2 w-[calc(100vw-2rem)] sm:w-96 max-w-sm bg-white rounded-xl border border-slate-200 shadow-xl z-50 overflow-hidden">
+                  <div className="px-4 py-3 bg-slate-50 border-b border-slate-200 flex items-center justify-between gap-2">
+                    <div className="flex items-center gap-2">
+                      <span className="text-xs font-bold text-slate-900">Order Notifications</span>
+                      {unreadNotificationsCount > 0 && (
+                        <span className="px-1.5 py-0.5 rounded-md bg-rose-100 text-rose-700 text-[10px] font-bold tabular-nums">
+                          {unreadNotificationsCount} new
+                        </span>
+                      )}
+                    </div>
+                    {unreadNotificationsCount > 0 && (
+                      <button
+                        type="button"
+                        onClick={() => void handleMarkNotificationsRead({ all: true })}
+                        className="text-[11px] font-semibold text-indigo-600 hover:text-indigo-800 inline-flex items-center gap-1 cursor-pointer py-1 px-1.5 rounded"
+                      >
+                        <CheckCheck className="w-3.5 h-3.5" />
+                        <span>Mark all read</span>
+                      </button>
+                    )}
+                  </div>
+
+                  <div className="max-h-80 overflow-y-auto divide-y divide-slate-100">
+                    {adminNotifications.length === 0 ? (
+                      <div className="p-6 text-center text-xs text-slate-500">
+                        No order notifications yet. New customer orders will appear here live.
+                      </div>
+                    ) : (
+                      adminNotifications.slice(0, 12).map((notif) => (
+                        <button
+                          key={notif.id}
+                          type="button"
+                          onClick={() => handleInspectOrderFromNotification(notif)}
+                          className={`w-full text-left px-4 py-3 hover:bg-slate-50 transition-colors cursor-pointer flex items-start justify-between gap-3 ${
+                            notif.isRead ? 'opacity-70' : 'bg-indigo-50/40'
+                          }`}
+                        >
+                          <div className="min-w-0 flex-1">
+                            <div className="flex items-center gap-1.5 mb-0.5">
+                              {!notif.isRead && (
+                                <span className="w-2 h-2 rounded-full bg-indigo-600 shrink-0" />
+                              )}
+                              <span className="font-mono text-xs font-bold text-slate-900 truncate">
+                                {notif.orderNumber}
+                              </span>
+                              <span
+                                className={`px-1.5 py-0.5 rounded text-[10px] font-semibold ${
+                                  notif.type === 'return_requested'
+                                    ? 'bg-amber-100 text-amber-800'
+                                    : 'bg-emerald-100 text-emerald-800'
+                                }`}
+                              >
+                                {notif.type === 'return_requested' ? 'Return' : 'New Order'}
+                              </span>
+                            </div>
+                            <p className="text-xs font-medium text-slate-800 truncate">
+                              {notif.customerName} · {notif.itemCount}{' '}
+                              {notif.itemCount === 1 ? 'pair' : 'pairs'}
+                            </p>
+                            <p className="text-[11px] text-slate-500 tabular-nums mt-0.5">
+                              ₹{notif.totalAmount.toLocaleString('en-IN')} · {notif.paymentMethod} ·{' '}
+                              {formatDateTimeIN(notif.createdAt)}
+                            </p>
+                          </div>
+                          <ArrowRight className="w-4 h-4 text-slate-400 shrink-0 mt-1" />
+                        </button>
+                      ))
+                    )}
+                  </div>
+
+                  <div className="px-4 py-2.5 bg-slate-50 border-t border-slate-200">
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setNotifDropdownOpen(false);
+                        setEditingProduct(null);
+                        setActiveTab('orders');
+                      }}
+                      className="w-full min-h-[40px] rounded-lg bg-slate-900 hover:bg-indigo-600 text-white text-xs font-semibold flex items-center justify-center gap-1.5 cursor-pointer transition-colors"
+                    >
+                      <span>Open Orders Section</span>
+                      <ArrowRight className="w-3.5 h-3.5" />
+                    </button>
+                  </div>
+                </div>
+              )}
+            </div>
+
             <button
               type="button"
-              onClick={() => loadDashboardData(true)}
+              onClick={() => {
+                void loadDashboardData(true);
+                void fetchAdminNotifications();
+              }}
               title="Refresh data"
               aria-label="Refresh dashboard data"
               className="min-w-[44px] min-h-[44px] inline-flex items-center justify-center rounded-lg border border-slate-200 hover:bg-slate-50 text-slate-600 cursor-pointer"
@@ -441,7 +702,20 @@ function AdminContent() {
           )}
 
           {activeTab === 'orders' && (
-            <AdminOrdersManager onOrdersUpdated={() => loadDashboardData()} />
+            <AdminOrdersManager
+              notifications={adminNotifications}
+              unreadCount={unreadNotificationsCount}
+              pendingOrderNumber={pendingInspectOrderNumber}
+              onClearPendingOrder={() => setPendingInspectOrderNumber(null)}
+              onNotificationsSync={(list, count) => {
+                setAdminNotifications(list);
+                setUnreadNotificationsCount(count);
+              }}
+              onOrdersUpdated={() => {
+                void loadDashboardData();
+                void fetchAdminNotifications();
+              }}
+            />
           )}
 
           {activeTab === 'products' && (

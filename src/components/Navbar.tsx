@@ -40,7 +40,7 @@ export default function Navbar() {
 
   // Check authentication status on initial load and when it changes
   useEffect(() => {
-    const checkAuth = () => {
+    const checkAuth = async () => {
       const authStatus = localStorage.getItem('isAuthenticated') === 'true';
       setIsAuthenticated(authStatus);
       
@@ -50,11 +50,29 @@ export default function Navbar() {
           try {
             const parsedData = JSON.parse(userDataString);
             setAuthUser(parsedData);
-          } catch (error) {
-            // Remove console.error for production
-            // console.error('Error parsing auth user data:', error);
+          } catch {
+            // ignore invalid stored JSON
           }
         }
+        return;
+      }
+
+      try {
+        const res = await fetch('/api/auth/google/session', {
+          credentials: 'include',
+          cache: 'no-store',
+        });
+        if (res.ok) {
+          const data = await res.json();
+          if (data.authenticated && data.user) {
+            localStorage.setItem('isAuthenticated', 'true');
+            localStorage.setItem('authUser', JSON.stringify(data.user));
+            setIsAuthenticated(true);
+            setAuthUser(data.user);
+          }
+        }
+      } catch {
+        // ignore network errors
       }
     };
     
@@ -106,16 +124,23 @@ export default function Navbar() {
   }, []);
 
   const handleLogout = () => {
-    // Clear auth data
     localStorage.removeItem('isAuthenticated');
     localStorage.removeItem('authUser');
-    
-    // Update state
+
+    fetch('/api/auth/google/session', {
+      method: 'POST',
+      credentials: 'include',
+      headers: {
+        'Content-Type': 'application/json',
+        'X-Requested-With': 'XMLHttpRequest',
+      },
+      body: JSON.stringify({ action: 'logout' }),
+    }).catch(() => {});
+
     setIsAuthenticated(false);
     setAuthUser(null);
     setShowUserMenu(false);
-    
-    // Dispatch custom event
+
     window.dispatchEvent(new Event('authUpdated'));
   };
 
@@ -216,9 +241,22 @@ export default function Navbar() {
                   className="mr-0.5 sm:mr-1.5 md:mr-2 min-w-[44px] min-h-[44px] flex items-center justify-center rounded-full p-2 text-gray-900 transition-colors hover:bg-gray-100 relative cursor-pointer"
                   aria-label="User profile"
                 >
-                  <div className="h-8 w-8 rounded-full bg-indigo-600 text-white flex items-center justify-center text-sm font-semibold shadow-xs">
-                    {authUser?.email?.charAt(0).toUpperCase() || 'U'}
-                  </div>
+                  {authUser?.picture ? (
+                    <Image
+                      src={authUser.picture}
+                      alt={authUser?.name || 'Profile'}
+                      width={32}
+                      height={32}
+                      referrerPolicy="no-referrer"
+                      className="h-8 w-8 rounded-full object-cover shadow-xs border border-slate-200"
+                    />
+                  ) : (
+                    <div className="h-8 w-8 rounded-full bg-indigo-600 text-white flex items-center justify-center text-sm font-semibold shadow-xs">
+                      {authUser?.name?.charAt(0).toUpperCase() ||
+                        authUser?.email?.charAt(0).toUpperCase() ||
+                        'U'}
+                    </div>
+                  )}
                 </button>
               ) : (
                 <Link

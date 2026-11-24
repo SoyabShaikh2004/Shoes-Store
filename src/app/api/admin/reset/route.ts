@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
+import { revalidatePath } from 'next/cache';
 import { resetProductsToDefault } from '@/lib/data';
 import { requireAdmin } from '@/lib/server/adminSession';
 
@@ -12,6 +13,11 @@ export async function POST(req: NextRequest) {
 
   try {
     const products = await resetProductsToDefault();
+
+    revalidatePath('/');
+    revalidatePath('/products');
+    revalidatePath('/products/[id]', 'page');
+
     return NextResponse.json({
       success: true,
       message: 'Catalog reset to default template successfully',

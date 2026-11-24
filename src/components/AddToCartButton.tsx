@@ -28,6 +28,9 @@ export default function AddToCartButton({
   const [isAdding, setIsAdding] = useState(false);
   const [isAdded, setIsAdded] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const isAvailable = Boolean(
+    product.inStock && product.status !== 'inactive' && (product.stockQuantity ?? 1) > 0
+  );
 
   const addToCart = () => {
     // Reset error state
@@ -90,16 +93,16 @@ export default function AddToCartButton({
     <div className="w-full">
       <button
         onClick={addToCart}
-        disabled={isAdding || !product.inStock}
+        disabled={isAdding || !isAvailable}
         className={`flex w-full items-center justify-center rounded-xl px-6 py-3 min-h-[48px] text-sm sm:text-base font-bold shadow-sm transition-all duration-150 active:scale-[0.99] cursor-pointer focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2 ${
-          !product.inStock
+          !isAvailable
             ? 'cursor-not-allowed bg-gray-200 text-gray-400'
             : isAdded
               ? 'bg-emerald-600 text-white hover:bg-emerald-700 shadow-emerald-600/20'
               : 'bg-indigo-600 text-white hover:bg-indigo-700 shadow-indigo-600/20'
         }`}
       >
-        {!product.inStock
+        {!isAvailable
           ? 'Out of Stock'
           : isAdded
             ? 'Added to Cart ✓'

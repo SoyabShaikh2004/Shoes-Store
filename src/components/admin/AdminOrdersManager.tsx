@@ -18,12 +18,15 @@ import {
   XCircle,
   RotateCcw,
   Bell,
+  BellRing,
+  CheckCheck,
   ChevronLeft,
   ChevronRight,
 } from 'lucide-react';
 import { getAdminAuthHeaders } from '@/lib/adminAuth';
 import { generateTaxInvoicePDF } from '@/lib/invoiceGenerator';
 import { ALL_ORDER_STATUSES, OrderStatus, formatDateTimeIN } from '@/lib/orderTypes';
+import type { AdminNotificationRecord } from '@/lib/db/schema';
 import type { FullOrderView } from '@/lib/db/store';
 
 interface OrdersOverview {
@@ -39,6 +42,11 @@ interface OrdersOverview {
 }
 
 interface AdminOrdersManagerProps {
+  notifications?: AdminNotificationRecord[];
+  unreadCount?: number;
+  pendingOrderNumber?: string | null;
+  onClearPendingOrder?: () => void;
+  onNotificationsSync?: (notifications: AdminNotificationRecord[], unreadCount: number) => void;
   onOrdersUpdated?: () => void;
 }
 
@@ -61,9 +69,19 @@ function statusBadgeStyle(status: OrderStatus): string {
   return 'bg-indigo-50 text-indigo-700 border-indigo-200';
 }
 
-export default function AdminOrdersManager({ onOrdersUpdated }: AdminOrdersManagerProps) {
+export default function AdminOrdersManager({
+  notifications,
+  unreadCount,
+  pendingOrderNumber,
+  onClearPendingOrder,
+  onNotificationsSync,
+  onOrdersUpdated,
+}: AdminOrdersManagerProps) {
   const [orders, setOrders] = useState<FullOrderView[]>([]);
   const [overview, setOverview] = useState<OrdersOverview | null>(null);
+  const [localNotifications, setLocalNotifications] = useState<AdminNotificationRecord[]>([]);
+  const [localUnreadCount, setLocalUnreadCount] = useState(0);
+  const [showReadNotifications, setShowReadNotifications] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
 
   // Filters
@@ -89,58 +107,174 @@ export default function AdminOrdersManager({ onOrdersUpdated }: AdminOrdersManag
   const [newAdminNote, setNewAdminNote] = useState('');
   const [isAddingNote, setIsAddingNote] = useState(false);
 
-  const fetchOrders = useCallback(async () => {
-    setIsLoading(true);
-    try {
-      const params = new URLSearchParams();
-      if (search.trim()) params.set('search', search.trim());
-      if (statusFilter !== 'All') params.set('status', statusFilter);
-      if (paymentFilter !== 'All') params.set('paymentStatus', paymentFilter);
-      if (dateFrom) params.set('dateFrom', dateFrom);
-      if (dateTo) params.set('dateTo', dateTo);
-      params.set('sort', sortBy);
+  const activeNotifications = notifications ?? localNotifications;
+  const activeUnreadCount = unreadCount ?? localUnreadCount;
+  const unreadNotifs = activeNotifications.filter((n) => !n.isRead);
 
-      const res = await fetch(`/api/admin/orders?${params.toString()}`, {
-        credentials: 'include',
-        headers: getAdminAuthHeaders(),
-        cache: 'no-store',
-      });
-      const data = await res.json();
-      if (!res.ok || !data.success) {
-        throw new Error(data.error || 'Failed to fetch orders');
+  const markNotificationsRead = useCallback(
+    async (params: { id?: string; orderNumber?: string; all?: boolean }) => {
+      try {
+        const res = await fetch('/api/admin/notifications', {
+          method: 'PATCH',
+          credentials: 'include',
+          headers: getAdminAuthHeaders({ 'Content-Type': 'application/json' }),
+          body: JSON.stringify({
+            action: 'mark_read',
+            ...params,
+          }),
+        });
+        const data = await res.json();
+        if (res.ok && data?.success) {
+          const nextList: AdminNotificationRecord[] = data.notifications || [];
+          const nextUnread = Number(data.unreadCount) || 0;
+          setLocalNotifications(nextList);
+          setLocalUnreadCount(nextUnread);
+          onNotificationsSync?.(nextList, nextUnread);
+        }
+      } catch {
+        // ignore mark read failure
       }
+    },
+    [onNotificationsSync]
+  );
 
-      setOrders(data.orders || []);
-      setOverview(data.overview || null);
-      setPage(1);
+  const fetchOrders = useCallback(
+    async (silent = false) => {
+      if (!silent) setIsLoading(true);
+      try {
+        const params = new URLSearchParams();
+        if (search.trim()) params.set('search', search.trim());
+        if (statusFilter !== 'All') params.set('status', statusFilter);
+        if (paymentFilter !== 'All') params.set('paymentStatus', paymentFilter);
+        if (dateFrom) params.set('dateFrom', dateFrom);
+        if (dateTo) params.set('dateTo', dateTo);
+        params.set('sort', sortBy);
 
-      if (selectedOrder) {
-        const refreshed = (data.orders || []).find(
-          (o: FullOrderView) => o.order.orderNumber === selectedOrder.order.orderNumber
-        );
-        if (refreshed) setSelectedOrder(refreshed);
+        const res = await fetch(`/api/admin/orders?${params.toString()}`, {
+          credentials: 'include',
+          headers: getAdminAuthHeaders(),
+          cache: 'no-store',
+        });
+        const data = await res.json();
+        if (!res.ok || !data.success) {
+          throw new Error(data.error || 'Failed to fetch orders');
+        }
+
+        setOrders(data.orders || []);
+        setOverview(data.overview || null);
+        if (!silent) setPage(1);
+
+        if (Array.isArray(data.adminNotifications)) {
+          setLocalNotifications(data.adminNotifications);
+          setLocalUnreadCount(Number(data.unreadNotificationsCount) || 0);
+          onNotificationsSync?.(
+            data.adminNotifications,
+            Number(data.unreadNotificationsCount) || 0
+          );
+        }
+
+        if (selectedOrder) {
+          const refreshed = (data.orders || []).find(
+            (o: FullOrderView) => o.order.orderNumber === selectedOrder.order.orderNumber
+          );
+          if (refreshed) setSelectedOrder(refreshed);
+        }
+      } catch (err: unknown) {
+        if (!silent) {
+          toast.error(err instanceof Error ? err.message : 'Failed to load orders');
+        }
+      } finally {
+        if (!silent) setIsLoading(false);
       }
-    } catch (err: unknown) {
-      toast.error(err instanceof Error ? err.message : 'Failed to load orders');
-    } finally {
-      setIsLoading(false);
-    }
-  }, [search, statusFilter, paymentFilter, dateFrom, dateTo, sortBy, selectedOrder?.order.orderNumber]);
+    },
+    [
+      search,
+      statusFilter,
+      paymentFilter,
+      dateFrom,
+      dateTo,
+      sortBy,
+      selectedOrder?.order.orderNumber,
+      onNotificationsSync,
+    ]
+  );
 
   useEffect(() => {
-    fetchOrders();
+    void fetchOrders(false);
   }, [fetchOrders]);
 
-  const openOrderModal = (view: FullOrderView) => {
-    setSelectedOrder(view);
-    setNextStatus(view.order.status);
-    setCarrierInput(view.shipping?.carrier || 'BlueDart Express');
-    setTrackingInput(view.shipping?.trackingNumber || '');
-    setEstDeliveryInput(view.shipping?.estimatedDelivery || view.order.estimatedDelivery || '');
-    setStatusNoteInput('');
-    setCancelReasonInput(view.order.cancelReason || '');
-    setNewAdminNote('');
-  };
+  // Silent background refresh when new unread order alerts arrive or every 8s
+  useEffect(() => {
+    if (activeUnreadCount > 0) {
+      void fetchOrders(true);
+    }
+  }, [activeUnreadCount, fetchOrders]);
+
+  useEffect(() => {
+    const timer = setInterval(() => {
+      if (document.visibilityState === 'visible') {
+        void fetchOrders(true);
+      }
+    }, 8000);
+    return () => clearInterval(timer);
+  }, [fetchOrders]);
+
+  const openOrderModal = useCallback(
+    (view: FullOrderView) => {
+      setSelectedOrder(view);
+      setNextStatus(view.order.status);
+      setCarrierInput(view.shipping?.carrier || 'BlueDart Express');
+      setTrackingInput(view.shipping?.trackingNumber || '');
+      setEstDeliveryInput(view.shipping?.estimatedDelivery || view.order.estimatedDelivery || '');
+      setStatusNoteInput('');
+      setCancelReasonInput(view.order.cancelReason || '');
+      setNewAdminNote('');
+
+      const hasUnreadForOrder = activeNotifications.some(
+        (n) => !n.isRead && n.orderNumber === view.order.orderNumber
+      );
+      if (hasUnreadForOrder) {
+        void markNotificationsRead({ orderNumber: view.order.orderNumber });
+      }
+    },
+    [activeNotifications, markNotificationsRead]
+  );
+
+  const handleOpenOrderByNumber = useCallback(
+    async (orderNumber: string) => {
+      const existing = orders.find(
+        (v) => v.order.orderNumber.toUpperCase() === orderNumber.toUpperCase()
+      );
+      if (existing) {
+        openOrderModal(existing);
+        return;
+      }
+
+      try {
+        const res = await fetch(
+          `/api/admin/orders?orderNumber=${encodeURIComponent(orderNumber)}`,
+          {
+            credentials: 'include',
+            headers: getAdminAuthHeaders(),
+            cache: 'no-store',
+          }
+        );
+        const data = await res.json();
+        if (res.ok && data?.success && data.order) {
+          openOrderModal(data.order as FullOrderView);
+        }
+      } catch {
+        toast.error(`Could not load order ${orderNumber}`);
+      }
+    },
+    [orders, openOrderModal]
+  );
+
+  useEffect(() => {
+    if (!pendingOrderNumber) return;
+    void handleOpenOrderByNumber(pendingOrderNumber);
+    onClearPendingOrder?.();
+  }, [pendingOrderNumber, handleOpenOrderByNumber, onClearPendingOrder]);
 
   const handleUpdateOrderStatus = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -252,6 +386,155 @@ export default function AdminOrdersManager({ onOrdersUpdated }: AdminOrdersManag
 
   return (
     <div className="space-y-6">
+      {/* Live Order Notifications Alert Panel inside Admin Orders Section */}
+      {unreadNotifs.length > 0 ? (
+        <div className="rounded-xl border border-indigo-200 bg-indigo-50/70 p-4 sm:p-5 space-y-3">
+          <div className="flex flex-wrap items-center justify-between gap-2">
+            <div className="flex items-center gap-2.5">
+              <div className="w-9 h-9 rounded-lg bg-indigo-600 text-white flex items-center justify-center shrink-0">
+                <BellRing className="w-4 h-4" />
+              </div>
+              <div>
+                <div className="flex items-center gap-2">
+                  <h2 className="text-sm sm:text-base font-bold text-slate-900">
+                    New Order Notifications
+                  </h2>
+                  <span className="px-2 py-0.5 rounded-md bg-rose-600 text-white text-[11px] font-bold tabular-nums">
+                    {unreadNotifs.length} unread
+                  </span>
+                </div>
+                <p className="text-xs text-slate-600">
+                  Live incoming orders and customer return requests ready for fulfillment.
+                </p>
+              </div>
+            </div>
+
+            <button
+              type="button"
+              onClick={() => void markNotificationsRead({ all: true })}
+              className="min-h-[44px] px-3.5 py-2 rounded-lg border border-indigo-200 bg-white hover:bg-indigo-100 text-indigo-700 text-xs font-semibold inline-flex items-center gap-1.5 cursor-pointer"
+            >
+              <CheckCheck className="w-4 h-4" />
+              <span>Mark All Read</span>
+            </button>
+          </div>
+
+          <div className="divide-y divide-indigo-100 rounded-xl border border-indigo-200/80 bg-white overflow-hidden">
+            {unreadNotifs.slice(0, 6).map((notif) => (
+              <div
+                key={notif.id}
+                className="p-3.5 sm:px-4 flex flex-col sm:flex-row sm:items-center justify-between gap-3"
+              >
+                <div className="min-w-0 space-y-1">
+                  <div className="flex flex-wrap items-center gap-2">
+                    <span
+                      className={`px-2 py-0.5 rounded-md text-[11px] font-bold ${
+                        notif.type === 'return_requested'
+                          ? 'bg-amber-100 text-amber-800'
+                          : 'bg-emerald-100 text-emerald-800'
+                      }`}
+                    >
+                      {notif.type === 'return_requested' ? 'Return Requested' : 'New Order'}
+                    </span>
+                    <span className="font-mono text-xs sm:text-sm font-bold text-slate-900">
+                      {notif.orderNumber}
+                    </span>
+                    <span className="text-xs text-slate-500 tabular-nums">
+                      {formatDateTimeIN(notif.createdAt)}
+                    </span>
+                  </div>
+                  <p className="text-xs sm:text-sm font-semibold text-slate-800">
+                    {notif.customerName}{' '}
+                    <span className="font-normal text-slate-500 font-mono">
+                      ({notif.customerPhone})
+                    </span>{' '}
+                    · {notif.itemCount} {notif.itemCount === 1 ? 'pair' : 'pairs'} (
+                    {notif.primaryItemName})
+                  </p>
+                  <p className="text-xs text-slate-600 tabular-nums">
+                    Total:{' '}
+                    <strong className="text-slate-900 font-mono">
+                      ₹{notif.totalAmount.toLocaleString('en-IN')}
+                    </strong>{' '}
+                    · {notif.paymentMethod} ({notif.paymentStatus})
+                  </p>
+                </div>
+
+                <div className="flex flex-wrap items-center gap-2 shrink-0">
+                  <button
+                    type="button"
+                    onClick={() => void handleOpenOrderByNumber(notif.orderNumber)}
+                    className="min-h-[44px] px-3.5 py-2 rounded-lg bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-semibold inline-flex items-center gap-1.5 cursor-pointer"
+                  >
+                    <Eye className="w-3.5 h-3.5" />
+                    <span>View &amp; Manage Order</span>
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => void markNotificationsRead({ id: notif.id })}
+                    className="min-h-[44px] px-3 py-2 rounded-lg border border-slate-200 hover:bg-slate-50 text-slate-700 text-xs font-semibold cursor-pointer"
+                  >
+                    Mark Read
+                  </button>
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+      ) : (
+        <div className="rounded-xl border border-slate-200 bg-white px-4 py-3 space-y-3">
+          <div className="flex flex-wrap items-center justify-between gap-2">
+            <div className="flex items-center gap-2.5 text-xs sm:text-sm text-slate-700">
+              <Bell className="w-4 h-4 text-slate-400 shrink-0" />
+              <span className="font-semibold text-slate-900">Order Notifications:</span>
+              <span className="text-slate-500">All caught up — no unread order alerts.</span>
+            </div>
+            {activeNotifications.length > 0 && (
+              <button
+                type="button"
+                onClick={() => setShowReadNotifications((prev) => !prev)}
+                className="min-h-[44px] px-3 rounded-lg border border-slate-200 hover:bg-slate-50 text-xs font-semibold text-slate-700 cursor-pointer"
+              >
+                {showReadNotifications
+                  ? 'Hide Recent Alerts'
+                  : `Recent Alerts (${activeNotifications.length})`}
+              </button>
+            )}
+          </div>
+
+          {showReadNotifications && activeNotifications.length > 0 && (
+            <div className="divide-y divide-slate-100 border-t border-slate-100 pt-2">
+              {activeNotifications.slice(0, 6).map((notif) => (
+                <div
+                  key={notif.id}
+                  className="py-2.5 flex flex-col sm:flex-row sm:items-center justify-between gap-2 text-xs"
+                >
+                  <div className="min-w-0">
+                    <span className="font-mono font-bold text-slate-900 mr-2">
+                      {notif.orderNumber}
+                    </span>
+                    <span className="text-slate-700">
+                      {notif.customerName} · ₹{notif.totalAmount.toLocaleString('en-IN')} ·{' '}
+                      {notif.paymentMethod}
+                    </span>
+                    <span className="text-slate-400 ml-2 tabular-nums">
+                      {formatDateTimeIN(notif.createdAt)}
+                    </span>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={() => void handleOpenOrderByNumber(notif.orderNumber)}
+                    className="min-h-[40px] px-3 py-1.5 rounded-lg bg-slate-100 hover:bg-slate-200 text-slate-800 font-semibold cursor-pointer self-start sm:self-auto"
+                  >
+                    Open Order
+                  </button>
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
+      )}
+
       {/* 8 Overview KPIs */}
       {overview && (
         <div className="grid grid-cols-2 md:grid-cols-4 gap-3 sm:gap-4">
@@ -317,7 +600,7 @@ export default function AdminOrdersManager({ onOrdersUpdated }: AdminOrdersManag
           <div className="flex flex-wrap items-center gap-2">
             <button
               type="button"
-              onClick={fetchOrders}
+              onClick={() => void fetchOrders(false)}
               className="min-h-[44px] px-3 py-2 rounded-lg border border-slate-200 hover:bg-slate-50 text-xs font-semibold text-slate-700 inline-flex items-center gap-1.5 cursor-pointer"
             >
               <RefreshCw className={`w-3.5 h-3.5 ${isLoading ? 'animate-spin' : ''}`} />

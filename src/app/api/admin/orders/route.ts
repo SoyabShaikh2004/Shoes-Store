@@ -1,7 +1,9 @@
 import { NextRequest, NextResponse } from 'next/server';
+import { revalidatePath } from 'next/cache';
 import * as XLSX from 'xlsx';
 import {
   addAdminNoteTransactional,
+  getAdminNotificationsFromDb,
   getAllOrdersAdmin,
   getFullOrderByNumber,
   updateOrderStatusTransactional,
@@ -56,14 +58,17 @@ export async function GET(req: NextRequest) {
       | 'amountAsc';
     const exportType = searchParams.get('export');
 
-    const { orders, overview } = await getAllOrdersAdmin({
-      search,
-      status,
-      paymentStatus,
-      dateFrom,
-      dateTo,
-      sort,
-    });
+    const [{ orders, overview }, adminNotifData] = await Promise.all([
+      getAllOrdersAdmin({
+        search,
+        status,
+        paymentStatus,
+        dateFrom,
+        dateTo,
+        sort,
+      }),
+      getAdminNotificationsFromDb(50),
+    ]);
 
     if (exportType === 'csv' || exportType === 'xlsx') {
       const rows = orders.map((v) => ({
@@ -137,6 +142,8 @@ export async function GET(req: NextRequest) {
       success: true,
       overview,
       orders,
+      adminNotifications: adminNotifData.notifications,
+      unreadNotificationsCount: adminNotifData.unreadCount,
     });
   } catch (error: unknown) {
     const message = error instanceof Error ? error.message : 'Failed to load orders';
@@ -197,6 +204,10 @@ export async function PATCH(req: NextRequest) {
         { status: 404 }
       );
     }
+
+    revalidatePath('/');
+    revalidatePath('/products');
+    revalidatePath('/products/[id]', 'page');
 
     return NextResponse.json({
       success: true,

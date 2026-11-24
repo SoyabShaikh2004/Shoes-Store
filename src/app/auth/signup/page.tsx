@@ -4,6 +4,7 @@ import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import Image from 'next/image';
+import GoogleSignInButton from '@/components/GoogleSignInButton';
 
 export default function SignupPage() {
   const router = useRouter();
@@ -127,6 +128,21 @@ export default function SignupPage() {
       localStorage.setItem('isAuthenticated', 'true');
       localStorage.setItem('authUser', JSON.stringify(userData));
       window.dispatchEvent(new Event('authUpdated'));
+
+      const cleanId = identifier.trim();
+      const isPhone = /^[0-9]{10}$/.test(cleanId);
+      void fetch('/api/auth/customer/sync', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'X-Requested-With': 'XMLHttpRequest',
+        },
+        body: JSON.stringify({
+          name: name.trim(),
+          email: isPhone ? undefined : cleanId,
+          phone: isPhone ? cleanId : undefined,
+        }),
+      }).catch(() => undefined);
       
       // Navigate to requested redirect or home page after successful signup
       router.push(redirectPath);
@@ -160,6 +176,26 @@ export default function SignupPage() {
         </div>
 
         <div className="bg-white rounded-xl border border-slate-200 shadow-lg p-5 sm:p-6 mb-6">
+          {step === 'details' && (
+            <>
+              <GoogleSignInButton
+                label="Sign up with Google"
+                disabled={isLoading}
+                onSuccess={() => router.push(redirectPath)}
+                onError={(msg) => setError(msg)}
+              />
+
+              <div className="relative my-5">
+                <div className="absolute inset-0 flex items-center" aria-hidden="true">
+                  <div className="w-full border-t border-slate-200" />
+                </div>
+                <div className="relative flex justify-center text-xs uppercase">
+                  <span className="bg-white px-3 text-slate-400 font-medium">or sign up with email</span>
+                </div>
+              </div>
+            </>
+          )}
+
           {error && (
             <div className="mb-4 p-3 bg-red-50 text-red-700 text-xs sm:text-sm rounded-md border border-red-200">
               {error}

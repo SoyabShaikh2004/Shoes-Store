@@ -4,6 +4,7 @@ import path from 'path';
 import crypto from 'crypto';
 import {
   AdminNoteRecord,
+  AdminNotificationRecord,
   AdminRole,
   AdminUserRecord,
   BrandRecord,
@@ -363,6 +364,9 @@ async function bootstrapDatabase(): Promise<DatabaseSchema> {
       if (!Array.isArray(existingDb.heroBanners) || existingDb.heroBanners.length === 0) {
         existingDb.heroBanners = DEFAULT_HERO_BANNERS.map((b) => ({ ...b }));
       }
+      if (!Array.isArray(existingDb.adminNotifications)) {
+        existingDb.adminNotifications = [];
+      }
       await persistDatabase(existingDb, storage);
       return existingDb;
     }
@@ -371,6 +375,9 @@ async function bootstrapDatabase(): Promise<DatabaseSchema> {
   if (existingDb && existingDb.version === 1 && Array.isArray(existingDb.products)) {
     if (!Array.isArray(existingDb.heroBanners) || existingDb.heroBanners.length === 0) {
       existingDb.heroBanners = DEFAULT_HERO_BANNERS.map((b) => ({ ...b }));
+    }
+    if (!Array.isArray(existingDb.adminNotifications)) {
+      existingDb.adminNotifications = [];
     }
     globalForDb.__stepstyleDbCache = existingDb;
     return existingDb;
@@ -672,6 +679,7 @@ async function bootstrapDatabase(): Promise<DatabaseSchema> {
     refunds: [],
     adminNotes: [],
     notifications,
+    adminNotifications: [],
     heroBanners: DEFAULT_HERO_BANNERS.map((b) => ({ ...b })),
   };
 
@@ -1403,6 +1411,74 @@ function createOrderNotifications(
   }
 }
 
+function pushAdminNotification(
+  db: DatabaseSchema,
+  entry: Omit<AdminNotificationRecord, 'id' | 'isRead' | 'createdAt'> & {
+    createdAt?: string;
+  }
+): AdminNotificationRecord {
+  if (!Array.isArray(db.adminNotifications)) {
+    db.adminNotifications = [];
+  }
+  const record: AdminNotificationRecord = {
+    id: `adm-notif-${Date.now()}-${crypto.randomBytes(3).toString('hex')}`,
+    type: entry.type,
+    orderId: entry.orderId,
+    orderNumber: entry.orderNumber,
+    customerName: entry.customerName,
+    customerPhone: entry.customerPhone,
+    totalAmount: entry.totalAmount,
+    paymentMethod: entry.paymentMethod,
+    paymentStatus: entry.paymentStatus,
+    itemCount: entry.itemCount,
+    primaryItemName: entry.primaryItemName,
+    message: entry.message,
+    isRead: false,
+    createdAt: entry.createdAt || new Date().toISOString(),
+  };
+  db.adminNotifications.unshift(record);
+  if (db.adminNotifications.length > 200) {
+    db.adminNotifications = db.adminNotifications.slice(0, 200);
+  }
+  return record;
+}
+
+export async function upsertCustomerInDb(params: {
+  name?: string;
+  email?: string;
+  phone?: string;
+}): Promise<UserRecord | null> {
+  const cleanEmail = (params.email || '').trim().toLowerCase();
+  const cleanPhone = (params.phone || '').replace(/\D/g, '').slice(-10);
+  if (!cleanEmail && !cleanPhone) return null;
+
+  return withTransaction((db) => {
+    const now = new Date().toISOString();
+    let user = db.users.find(
+      (u) =>
+        (cleanEmail && u.email && u.email.toLowerCase() === cleanEmail) ||
+        (cleanPhone && u.phone && u.phone.replace(/\D/g, '').slice(-10) === cleanPhone)
+    );
+    if (!user) {
+      user = {
+        id: `usr-${Date.now()}-${crypto.randomBytes(3).toString('hex')}`,
+        name: (params.name || '').trim() || cleanEmail.split('@')[0] || 'Customer',
+        email: cleanEmail,
+        phone: cleanPhone || 'N/A',
+        createdAt: now,
+      };
+      db.users.unshift(user);
+    } else {
+      if (params.name && params.name.trim() && (user.name === 'Customer' || !user.name)) {
+        user.name = params.name.trim();
+      }
+      if (cleanEmail && !user.email) user.email = cleanEmail;
+      if (cleanPhone && (!user.phone || user.phone === 'N/A')) user.phone = cleanPhone;
+    }
+    return user;
+  });
+}
+
 // ---------- Order Operations ----------
 
 export interface PlaceOrderInput {
@@ -1498,6 +1574,27 @@ export async function placeOrderTransactional(
       }
     }
 
+    // Validate live catalog inventory before persisting order
+    const requestedByProduct = new Map<number, number>();
+    for (const item of input.items) {
+      const prodId = Number(item.id);
+      const qty = Math.max(1, Number(item.quantity) || 1);
+      requestedByProduct.set(prodId, (requestedByProduct.get(prodId) || 0) + qty);
+    }
+    for (const [prodId, reqQty] of requestedByProduct.entries()) {
+      const prod = db.products.find((p) => p.id === prodId && !p.isDeleted);
+      if (prod) {
+        if (prod.status === 'inactive' || !prod.inStock || prod.stockQuantity <= 0) {
+          throw new Error(`INSUFFICIENT_STOCK: "${prod.name}" is currently out of stock.`);
+        }
+        if (prod.stockQuantity < reqQty) {
+          throw new Error(
+            `INSUFFICIENT_STOCK: Only ${prod.stockQuantity} pair(s) of "${prod.name}" left in stock.`
+          );
+        }
+      }
+    }
+
     const orderNumber = input.orderId
       ? normalizeOrderNumber(input.orderId)
       : generateUniqueOrderNumber(existingNumbers);
@@ -1564,16 +1661,21 @@ export async function placeOrderTransactional(
     db.orders.unshift(newOrder);
 
     // Create OrderItems
+    let totalItemPairs = 0;
+    let firstItemName = 'Footwear';
     input.items.forEach((item, idx) => {
       const prod = db.products.find((p) => p.id === Number(item.id));
       const qty = Math.max(1, Number(item.quantity) || 1);
       const unitPrice = Number(item.price) || prod?.price || 0;
+      const resolvedName = item.name || prod?.name || 'Footwear';
+      if (idx === 0) firstItemName = resolvedName;
+      totalItemPairs += qty;
       db.orderItems.push({
         id: `oi-${orderId}-${idx + 1}`,
         orderId,
         productId: Number(item.id),
         sku: prod?.sku || `STEP-${String(item.id).padStart(4, '0')}`,
-        name: item.name || prod?.name || 'Footwear',
+        name: resolvedName,
         imagePath: item.imagePath || prod?.imagePath || '/images/Empty-cart.jpg',
         brand: item.brand || prod?.brand || 'StepStyle',
         category: item.category || prod?.category || 'Sneakers',
@@ -1585,8 +1687,8 @@ export async function placeOrderTransactional(
       });
     });
 
-    // Deduct stock immediately when confirmed
-    if (initialStatus === 'Order Confirmed') {
+    // Reserve / deduct stock immediately for both Confirmed (UPI/Card) and Placed (COD) orders
+    if (initialStatus === 'Order Confirmed' || initialStatus === 'Order Placed') {
       applyStockDeduction(db, newOrder);
     }
 
@@ -1645,6 +1747,24 @@ export async function placeOrderTransactional(
     }
 
     createOrderNotifications(db, newOrder, shipRecord, initialStatus);
+
+    // Record live Admin Order Notification for the Admin Orders dashboard
+    pushAdminNotification(db, {
+      type: 'new_order',
+      orderId,
+      orderNumber,
+      customerName: newOrder.customerName,
+      customerPhone: cleanPhone,
+      totalAmount,
+      paymentMethod: newOrder.paymentMethod,
+      paymentStatus: payStatus,
+      itemCount: totalItemPairs,
+      primaryItemName: firstItemName,
+      message: `New order ${orderNumber} placed by ${newOrder.customerName} (${totalItemPairs} ${
+        totalItemPairs === 1 ? 'pair' : 'pairs'
+      } · ₹${totalAmount.toLocaleString('en-IN')})`,
+      createdAt: now,
+    });
 
     return { orderView: assembleFullOrder(db, newOrder), duplicate: false };
   });
@@ -1823,7 +1943,7 @@ export async function updateOrderStatusTransactional(params: {
     ) {
       applyStockDeduction(db, order);
     } else if (
-      ['Order Cancelled', 'Returned'].includes(params.status) &&
+      ['Order Cancelled', 'Payment Failed', 'Returned'].includes(params.status) &&
       order.stockDeducted
     ) {
       applyStockRestoration(db, order);
@@ -1953,7 +2073,82 @@ export async function updateOrderStatusTransactional(params: {
 
     createOrderNotifications(db, order, ship, params.status, historyNote);
 
+    if (params.status === 'Return Requested') {
+      const items = db.orderItems.filter((i) => i.orderId === order.id);
+      const itemCount = items.reduce((sum, i) => sum + i.quantity, 0);
+      pushAdminNotification(db, {
+        type: 'return_requested',
+        orderId: order.id,
+        orderNumber: order.orderNumber,
+        customerName: order.customerName,
+        customerPhone: order.customerPhone,
+        totalAmount: order.totalAmount,
+        paymentMethod: order.paymentMethod,
+        paymentStatus: order.paymentStatus,
+        itemCount,
+        primaryItemName: items[0]?.name || 'Footwear',
+        message: `Return requested for ${order.orderNumber} by ${order.customerName}`,
+        createdAt: now,
+      });
+    }
+
     return assembleFullOrder(db, order);
+  });
+}
+
+export async function getAdminNotificationsFromDb(limit = 50): Promise<{
+  notifications: AdminNotificationRecord[];
+  unreadCount: number;
+}> {
+  const db = await getDatabase();
+  const list = Array.isArray(db.adminNotifications) ? db.adminNotifications : [];
+  const sorted = [...list].sort(
+    (a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
+  );
+  return {
+    notifications: sorted.slice(0, limit),
+    unreadCount: sorted.filter((n) => !n.isRead).length,
+  };
+}
+
+export async function markAdminNotificationsReadInDb(params: {
+  id?: string;
+  orderNumber?: string;
+  all?: boolean;
+  adminName?: string;
+}): Promise<{
+  notifications: AdminNotificationRecord[];
+  unreadCount: number;
+}> {
+  return withTransaction((db) => {
+    if (!Array.isArray(db.adminNotifications)) {
+      db.adminNotifications = [];
+    }
+    const now = new Date().toISOString();
+    const targetOrderNum = params.orderNumber
+      ? normalizeOrderNumber(params.orderNumber)
+      : undefined;
+
+    for (const n of db.adminNotifications) {
+      if (n.isRead) continue;
+      const matches =
+        Boolean(params.all) ||
+        (params.id && n.id === params.id) ||
+        (targetOrderNum && normalizeOrderNumber(n.orderNumber) === targetOrderNum);
+      if (matches) {
+        n.isRead = true;
+        n.readAt = now;
+        n.readByAdminName = params.adminName || 'Admin';
+      }
+    }
+
+    const sorted = [...db.adminNotifications].sort(
+      (a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
+    );
+    return {
+      notifications: sorted.slice(0, 50),
+      unreadCount: sorted.filter((n) => !n.isRead).length,
+    };
   });
 }
 

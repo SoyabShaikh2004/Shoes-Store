@@ -4,6 +4,7 @@ import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import Image from 'next/image';
+import GoogleSignInButton from '@/components/GoogleSignInButton';
 
 export default function LoginPage() {
   const router = useRouter();
@@ -88,6 +89,20 @@ export default function LoginPage() {
         loginTime: new Date().toISOString()
       }));
       window.dispatchEvent(new Event('authUpdated'));
+
+      const cleanId = identifier.trim();
+      const isPhone = /^[0-9]{10}$/.test(cleanId);
+      void fetch('/api/auth/customer/sync', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'X-Requested-With': 'XMLHttpRequest',
+        },
+        body: JSON.stringify({
+          email: isPhone ? undefined : cleanId,
+          phone: isPhone ? cleanId : undefined,
+        }),
+      }).catch(() => undefined);
       
       // Navigate to requested redirect or home page after successful login
       router.push(redirectPath);
@@ -123,6 +138,20 @@ export default function LoginPage() {
         loginTime: new Date().toISOString()
       }));
       window.dispatchEvent(new Event('authUpdated'));
+
+      const cleanId = identifier.trim();
+      const isPhone = /^[0-9]{10}$/.test(cleanId);
+      void fetch('/api/auth/customer/sync', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'X-Requested-With': 'XMLHttpRequest',
+        },
+        body: JSON.stringify({
+          email: isPhone ? undefined : cleanId,
+          phone: isPhone ? cleanId : undefined,
+        }),
+      }).catch(() => undefined);
       
       // Navigate to requested redirect or home page
       router.push(redirectPath);
@@ -147,6 +176,22 @@ export default function LoginPage() {
         </div>
 
         <div className="bg-white rounded-xl border border-slate-200 shadow-lg p-5 sm:p-6 mb-6">
+          <GoogleSignInButton
+            label="Continue with Google"
+            disabled={isLoading}
+            onSuccess={() => router.push(redirectPath)}
+            onError={(msg) => setError(msg)}
+          />
+
+          <div className="relative my-5">
+            <div className="absolute inset-0 flex items-center" aria-hidden="true">
+              <div className="w-full border-t border-slate-200" />
+            </div>
+            <div className="relative flex justify-center text-xs uppercase">
+              <span className="bg-white px-3 text-slate-400 font-medium">or sign in with</span>
+            </div>
+          </div>
+
           <div className="flex border-b border-gray-200 mb-6">
             <button
               type="button"

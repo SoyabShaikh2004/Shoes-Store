@@ -18,6 +18,7 @@ import {
 } from 'lucide-react';
 import toast from 'react-hot-toast';
 import { Product } from '@/lib/data';
+import GoogleSignInButton from '@/components/GoogleSignInButton';
 
 interface QuickOrderDrawerProps {
   product: Product | null;
@@ -96,6 +97,19 @@ export default function QuickOrderDrawer({ product, onClose }: QuickOrderDrawerP
     setQuantity(1);
     setSelectedColor(product.colors?.[0] || 'Standard');
     setSelectedSize(product.sizes?.length === 1 ? product.sizes[0] : null);
+
+    if (localStorage.getItem('isAuthenticated') !== 'true') {
+      fetch('/api/auth/google/session', { credentials: 'include', cache: 'no-store' })
+        .then((res) => (res.ok ? res.json() : null))
+        .then((data) => {
+          if (data?.authenticated && data.user) {
+            localStorage.setItem('isAuthenticated', 'true');
+            localStorage.setItem('authUser', JSON.stringify(data.user));
+            window.dispatchEvent(new Event('authUpdated'));
+          }
+        })
+        .catch(() => undefined);
+    }
   }, [product]);
 
   useEffect(() => {
@@ -193,6 +207,18 @@ export default function QuickOrderDrawer({ product, onClose }: QuickOrderDrawerP
     }
 
     setIsSigningIn(true);
+    void fetch('/api/auth/customer/sync', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'X-Requested-With': 'XMLHttpRequest',
+      },
+      body: JSON.stringify({
+        email: emailValid ? cleanId : undefined,
+        phone: phoneValid ? cleanId : undefined,
+      }),
+    }).catch(() => undefined);
+
     setTimeout(() => {
       localStorage.setItem('isAuthenticated', 'true');
       localStorage.setItem(
@@ -441,6 +467,28 @@ export default function QuickOrderDrawer({ product, onClose }: QuickOrderDrawerP
                       <p className="text-xs text-slate-600 mt-0.5">
                         Your UK {selectedSize || product.sizes[0]} pair is saved in your cart. Sign in below to proceed straight to UPI / COD checkout.
                       </p>
+                    </div>
+                  </div>
+
+                  <GoogleSignInButton
+                    label="Continue with Google"
+                    disabled={isSigningIn}
+                    onSuccess={() => {
+                      toast.success('Signed in! Proceeding to checkout...');
+                      onClose();
+                      router.push('/cart?checkout=quick');
+                    }}
+                    onError={(msg) => setAuthError(msg)}
+                  />
+
+                  <div className="relative">
+                    <div className="absolute inset-0 flex items-center" aria-hidden="true">
+                      <div className="w-full border-t border-slate-200" />
+                    </div>
+                    <div className="relative flex justify-center text-[11px] uppercase">
+                      <span className="bg-white px-2.5 text-slate-400 font-medium">
+                        or sign in with email / mobile
+                      </span>
                     </div>
                   </div>
 

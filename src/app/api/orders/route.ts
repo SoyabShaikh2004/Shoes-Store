@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
+import { revalidatePath } from 'next/cache';
 import {
   getFullOrderByNumber,
   getOrdersForCustomer,
@@ -187,6 +188,18 @@ export async function POST(req: NextRequest) {
       );
     }
 
+    for (const item of body.items) {
+      const id = Number(item?.id);
+      const qty = Number(item?.quantity);
+      const price = Number(item?.price);
+      if (isNaN(id) || id <= 0 || isNaN(qty) || qty < 1 || isNaN(price) || price < 0) {
+        return NextResponse.json(
+          { success: false, error: 'Order contains invalid product details or quantity.' },
+          { status: 400 }
+        );
+      }
+    }
+
     const totalAmount = Number(body.totalAmount);
     if (isNaN(totalAmount) || totalAmount <= 0) {
       return NextResponse.json(
@@ -218,6 +231,10 @@ export async function POST(req: NextRequest) {
       trackingNumber: body.trackingNumber ? String(body.trackingNumber) : undefined,
     });
 
+    revalidatePath('/');
+    revalidatePath('/products');
+    revalidatePath('/products/[id]', 'page');
+
     return NextResponse.json(
       {
         success: true,
@@ -228,6 +245,16 @@ export async function POST(req: NextRequest) {
     );
   } catch (error) {
     console.error('Error placing order:', error);
+    const rawMsg = error instanceof Error ? error.message : '';
+    if (rawMsg.startsWith('INSUFFICIENT_STOCK:')) {
+      return NextResponse.json(
+        {
+          success: false,
+          error: rawMsg.replace(/^INSUFFICIENT_STOCK:\s*/, ''),
+        },
+        { status: 409 }
+      );
+    }
     return NextResponse.json(
       { success: false, error: 'Failed to place order.' },
       { status: 500 }
@@ -297,6 +324,9 @@ export async function PATCH(req: NextRequest) {
       adminRole: 'Customer',
       note: reason.slice(0, 300),
     });
+
+    revalidatePath('/');
+    revalidatePath('/products');
 
     return NextResponse.json({
       success: true,

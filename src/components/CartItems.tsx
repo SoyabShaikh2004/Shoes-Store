@@ -1,11 +1,12 @@
 'use client';
 
-import { useState, useEffect, useMemo } from 'react';
+import { useState, useEffect, useMemo, useCallback } from 'react';
 import Image from 'next/image';
 import Link from 'next/link';
 import { motion, useReducedMotion } from 'motion/react';
 import { CartItem } from '@/app/cart/page';
 import OnlineUPIPayment from '@/components/OnlineUPIPayment';
+import GoogleSignInButton from '@/components/GoogleSignInButton';
 import { generateTaxInvoicePDF, InvoiceOrderData } from '@/lib/invoiceGenerator';
 import {
   CreditCard,
@@ -130,6 +131,57 @@ export default function CartItems() {
     };
   }, [items]);
 
+  const hydrateUserFields = useCallback((rawUser: { name?: string; phone?: string; address?: string; pincode?: string }) => {
+    if (rawUser.name) setCustomerName((prev) => prev || rawUser.name || '');
+    if (rawUser.phone) {
+      setCustomerPhone((prev) => prev || String(rawUser.phone).replace(/\D/g, '').slice(-10));
+    }
+    if (rawUser.address) setDeliveryAddress((prev) => prev || rawUser.address || '');
+    if (rawUser.pincode) {
+      setCustomerPincode((prev) => prev || String(rawUser.pincode).replace(/\D/g, '').slice(0, 6));
+    }
+  }, []);
+
+  const syncAuthAndUser = useCallback(async () => {
+    let authed = localStorage.getItem('isAuthenticated') === 'true';
+
+    if (authed) {
+      setIsAuthenticated(true);
+      try {
+        const storedUser = localStorage.getItem('authUser') || localStorage.getItem('user');
+        if (storedUser) {
+          hydrateUserFields(JSON.parse(storedUser));
+        }
+      } catch {
+        // ignore
+      }
+      return;
+    }
+
+    try {
+      const res = await fetch('/api/auth/google/session', {
+        credentials: 'include',
+        cache: 'no-store',
+      });
+      if (res.ok) {
+        const data = await res.json();
+        if (data?.authenticated && data.user) {
+          authed = true;
+          localStorage.setItem('isAuthenticated', 'true');
+          localStorage.setItem('authUser', JSON.stringify(data.user));
+          setIsAuthenticated(true);
+          hydrateUserFields(data.user);
+          window.dispatchEvent(new Event('authUpdated'));
+          return;
+        }
+      }
+    } catch {
+      // ignore session check error
+    }
+
+    setIsAuthenticated(false);
+  }, [hydrateUserFields]);
+
   // Load cart items & auth state
   useEffect(() => {
     const loadCartItems = () => {
@@ -146,41 +198,25 @@ export default function CartItems() {
       }
     };
 
-    const syncAuthAndUser = () => {
-      const authed = localStorage.getItem('isAuthenticated') === 'true';
-      setIsAuthenticated(authed);
-
-      if (authed) {
-        try {
-          const storedUser = localStorage.getItem('authUser') || localStorage.getItem('user');
-          if (storedUser) {
-            const parsed = JSON.parse(storedUser);
-            if (parsed.name) setCustomerName((prev) => prev || parsed.name);
-            if (parsed.phone) setCustomerPhone((prev) => prev || String(parsed.phone).replace(/\D/g, '').slice(-10));
-            if (parsed.address) setDeliveryAddress((prev) => prev || parsed.address);
-            if (parsed.pincode) setCustomerPincode((prev) => prev || String(parsed.pincode).replace(/\D/g, '').slice(0, 6));
-          }
-        } catch {
-          // ignore
-        }
-      }
+    const handleAuthChange = () => {
+      void syncAuthAndUser();
     };
 
     loadCartItems();
-    syncAuthAndUser();
+    void syncAuthAndUser();
 
     window.addEventListener('storage', loadCartItems);
     window.addEventListener('cartUpdated', loadCartItems);
-    window.addEventListener('storage', syncAuthAndUser);
-    window.addEventListener('authUpdated', syncAuthAndUser);
+    window.addEventListener('storage', handleAuthChange);
+    window.addEventListener('authUpdated', handleAuthChange);
 
     return () => {
       window.removeEventListener('storage', loadCartItems);
       window.removeEventListener('cartUpdated', loadCartItems);
-      window.removeEventListener('storage', syncAuthAndUser);
-      window.removeEventListener('authUpdated', syncAuthAndUser);
+      window.removeEventListener('storage', handleAuthChange);
+      window.removeEventListener('authUpdated', handleAuthChange);
     };
-  }, []);
+  }, [syncAuthAndUser]);
 
   // Auto-advance to Delivery step when arriving from Quick Buy -> Buy Now
   useEffect(() => {
@@ -343,7 +379,7 @@ export default function CartItems() {
     estimatedDelivery: string;
     pincodeOverride?: string;
     stage: 'payment_confirmed' | 'processing';
-  }) => {
+  }): Promise<{ ok: boolean; error?: string; order?: Record<string, unknown> }> => {
     let customerEmail: string | undefined;
     try {
       const storedUser = localStorage.getItem('authUser');
@@ -388,8 +424,6 @@ export default function CartItems() {
       estimatedDelivery: params.estimatedDelivery,
     };
 
-    setCompletedSnapshot(invoiceSnapshot);
-
     const orderPayload = {
       orderId,
       date: params.date,
@@ -410,47 +444,54 @@ export default function CartItems() {
     };
 
     try {
-      const hintsRaw = localStorage.getItem('orderVerifyHints');
-      const hints = hintsRaw ? JSON.parse(hintsRaw) : {};
-      const hintVal = customerEmail || customerPhone;
-      if (hintVal && orderId) {
-        hints[orderId.toUpperCase()] = hintVal;
-        localStorage.setItem('orderVerifyHints', JSON.stringify(hints));
-      }
-    } catch {
-      // ignore
-    }
-
-    let persistedRecord: Record<string, unknown> = orderPayload;
-
-    try {
       const res = await fetch('/api/orders', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(orderPayload),
       });
-      if (res.ok) {
-        const data = await res.json();
-        if (data?.success && data.order) {
-          persistedRecord = data.order;
-        }
+      const data = await res.json().catch(() => null);
+      if (!res.ok || !data?.success) {
+        return {
+          ok: false,
+          error: data?.error || 'Could not place your order. Please check your cart and try again.',
+        };
       }
-    } catch {
-      // ignore network failure; localStorage fallback remains
-    }
 
-    try {
-      const existingOrders = JSON.parse(localStorage.getItem('orders') || '[]');
-      const filtered = Array.isArray(existingOrders)
-        ? existingOrders.filter(
-            (o: { orderId?: string; orderNumber?: string }) =>
-              o.orderId !== orderId && o.orderNumber !== orderId
-          )
-        : [];
-      filtered.unshift(persistedRecord);
-      localStorage.setItem('orders', JSON.stringify(filtered));
+      const persistedRecord: Record<string, unknown> = data.order || orderPayload;
+      setCompletedSnapshot(invoiceSnapshot);
+
+      try {
+        const hintsRaw = localStorage.getItem('orderVerifyHints');
+        const hints = hintsRaw ? JSON.parse(hintsRaw) : {};
+        const hintVal = customerEmail || customerPhone;
+        if (hintVal && orderId) {
+          hints[orderId.toUpperCase()] = hintVal;
+          localStorage.setItem('orderVerifyHints', JSON.stringify(hints));
+        }
+      } catch {
+        // ignore
+      }
+
+      try {
+        const existingOrders = JSON.parse(localStorage.getItem('orders') || '[]');
+        const filtered = Array.isArray(existingOrders)
+          ? existingOrders.filter(
+              (o: { orderId?: string; orderNumber?: string }) =>
+                o.orderId !== orderId && o.orderNumber !== orderId
+            )
+          : [];
+        filtered.unshift(persistedRecord);
+        localStorage.setItem('orders', JSON.stringify(filtered));
+      } catch {
+        // ignore
+      }
+
+      return { ok: true, order: persistedRecord };
     } catch {
-      // ignore
+      return {
+        ok: false,
+        error: 'Network error submitting order. Please verify your connection and try again.',
+      };
     }
   };
 
@@ -486,7 +527,7 @@ export default function CartItems() {
     return true;
   };
 
-  const processCardPayment = () => {
+  const processCardPayment = async () => {
     if (!validateDeliveryForm()) {
       setStep('delivery');
       return;
@@ -497,96 +538,103 @@ export default function CartItems() {
     setErrorMessage(`Authorizing ₹${billing.grandTotal.toLocaleString('en-IN')} via ${cardNetwork || 'Card'}...`);
     const timestamp = new Date().toISOString();
     const txnId = `CRD${Math.floor(100000000 + Math.random() * 900000000)}`;
+    const estDelivery = getEstimatedDeliveryDate();
+    const cardLabel = `${cardNetwork || 'Card'} (****${cardDetails.cardNumber.slice(-4)})`;
 
-    setTimeout(() => {
-      const estDelivery = getEstimatedDeliveryDate();
-      const cardLabel = `${cardNetwork || 'Card'} (****${cardDetails.cardNumber.slice(-4)})`;
+    const result = await persistPlacedOrder({
+      date: timestamp,
+      totalAmount: billing.grandTotal,
+      paymentStatus: 'PAID',
+      paymentMethod: cardLabel,
+      transactionId: txnId,
+      estimatedDelivery: estDelivery,
+      stage: 'payment_confirmed',
+    });
 
-      setPaymentStatus('success');
-      setErrorMessage('');
-      setTransactionData({
-        id: txnId,
-        amount: billing.grandTotal,
-        timestamp,
-        method: cardLabel,
-        status: 'Paid & Confirmed',
-        extraInfo: {
-          pincode: customerPincode,
-          estimatedDelivery: estDelivery,
-          address: deliveryAddress,
-          phone: customerPhone,
-        },
-      });
+    if (!result.ok) {
+      setPaymentStatus('idle');
+      const errMsg = result.error || 'Unable to confirm order. Please try again.';
+      setErrorMessage(errMsg);
+      toast.error(errMsg);
+      return;
+    }
 
-      void persistPlacedOrder({
-        date: timestamp,
-        totalAmount: billing.grandTotal,
-        paymentStatus: 'PAID',
-        paymentMethod: cardLabel,
-        transactionId: txnId,
+    setPaymentStatus('success');
+    setErrorMessage('');
+    setTransactionData({
+      id: txnId,
+      amount: billing.grandTotal,
+      timestamp,
+      method: cardLabel,
+      status: 'Paid & Confirmed',
+      extraInfo: {
+        pincode: customerPincode,
         estimatedDelivery: estDelivery,
-        stage: 'payment_confirmed',
-      });
-
-      setTimeout(() => {
-        setOrderComplete(true);
-        localStorage.setItem('cartItems', JSON.stringify([]));
-        notifyCartUpdated();
-        scrollToTop();
-      }, 900);
-    }, 1100);
+        address: deliveryAddress,
+        phone: customerPhone,
+      },
+    });
+    setOrderComplete(true);
+    localStorage.setItem('cartItems', JSON.stringify([]));
+    notifyCartUpdated();
+    scrollToTop();
+    toast.success('Order confirmed!');
   };
 
-  const processCODPayment = () => {
+  const processCODPayment = async () => {
     if (!validateDeliveryForm()) {
       setStep('delivery');
       return;
     }
 
     setPaymentStatus('processing');
-    setErrorMessage('Confirming Cash on Delivery availability...');
+    setErrorMessage('Confirming Cash on Delivery order...');
     const txnId = `COD${Math.floor(100000000 + Math.random() * 900000000)}`;
     const timestamp = new Date().toISOString();
+    const estDelivery = getEstimatedDeliveryDate();
 
-    setTimeout(() => {
-      const estDelivery = getEstimatedDeliveryDate();
-      setPaymentStatus('success');
-      setErrorMessage('');
-      setTransactionData({
-        id: txnId,
-        amount: billing.grandTotal,
-        timestamp,
-        method: 'Cash on Delivery (COD)',
-        status: 'Confirmed (Pay on Delivery)',
-        extraInfo: {
-          pincode: customerPincode,
-          estimatedDelivery: estDelivery,
-          address: deliveryAddress,
-          phone: customerPhone,
-        },
-      });
+    const result = await persistPlacedOrder({
+      date: timestamp,
+      totalAmount: billing.grandTotal,
+      paymentStatus: 'COD - Pay on Delivery',
+      paymentMethod: 'Cash on Delivery',
+      transactionId: txnId,
+      estimatedDelivery: estDelivery,
+      pincodeOverride: customerPincode,
+      stage: 'processing',
+    });
 
-      void persistPlacedOrder({
-        date: timestamp,
-        totalAmount: billing.grandTotal,
-        paymentStatus: 'COD - Pay on Delivery',
-        paymentMethod: 'Cash on Delivery',
-        transactionId: txnId,
+    if (!result.ok) {
+      setPaymentStatus('idle');
+      const errMsg = result.error || 'Unable to confirm COD order. Please try again.';
+      setErrorMessage(errMsg);
+      toast.error(errMsg);
+      return;
+    }
+
+    setPaymentStatus('success');
+    setErrorMessage('');
+    setTransactionData({
+      id: txnId,
+      amount: billing.grandTotal,
+      timestamp,
+      method: 'Cash on Delivery (COD)',
+      status: 'Confirmed (Pay on Delivery)',
+      extraInfo: {
+        pincode: customerPincode,
         estimatedDelivery: estDelivery,
-        pincodeOverride: customerPincode,
-        stage: 'processing',
-      });
-
-      setTimeout(() => {
-        setOrderComplete(true);
-        localStorage.setItem('cartItems', JSON.stringify([]));
-        notifyCartUpdated();
-        scrollToTop();
-      }, 900);
-    }, 1000);
+        address: deliveryAddress,
+        phone: customerPhone,
+      },
+    });
+    setOrderComplete(true);
+    localStorage.setItem('cartItems', JSON.stringify([]));
+    notifyCartUpdated();
+    scrollToTop();
+    toast.success('COD order confirmed!');
   };
 
-  const handleOnlineUPISuccess = (details: {
+  const handleOnlineUPISuccess = async (details: {
     transactionId: string;
     utrNumber?: string;
     paymentApp: string;
@@ -594,6 +642,29 @@ export default function CartItems() {
     timestamp: string;
   }) => {
     const estDelivery = getEstimatedDeliveryDate();
+    setPaymentStatus('processing');
+    setErrorMessage('Recording verified UPI order...');
+
+    const result = await persistPlacedOrder({
+      date: details.timestamp,
+      totalAmount: details.amount,
+      paymentStatus: 'PAID',
+      paymentMethod: details.paymentApp,
+      transactionId: details.transactionId,
+      utrNumber: details.utrNumber || 'N/A',
+      paidToUPI: MERCHANT_UPI_ID,
+      estimatedDelivery: estDelivery,
+      stage: 'payment_confirmed',
+    });
+
+    if (!result.ok) {
+      setPaymentStatus('idle');
+      const errMsg = result.error || 'Unable to record your order. Please try again.';
+      setErrorMessage(errMsg);
+      toast.error(errMsg);
+      return;
+    }
+
     setTransactionData({
       id: details.transactionId,
       amount: details.amount,
@@ -610,25 +681,11 @@ export default function CartItems() {
     });
     setPaymentStatus('success');
     setErrorMessage('');
-
-    void persistPlacedOrder({
-      date: details.timestamp,
-      totalAmount: details.amount,
-      paymentStatus: 'PAID',
-      paymentMethod: details.paymentApp,
-      transactionId: details.transactionId,
-      utrNumber: details.utrNumber || 'N/A',
-      paidToUPI: MERCHANT_UPI_ID,
-      estimatedDelivery: estDelivery,
-      stage: 'payment_confirmed',
-    });
-
-    setTimeout(() => {
-      setOrderComplete(true);
-      localStorage.setItem('cartItems', JSON.stringify([]));
-      notifyCartUpdated();
-      scrollToTop();
-    }, 550);
+    setOrderComplete(true);
+    localStorage.setItem('cartItems', JSON.stringify([]));
+    notifyCartUpdated();
+    scrollToTop();
+    toast.success('Order confirmed!');
   };
 
   const handleDownloadInvoice = () => {
@@ -1159,10 +1216,24 @@ export default function CartItems() {
                         Sign In Required to Complete Order
                       </h3>
                       <p className="text-xs sm:text-sm text-slate-600 mt-1 leading-relaxed">
-                        Your cart items are saved safely. Sign in or create an account to confirm your delivery address and proceed to payment.
+                        Your cart items are saved safely. Sign in with Google or your account to confirm delivery and proceed to payment.
                       </p>
                     </div>
                   </div>
+                  <GoogleSignInButton
+                    label="Continue with Google"
+                    onSuccess={() => {
+                      setErrorMessage('');
+                      void syncAuthAndUser();
+                      toast.success('Signed in with Google!');
+                    }}
+                    onError={(msg) => setErrorMessage(msg)}
+                  />
+                  {errorMessage && (
+                    <div className="p-2.5 bg-rose-50 border border-rose-200 rounded-lg text-xs font-medium text-rose-700">
+                      {errorMessage}
+                    </div>
+                  )}
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
                     <Link
                       href="/auth/login?redirect=/cart?checkout=quick"

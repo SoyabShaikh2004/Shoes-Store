@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
+import { revalidatePath } from 'next/cache';
 import { getProductById, updateProduct, deleteProduct } from '@/lib/data';
 import { requireAdmin } from '@/lib/server/adminSession';
 
@@ -106,6 +107,11 @@ export async function PUT(req: NextRequest, { params }: RouteContext) {
       );
     }
 
+    revalidatePath('/');
+    revalidatePath('/products');
+    revalidatePath(`/products/${id}`);
+    revalidatePath('/products/[id]', 'page');
+
     return NextResponse.json({
       success: true,
       message: 'Product updated successfully',
@@ -140,6 +146,11 @@ export async function DELETE(req: NextRequest, { params }: RouteContext) {
         { status: 404 }
       );
     }
+
+    revalidatePath('/');
+    revalidatePath('/products');
+    revalidatePath(`/products/${id}`);
+    revalidatePath('/products/[id]', 'page');
 
     return NextResponse.json({
       success: true,

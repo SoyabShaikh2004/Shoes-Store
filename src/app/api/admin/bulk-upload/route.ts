@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
+import { revalidatePath } from 'next/cache';
 import { promises as fs } from 'fs';
 import path from 'path';
 import * as XLSX from 'xlsx';
@@ -721,6 +722,10 @@ export async function POST(req: NextRequest) {
         });
 
         const report = await bulkImportProductsTransactional(mappedRows);
+
+        revalidatePath('/');
+        revalidatePath('/products');
+        revalidatePath('/products/[id]', 'page');
 
         return NextResponse.json({
           success: true,

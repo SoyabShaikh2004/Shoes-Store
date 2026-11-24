@@ -5,6 +5,8 @@ import ProductImages from '@/components/ProductImages';
 import ProductDetailActions from '@/components/ProductDetailActions';
 import Link from 'next/link';
 
+export const dynamic = 'force-dynamic';
+
 interface ProductDetailPageProps {
   params: {
     id: string;
@@ -102,6 +104,8 @@ export default async function ProductDetailPage({ params }: ProductDetailPagePro
   
   const productImages = getProductImageSlides(product.id, product.imagePath, product.images);
 
+  const stockQty = product.stockQuantity ?? 1;
+  const isAvailable = Boolean(product.inStock && product.status !== 'inactive' && stockQty > 0);
   const hasDiscount = product.mrp && product.mrp > product.price;
   const discountAmount = hasDiscount ? product.mrp! - product.price : 0;
   const discountPercent = hasDiscount
@@ -157,9 +161,11 @@ export default async function ProductDetailPage({ params }: ProductDetailPagePro
               <span className="inline-block rounded-md bg-gray-100 px-2.5 py-1 text-xs font-medium text-gray-700">
                 {product.category}
               </span>
-              {product.inStock ? (
+              {isAvailable ? (
                 <span className="inline-block rounded-md bg-emerald-50 border border-emerald-200 px-2.5 py-1 text-xs font-medium text-emerald-800">
-                  In Stock
+                  {product.stockQuantity !== undefined && product.stockQuantity <= 8
+                    ? `Only ${product.stockQuantity} left`
+                    : 'In Stock'}
                 </span>
               ) : (
                 <span className="inline-block rounded-md bg-rose-50 border border-rose-200 px-2.5 py-1 text-xs font-medium text-rose-800">

@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
+import { revalidatePath } from 'next/cache';
 import {
   BulkProductActionPayload,
   bulkMutateProductsTransactional,
@@ -23,6 +24,10 @@ export async function POST(req: NextRequest) {
     }
 
     const result = await bulkMutateProductsTransactional(body);
+
+    revalidatePath('/');
+    revalidatePath('/products');
+    revalidatePath('/products/[id]', 'page');
 
     return NextResponse.json({
       success: true,

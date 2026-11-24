@@ -3,6 +3,7 @@
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
+import Image from 'next/image';
 import { Package, Truck, Search, ArrowRight, Heart, LogOut, ShoppingBag } from 'lucide-react';
 import { CustomerOrderView, mapLegacyStageToStatus } from '@/lib/orderTypes';
 
@@ -10,6 +11,7 @@ interface UserData {
   email?: string;
   name?: string;
   phone?: string;
+  picture?: string;
   loginMethod?: string;
   loginTime?: string;
 }
@@ -22,25 +24,50 @@ export default function AccountPage() {
   const [orders, setOrders] = useState<CustomerOrderView[]>([]);
 
   useEffect(() => {
+    let parsedUser: UserData | null = null;
     const isAuthenticated = localStorage.getItem('isAuthenticated') === 'true';
 
-    if (!isAuthenticated) {
-      router.push('/auth/login');
-      return;
-    }
-
-    let parsedUser: UserData | null = null;
-    const userDataString = localStorage.getItem('authUser');
-    if (userDataString) {
-      try {
-        parsedUser = JSON.parse(userDataString);
-        setUserData(parsedUser);
-      } catch {
-        // ignore invalid user data
+    if (isAuthenticated) {
+      const userDataString = localStorage.getItem('authUser');
+      if (userDataString) {
+        try {
+          parsedUser = JSON.parse(userDataString);
+          setUserData(parsedUser);
+        } catch {
+          // ignore invalid user data
+        }
       }
     }
 
     const loadOrders = async () => {
+      if (!isAuthenticated) {
+        try {
+          const sessionRes = await fetch('/api/auth/google/session', {
+            credentials: 'include',
+            cache: 'no-store',
+          });
+          if (sessionRes.ok) {
+            const sessionData = await sessionRes.json();
+            if (sessionData.authenticated && sessionData.user) {
+              parsedUser = sessionData.user;
+              setUserData(parsedUser);
+              localStorage.setItem('isAuthenticated', 'true');
+              localStorage.setItem('authUser', JSON.stringify(parsedUser));
+              window.dispatchEvent(new Event('authUpdated'));
+            } else {
+              router.push('/auth/login');
+              return;
+            }
+          } else {
+            router.push('/auth/login');
+            return;
+          }
+        } catch {
+          router.push('/auth/login');
+          return;
+        }
+      }
+
       const merged = new Map<string, CustomerOrderView>();
 
       try {
@@ -134,14 +161,27 @@ export default function AccountPage() {
         <div className="bg-white rounded-xl border border-slate-200 overflow-hidden">
           <div className="p-4 sm:p-6">
             <div className="flex flex-col sm:flex-row sm:items-center mb-6">
-              <div className="h-16 w-16 rounded-full bg-indigo-600 text-white flex items-center justify-center text-xl font-medium mx-auto sm:mx-0 sm:mr-4 mb-3 sm:mb-0">
-                {userData?.email?.charAt(0).toUpperCase() || 'U'}
-              </div>
+              {userData?.picture ? (
+                <Image
+                  src={userData.picture}
+                  alt={userData?.name || 'Profile'}
+                  width={64}
+                  height={64}
+                  referrerPolicy="no-referrer"
+                  className="h-16 w-16 rounded-full object-cover border border-slate-200 mx-auto sm:mx-0 sm:mr-4 mb-3 sm:mb-0"
+                />
+              ) : (
+                <div className="h-16 w-16 rounded-full bg-indigo-600 text-white flex items-center justify-center text-xl font-medium mx-auto sm:mx-0 sm:mr-4 mb-3 sm:mb-0">
+                  {userData?.name?.charAt(0).toUpperCase() ||
+                    userData?.email?.charAt(0).toUpperCase() ||
+                    'U'}
+                </div>
+              )}
               <div className="text-center sm:text-left">
                 <h2 className="text-lg sm:text-xl font-semibold text-slate-900">
                   {userData?.name || 'User'}
                 </h2>
-                <p className="text-sm text-slate-600">{userData?.email}</p>
+                <p className="text-sm text-slate-600 break-words">{userData?.email}</p>
               </div>
             </div>
 
@@ -199,6 +239,15 @@ export default function AccountPage() {
                 onClick={() => {
                   localStorage.removeItem('isAuthenticated');
                   localStorage.removeItem('authUser');
+                  fetch('/api/auth/google/session', {
+                    method: 'POST',
+                    credentials: 'include',
+                    headers: {
+                      'Content-Type': 'application/json',
+                      'X-Requested-With': 'XMLHttpRequest',
+                    },
+                    body: JSON.stringify({ action: 'logout' }),
+                  }).catch(() => {});
                   window.dispatchEvent(new Event('authUpdated'));
                   router.push('/auth/login');
                 }}

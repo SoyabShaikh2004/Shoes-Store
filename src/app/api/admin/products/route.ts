@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
+import { revalidatePath } from 'next/cache';
 import { getProducts, createProduct, Product } from '@/lib/data';
 import { requireAdmin } from '@/lib/server/adminSession';
 
@@ -136,6 +137,10 @@ export async function POST(req: NextRequest) {
     };
 
     const created = await createProduct(productData);
+
+    revalidatePath('/');
+    revalidatePath('/products');
+    revalidatePath('/products/[id]', 'page');
 
     return NextResponse.json(
       {

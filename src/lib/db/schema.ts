@@ -237,6 +237,25 @@ export interface NotificationRecord {
   sentAt: string;
 }
 
+export interface AdminNotificationRecord {
+  id: string;
+  type: 'new_order' | 'return_requested' | 'payment_update';
+  orderId: string;
+  orderNumber: string;
+  customerName: string;
+  customerPhone: string;
+  totalAmount: number;
+  paymentMethod: string;
+  paymentStatus: string;
+  itemCount: number;
+  primaryItemName: string;
+  message: string;
+  isRead: boolean;
+  createdAt: string;
+  readAt?: string;
+  readByAdminName?: string;
+}
+
 export interface HeroBannerRecord {
   id: string;
   image: string;
@@ -263,5 +282,6 @@ export interface DatabaseSchema {
   refunds: RefundRecord[];
   adminNotes: AdminNoteRecord[];
   notifications: NotificationRecord[];
+  adminNotifications?: AdminNotificationRecord[];
   heroBanners?: HeroBannerRecord[];
 }

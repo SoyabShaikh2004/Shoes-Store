@@ -31,6 +31,7 @@ export default function ProductImages({ slides, productName }: ProductImagesProp
     // If direct uploads or full URL, standard fallback is just the fallback placeholder
     if (
       imagePath.startsWith('/uploads/') ||
+      imagePath.startsWith('/api/uploads/') ||
       imagePath.startsWith('http') ||
       imagePath.startsWith('data:')
     ) {

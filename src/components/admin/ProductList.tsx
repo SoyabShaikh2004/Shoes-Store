@@ -125,6 +125,7 @@ export default function ProductList({
     if (
       product.imagePath &&
       (product.imagePath.startsWith('/uploads/') ||
+        product.imagePath.startsWith('/api/uploads/') ||
         product.imagePath.startsWith('/images/') ||
         product.imagePath.startsWith('http') ||
         product.imagePath.startsWith('data:') ||
@@ -293,13 +294,13 @@ export default function ProductList({
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
               placeholder="Search by shoe name, SKU, category, brand, or ID..."
-              className="w-full text-sm bg-slate-50 border border-slate-200 rounded-lg pl-10 pr-4 py-2.5 focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-600 focus:bg-white transition-colors"
+              className="w-full min-h-[44px] text-base sm:text-sm bg-slate-50 border border-slate-200 rounded-lg pl-10 pr-16 py-2 focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-600 focus:bg-white transition-colors"
             />
             {searchTerm && (
               <button
                 type="button"
                 onClick={() => setSearchTerm('')}
-                className="absolute right-3 top-1/2 -translate-y-1/2 text-xs text-slate-400 hover:text-slate-700 cursor-pointer"
+                className="absolute right-2 top-1/2 -translate-y-1/2 min-h-[36px] px-2 text-xs text-slate-500 hover:text-slate-700 cursor-pointer"
               >
                 Clear
               </button>
@@ -310,21 +311,21 @@ export default function ProductList({
             <select
               value={statusFilter}
               onChange={(e) => setStatusFilter(e.target.value as 'All' | 'active' | 'inactive')}
-              className="text-xs bg-slate-50 border border-slate-200 rounded-lg px-3 py-2 text-slate-700 font-medium cursor-pointer focus:outline-none"
+              className="min-h-[44px] text-base sm:text-xs bg-slate-50 border border-slate-200 rounded-lg px-3 py-2 text-slate-700 font-medium cursor-pointer focus:outline-none"
             >
               <option value="All">Status: All</option>
               <option value="active">Active Only</option>
               <option value="inactive">Inactive Only</option>
             </select>
 
-            <div className="flex items-center gap-1.5 bg-slate-50 border border-slate-200 rounded-lg px-3 py-2">
-              <ArrowUpDown className="w-3.5 h-3.5 text-slate-500" />
+            <div className="min-h-[44px] flex items-center gap-1.5 bg-slate-50 border border-slate-200 rounded-lg px-3 py-1">
+              <ArrowUpDown className="w-3.5 h-3.5 text-slate-500 shrink-0" />
               <select
                 value={sortBy}
                 onChange={(e) =>
                   setSortBy(e.target.value as 'newest' | 'priceAsc' | 'priceDesc' | 'discountDesc')
                 }
-                className="text-xs bg-transparent border-none focus:outline-none text-slate-700 font-medium cursor-pointer"
+                className="min-h-[36px] text-base sm:text-xs bg-transparent border-none focus:outline-none text-slate-700 font-medium cursor-pointer"
               >
                 <option value="newest">Sort: Newest First</option>
                 <option value="priceAsc">Sort: Price (Low → High)</option>
@@ -333,12 +334,13 @@ export default function ProductList({
               </select>
             </div>
 
-            <div className="flex items-center border border-slate-200 rounded-lg p-1 bg-slate-50">
+            <div className="flex items-center border border-slate-200 rounded-lg p-1 bg-slate-50 gap-1">
               <button
                 type="button"
                 onClick={() => setViewMode('table')}
                 title="Table view"
-                className={`p-1.5 rounded-md transition-colors cursor-pointer ${
+                aria-label="List view"
+                className={`min-w-[38px] min-h-[36px] inline-flex items-center justify-center rounded-md transition-colors cursor-pointer ${
                   viewMode === 'table'
                     ? 'bg-white text-indigo-600 shadow-xs'
                     : 'text-slate-500 hover:text-slate-800'
@@ -350,7 +352,8 @@ export default function ProductList({
                 type="button"
                 onClick={() => setViewMode('grid')}
                 title="Cards grid view"
-                className={`p-1.5 rounded-md transition-colors cursor-pointer ${
+                aria-label="Grid view"
+                className={`min-w-[38px] min-h-[36px] inline-flex items-center justify-center rounded-md transition-colors cursor-pointer ${
                   viewMode === 'grid'
                     ? 'bg-white text-indigo-600 shadow-xs'
                     : 'text-slate-500 hover:text-slate-800'
@@ -371,7 +374,7 @@ export default function ProductList({
             <button
               type="button"
               onClick={() => setSelectedCategory('All')}
-              className={`px-2.5 py-1 rounded-md border transition-colors cursor-pointer ${
+              className={`min-h-[36px] px-2.5 py-1 rounded-md border transition-colors cursor-pointer ${
                 selectedCategory === 'All'
                   ? 'bg-slate-900 text-white border-slate-900 font-medium'
                   : 'bg-slate-50 text-slate-700 border-slate-200 hover:bg-slate-100'
@@ -386,7 +389,7 @@ export default function ProductList({
                   key={cat}
                   type="button"
                   onClick={() => setSelectedCategory(cat)}
-                  className={`px-2.5 py-1 rounded-md border transition-colors cursor-pointer ${
+                  className={`min-h-[36px] px-2.5 py-1 rounded-md border transition-colors cursor-pointer ${
                     selectedCategory === cat
                       ? 'bg-slate-900 text-white border-slate-900 font-medium'
                       : 'bg-slate-50 text-slate-700 border-slate-200 hover:bg-slate-100'
@@ -398,12 +401,12 @@ export default function ProductList({
             })}
           </div>
 
-          <div className="flex items-center gap-1.5">
+          <div className="flex flex-wrap items-center gap-1.5">
             <span className="text-slate-500 font-medium mr-1">Stock:</span>
             <button
               type="button"
               onClick={() => setStockFilter('All')}
-              className={`px-2.5 py-1 rounded-md cursor-pointer ${
+              className={`min-h-[36px] px-2.5 py-1 rounded-md cursor-pointer ${
                 stockFilter === 'All'
                   ? 'bg-slate-800 text-white font-medium'
                   : 'text-slate-600 hover:bg-slate-100'
@@ -414,7 +417,7 @@ export default function ProductList({
             <button
               type="button"
               onClick={() => setStockFilter('inStock')}
-              className={`px-2.5 py-1 rounded-md cursor-pointer ${
+              className={`min-h-[36px] px-2.5 py-1 rounded-md cursor-pointer ${
                 stockFilter === 'inStock'
                   ? 'bg-emerald-600 text-white font-medium'
                   : 'text-emerald-700 hover:bg-emerald-50'
@@ -425,7 +428,7 @@ export default function ProductList({
             <button
               type="button"
               onClick={() => setStockFilter('outOfStock')}
-              className={`px-2.5 py-1 rounded-md cursor-pointer ${
+              className={`min-h-[36px] px-2.5 py-1 rounded-md cursor-pointer ${
                 stockFilter === 'outOfStock'
                   ? 'bg-rose-600 text-white font-medium'
                   : 'text-rose-700 hover:bg-rose-50'
@@ -446,7 +449,7 @@ export default function ProductList({
             <button
               type="button"
               onClick={() => setSelectedIds([])}
-              className="text-xs text-slate-400 hover:text-white underline cursor-pointer ml-1"
+              className="min-h-[36px] px-2 text-xs text-slate-400 hover:text-white underline cursor-pointer ml-1"
             >
               Clear
             </button>
@@ -457,7 +460,7 @@ export default function ProductList({
               type="button"
               disabled={isBulkRunning}
               onClick={() => setBulkModal('bulk_edit_price')}
-              className="px-3 py-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 border border-slate-700 font-medium cursor-pointer whitespace-nowrap"
+              className="min-h-[36px] px-3 py-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 border border-slate-700 font-medium cursor-pointer whitespace-nowrap"
             >
               Edit Price
             </button>
@@ -465,7 +468,7 @@ export default function ProductList({
               type="button"
               disabled={isBulkRunning}
               onClick={() => setBulkModal('bulk_update_stock')}
-              className="px-3 py-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 border border-slate-700 font-medium cursor-pointer whitespace-nowrap"
+              className="min-h-[36px] px-3 py-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 border border-slate-700 font-medium cursor-pointer whitespace-nowrap"
             >
               Update Stock
             </button>
@@ -473,7 +476,7 @@ export default function ProductList({
               type="button"
               disabled={isBulkRunning}
               onClick={() => setBulkModal('bulk_update_discount')}
-              className="px-3 py-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 border border-slate-700 font-medium cursor-pointer whitespace-nowrap"
+              className="min-h-[36px] px-3 py-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 border border-slate-700 font-medium cursor-pointer whitespace-nowrap"
             >
               Set Discount
             </button>
@@ -481,7 +484,7 @@ export default function ProductList({
               type="button"
               disabled={isBulkRunning}
               onClick={() => setBulkModal('bulk_assign_category')}
-              className="px-3 py-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 border border-slate-700 font-medium cursor-pointer whitespace-nowrap"
+              className="min-h-[36px] px-3 py-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 border border-slate-700 font-medium cursor-pointer whitespace-nowrap"
             >
               Assign Category
             </button>
@@ -489,7 +492,7 @@ export default function ProductList({
               type="button"
               disabled={isBulkRunning}
               onClick={() => setBulkModal('bulk_assign_brand')}
-              className="px-3 py-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 border border-slate-700 font-medium cursor-pointer whitespace-nowrap"
+              className="min-h-[36px] px-3 py-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 border border-slate-700 font-medium cursor-pointer whitespace-nowrap"
             >
               Assign Brand
             </button>
@@ -497,7 +500,7 @@ export default function ProductList({
               type="button"
               disabled={isBulkRunning}
               onClick={() => runBulkAction({ action: 'bulk_activate' })}
-              className="px-3 py-1.5 rounded-lg bg-emerald-600 hover:bg-emerald-700 font-semibold cursor-pointer whitespace-nowrap"
+              className="min-h-[36px] px-3 py-1.5 rounded-lg bg-emerald-600 hover:bg-emerald-700 font-semibold cursor-pointer whitespace-nowrap"
             >
               Activate
             </button>
@@ -505,7 +508,7 @@ export default function ProductList({
               type="button"
               disabled={isBulkRunning}
               onClick={() => runBulkAction({ action: 'bulk_deactivate' })}
-              className="px-3 py-1.5 rounded-lg bg-amber-600 hover:bg-amber-700 font-semibold cursor-pointer whitespace-nowrap"
+              className="min-h-[36px] px-3 py-1.5 rounded-lg bg-amber-600 hover:bg-amber-700 font-semibold cursor-pointer whitespace-nowrap"
             >
               Deactivate
             </button>
@@ -513,7 +516,7 @@ export default function ProductList({
               type="button"
               disabled={isBulkRunning}
               onClick={() => setConfirmDeleteOpen(true)}
-              className="px-3 py-1.5 rounded-lg bg-rose-600 hover:bg-rose-700 font-semibold cursor-pointer whitespace-nowrap"
+              className="min-h-[36px] px-3 py-1.5 rounded-lg bg-rose-600 hover:bg-rose-700 font-semibold cursor-pointer whitespace-nowrap"
             >
               Delete ({selectedIds.length})
             </button>
@@ -544,7 +547,171 @@ export default function ProductList({
         </div>
       ) : viewMode === 'table' ? (
         <div className="bg-white rounded-xl border border-slate-200 overflow-hidden">
-          <div className="overflow-x-auto">
+          {/* Mobile & Tablet Card List */}
+          <div className="lg:hidden">
+            <div className="px-4 py-2.5 bg-slate-50 border-b border-slate-200 flex items-center justify-between text-xs font-semibold text-slate-600">
+              <button
+                type="button"
+                onClick={toggleSelectAll}
+                className="min-h-[36px] inline-flex items-center gap-2 text-slate-700 cursor-pointer"
+              >
+                {allFilteredSelected ? (
+                  <CheckSquare className="w-4 h-4 text-indigo-600" />
+                ) : (
+                  <Square className="w-4 h-4 text-slate-400" />
+                )}
+                <span>Select All ({filteredProducts.length})</span>
+              </button>
+              <span className="tabular-nums text-slate-500">Tap stock badge to toggle</span>
+            </div>
+
+            <div className="divide-y divide-slate-100">
+              {filteredProducts.map((product) => {
+                const hasDiscount = product.mrp && product.mrp > product.price;
+                const discountPercent = hasDiscount
+                  ? Math.round(((product.mrp! - product.price) / product.mrp!) * 100)
+                  : 0;
+                const isSelected = selectedIds.includes(product.id);
+                const isInactive = product.status === 'inactive';
+
+                return (
+                  <div
+                    key={product.id}
+                    className={`p-4 space-y-3 ${isSelected ? 'bg-indigo-50/40' : ''}`}
+                  >
+                    <div className="flex items-start gap-3">
+                      <input
+                        type="checkbox"
+                        checked={isSelected}
+                        onChange={() => toggleSelectOne(product.id)}
+                        aria-label={`Select ${product.name}`}
+                        className="mt-1 h-5 w-5 rounded border-slate-300 text-indigo-600 focus:ring-indigo-500 cursor-pointer shrink-0"
+                      />
+                      <div className="relative w-14 h-14 rounded-lg border border-slate-200 overflow-hidden bg-slate-50 shrink-0">
+                        <Image
+                          src={getProductImage(product)}
+                          alt={product.name}
+                          fill
+                          referrerPolicy="no-referrer"
+                          className="object-contain p-1"
+                          unoptimized={getProductImage(product).startsWith('data:')}
+                        />
+                        {product.featured && (
+                          <div className="absolute top-0.5 left-0.5 bg-amber-500 text-white rounded p-0.5">
+                            <Sparkles className="w-2.5 h-2.5" />
+                          </div>
+                        )}
+                      </div>
+                      <div className="flex-1 min-w-0">
+                        <div className="flex items-start justify-between gap-2">
+                          <div className="min-w-0">
+                            <div className="font-semibold text-sm text-slate-900 truncate">
+                              {product.name}
+                            </div>
+                            <div className="text-xs text-slate-500 font-mono truncate">
+                              {product.sku || `STEP-${String(product.id).padStart(4, '0')}`} ·{' '}
+                              <span className="font-sans">{product.category}</span>
+                            </div>
+                          </div>
+                          <span
+                            className={`text-[11px] font-semibold shrink-0 ${
+                              isInactive ? 'text-slate-400' : 'text-emerald-700'
+                            }`}
+                          >
+                            {isInactive ? 'Inactive' : 'Active'}
+                          </span>
+                        </div>
+
+                        <div className="mt-2 flex flex-wrap items-baseline gap-2 tabular-nums">
+                          <span className="text-sm font-bold text-slate-900">
+                            ₹{product.price.toLocaleString('en-IN')}
+                          </span>
+                          {hasDiscount && (
+                            <>
+                              <span className="text-xs text-slate-400 line-through">
+                                ₹{product.mrp!.toLocaleString('en-IN')}
+                              </span>
+                              <span className="text-xs font-semibold text-rose-700">
+                                {discountPercent}% OFF
+                              </span>
+                            </>
+                          )}
+                        </div>
+                      </div>
+                    </div>
+
+                    <div className="flex flex-wrap items-center justify-between gap-2 pt-1">
+                      <button
+                        type="button"
+                        disabled={isUpdatingStock === product.id}
+                        onClick={() => handleToggleStock(product)}
+                        className={`min-h-[44px] inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold border cursor-pointer transition-colors tabular-nums ${
+                          product.inStock
+                            ? 'bg-emerald-50 text-emerald-700 border-emerald-200 hover:bg-emerald-100'
+                            : 'bg-rose-50 text-rose-700 border-rose-200 hover:bg-rose-100'
+                        }`}
+                      >
+                        {product.inStock ? (
+                          <>
+                            <CheckCircle className="w-3.5 h-3.5 text-emerald-600" />
+                            <span>{product.stockQuantity ?? 25} qty</span>
+                          </>
+                        ) : (
+                          <>
+                            <XCircle className="w-3.5 h-3.5 text-rose-600" />
+                            <span>Out of Stock</span>
+                          </>
+                        )}
+                      </button>
+
+                      <div className="flex items-center gap-1.5">
+                        <Link
+                          href={`/products/${product.id}`}
+                          target="_blank"
+                          title="Preview on Storefront"
+                          aria-label={`Preview ${product.name}`}
+                          className="min-w-[44px] min-h-[44px] inline-flex items-center justify-center text-slate-500 hover:text-indigo-600 rounded-lg border border-slate-200 hover:bg-indigo-50 transition-colors"
+                        >
+                          <ExternalLink className="w-4 h-4" />
+                        </Link>
+                        <button
+                          type="button"
+                          onClick={() => handleDuplicate(product)}
+                          title="Duplicate Shoe"
+                          aria-label={`Duplicate ${product.name}`}
+                          className="min-w-[44px] min-h-[44px] inline-flex items-center justify-center text-slate-500 hover:text-slate-800 rounded-lg border border-slate-200 hover:bg-slate-100 transition-colors cursor-pointer"
+                        >
+                          <Copy className="w-4 h-4" />
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => onEdit(product)}
+                          title="Edit Shoe Details"
+                          aria-label={`Edit ${product.name}`}
+                          className="min-w-[44px] min-h-[44px] inline-flex items-center justify-center text-indigo-600 hover:text-indigo-800 rounded-lg border border-indigo-200 bg-indigo-50 hover:bg-indigo-100 transition-colors cursor-pointer"
+                        >
+                          <Edit2 className="w-4 h-4" />
+                        </button>
+                        <button
+                          type="button"
+                          disabled={deletingId === product.id}
+                          onClick={() => handleDelete(product.id, product.name)}
+                          title="Delete Shoe"
+                          aria-label={`Delete ${product.name}`}
+                          className="min-w-[44px] min-h-[44px] inline-flex items-center justify-center text-rose-600 hover:text-rose-700 rounded-lg border border-rose-200 bg-rose-50 hover:bg-rose-100 transition-colors cursor-pointer"
+                        >
+                          <Trash2 className="w-4 h-4" />
+                        </button>
+                      </div>
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          </div>
+
+          {/* Desktop Table */}
+          <div className="hidden lg:block overflow-x-auto">
             <table className="w-full text-left text-sm text-slate-600">
               <thead className="bg-slate-50 border-b border-slate-200 text-xs font-semibold uppercase tracking-wider text-slate-500">
                 <tr>
@@ -737,7 +904,7 @@ export default function ProductList({
           </div>
         </div>
       ) : (
-        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
           {filteredProducts.map((product) => {
             const hasDiscount = product.mrp && product.mrp > product.price;
             const discountPercent = hasDiscount
@@ -767,14 +934,14 @@ export default function ProductList({
                         type="checkbox"
                         checked={isSelected}
                         onChange={() => toggleSelectOne(product.id)}
-                        className="h-4 w-4 rounded border-slate-300 text-indigo-600 focus:ring-indigo-500 cursor-pointer"
+                        className="h-5 w-5 rounded border-slate-300 text-indigo-600 focus:ring-indigo-500 cursor-pointer"
                       />
                     </div>
                     <div className="absolute top-2 right-2">
                       <button
                         type="button"
                         onClick={() => handleToggleStock(product)}
-                        className={`text-[11px] font-semibold px-2 py-0.5 rounded border cursor-pointer tabular-nums ${
+                        className={`min-h-[32px] text-[11px] font-semibold px-2.5 py-1 rounded border cursor-pointer tabular-nums ${
                           product.inStock
                             ? 'bg-emerald-50 text-emerald-700 border-emerald-200'
                             : 'bg-rose-50 text-rose-700 border-rose-200'
@@ -810,11 +977,11 @@ export default function ProductList({
                   </div>
                 </div>
 
-                <div className="p-3 bg-slate-50 border-t border-slate-100 flex items-center justify-between gap-1">
+                <div className="p-2.5 bg-slate-50 border-t border-slate-100 flex items-center justify-between gap-1">
                   <Link
                     href={`/products/${product.id}`}
                     target="_blank"
-                    className="text-xs text-slate-600 hover:text-indigo-600 flex items-center gap-1 font-medium px-2 py-1 rounded hover:bg-white transition-colors"
+                    className="min-h-[40px] text-xs text-slate-600 hover:text-indigo-600 flex items-center gap-1 font-medium px-2.5 py-1.5 rounded-lg hover:bg-white transition-colors"
                   >
                     <ExternalLink className="w-3.5 h-3.5" />
                     Preview
@@ -823,23 +990,26 @@ export default function ProductList({
                     <button
                       type="button"
                       onClick={() => handleDuplicate(product)}
-                      className="p-1.5 text-slate-500 hover:text-slate-800 rounded hover:bg-white cursor-pointer"
+                      className="min-w-[40px] min-h-[40px] inline-flex items-center justify-center text-slate-500 hover:text-slate-800 rounded-lg hover:bg-white cursor-pointer"
+                      aria-label={`Duplicate ${product.name}`}
                     >
-                      <Copy className="w-3.5 h-3.5" />
+                      <Copy className="w-4 h-4" />
                     </button>
                     <button
                       type="button"
                       onClick={() => onEdit(product)}
-                      className="p-1.5 text-indigo-600 hover:text-indigo-800 rounded hover:bg-white cursor-pointer"
+                      className="min-w-[40px] min-h-[40px] inline-flex items-center justify-center text-indigo-600 hover:text-indigo-800 rounded-lg hover:bg-white cursor-pointer"
+                      aria-label={`Edit ${product.name}`}
                     >
-                      <Edit2 className="w-3.5 h-3.5" />
+                      <Edit2 className="w-4 h-4" />
                     </button>
                     <button
                       type="button"
                       onClick={() => handleDelete(product.id, product.name)}
-                      className="p-1.5 text-rose-500 hover:text-rose-700 rounded hover:bg-white cursor-pointer"
+                      className="min-w-[40px] min-h-[40px] inline-flex items-center justify-center text-rose-500 hover:text-rose-700 rounded-lg hover:bg-white cursor-pointer"
+                      aria-label={`Delete ${product.name}`}
                     >
-                      <Trash2 className="w-3.5 h-3.5" />
+                      <Trash2 className="w-4 h-4" />
                     </button>
                   </div>
                 </div>
@@ -852,7 +1022,7 @@ export default function ProductList({
       {/* Bulk Action Modals */}
       {bulkModal && (
         <div className="fixed inset-0 z-50 bg-slate-950/60 flex items-center justify-center p-4">
-          <div className="bg-white rounded-xl border border-slate-200 max-w-md w-full p-6 space-y-4">
+          <div className="bg-white rounded-xl border border-slate-200 max-w-md w-full max-h-[90dvh] overflow-y-auto p-5 sm:p-6 space-y-4">
             <div className="flex items-center justify-between">
               <h3 className="text-base font-bold text-slate-900">
                 Bulk Update ({selectedIds.length} products)
@@ -860,7 +1030,8 @@ export default function ProductList({
               <button
                 type="button"
                 onClick={() => setBulkModal(null)}
-                className="p-1 rounded-md text-slate-400 hover:text-slate-700 cursor-pointer"
+                aria-label="Close modal"
+                className="min-w-[44px] min-h-[44px] inline-flex items-center justify-center rounded-lg text-slate-400 hover:text-slate-700 cursor-pointer"
               >
                 <X className="w-4 h-4" />
               </button>
@@ -879,7 +1050,7 @@ export default function ProductList({
                         e.target.value as 'fixed' | 'percent_increase' | 'percent_decrease'
                       )
                     }
-                    className="w-full px-3 py-2 text-sm border border-slate-300 rounded-lg"
+                    className="w-full min-h-[44px] px-3 py-2 text-base sm:text-sm border border-slate-300 rounded-lg"
                   >
                     <option value="percent_decrease">Decrease Price by %</option>
                     <option value="percent_increase">Increase Price by %</option>
@@ -895,14 +1066,14 @@ export default function ProductList({
                     min="1"
                     value={priceValue}
                     onChange={(e) => setPriceValue(e.target.value)}
-                    className="w-full px-3 py-2 text-sm border border-slate-300 rounded-lg"
+                    className="w-full min-h-[44px] px-3 py-2 text-base sm:text-sm border border-slate-300 rounded-lg"
                   />
                 </div>
                 <div className="flex justify-end gap-2 pt-2">
                   <button
                     type="button"
                     onClick={() => setBulkModal(null)}
-                    className="px-4 py-2 text-xs font-semibold bg-slate-100 rounded-lg cursor-pointer"
+                    className="min-h-[44px] px-4 py-2 text-xs font-semibold bg-slate-100 rounded-lg cursor-pointer"
                   >
                     Cancel
                   </button>
@@ -916,7 +1087,7 @@ export default function ProductList({
                         value: Number(priceValue),
                       })
                     }
-                    className="px-4 py-2 text-xs font-semibold bg-slate-900 text-white rounded-lg cursor-pointer"
+                    className="min-h-[44px] px-4 py-2 text-xs font-semibold bg-slate-900 text-white rounded-lg cursor-pointer"
                   >
                     Apply Prices
                   </button>
@@ -935,14 +1106,14 @@ export default function ProductList({
                     min="0"
                     value={bulkStockVal}
                     onChange={(e) => setBulkStockVal(e.target.value)}
-                    className="w-full px-3 py-2 text-sm border border-slate-300 rounded-lg"
+                    className="w-full min-h-[44px] px-3 py-2 text-base sm:text-sm border border-slate-300 rounded-lg"
                   />
                 </div>
                 <div className="flex justify-end gap-2 pt-2">
                   <button
                     type="button"
                     onClick={() => setBulkModal(null)}
-                    className="px-4 py-2 text-xs font-semibold bg-slate-100 rounded-lg cursor-pointer"
+                    className="min-h-[44px] px-4 py-2 text-xs font-semibold bg-slate-100 rounded-lg cursor-pointer"
                   >
                     Cancel
                   </button>
@@ -955,7 +1126,7 @@ export default function ProductList({
                         stockQuantity: Number(bulkStockVal),
                       })
                     }
-                    className="px-4 py-2 text-xs font-semibold bg-slate-900 text-white rounded-lg cursor-pointer"
+                    className="min-h-[44px] px-4 py-2 text-xs font-semibold bg-slate-900 text-white rounded-lg cursor-pointer"
                   >
                     Update Stock
                   </button>
@@ -975,14 +1146,14 @@ export default function ProductList({
                     max="90"
                     value={bulkDiscountVal}
                     onChange={(e) => setBulkDiscountVal(e.target.value)}
-                    className="w-full px-3 py-2 text-sm border border-slate-300 rounded-lg"
+                    className="w-full min-h-[44px] px-3 py-2 text-base sm:text-sm border border-slate-300 rounded-lg"
                   />
                 </div>
                 <div className="flex justify-end gap-2 pt-2">
                   <button
                     type="button"
                     onClick={() => setBulkModal(null)}
-                    className="px-4 py-2 text-xs font-semibold bg-slate-100 rounded-lg cursor-pointer"
+                    className="min-h-[44px] px-4 py-2 text-xs font-semibold bg-slate-100 rounded-lg cursor-pointer"
                   >
                     Cancel
                   </button>
@@ -995,7 +1166,7 @@ export default function ProductList({
                         discountPercentage: Number(bulkDiscountVal),
                       })
                     }
-                    className="px-4 py-2 text-xs font-semibold bg-slate-900 text-white rounded-lg cursor-pointer"
+                    className="min-h-[44px] px-4 py-2 text-xs font-semibold bg-slate-900 text-white rounded-lg cursor-pointer"
                   >
                     Apply Discount
                   </button>
@@ -1014,14 +1185,14 @@ export default function ProductList({
                     value={bulkCategoryVal}
                     onChange={(e) => setBulkCategoryVal(e.target.value)}
                     placeholder="e.g. Running, Basketball, Sneakers"
-                    className="w-full px-3 py-2 text-sm border border-slate-300 rounded-lg"
+                    className="w-full min-h-[44px] px-3 py-2 text-base sm:text-sm border border-slate-300 rounded-lg"
                   />
                 </div>
                 <div className="flex justify-end gap-2 pt-2">
                   <button
                     type="button"
                     onClick={() => setBulkModal(null)}
-                    className="px-4 py-2 text-xs font-semibold bg-slate-100 rounded-lg cursor-pointer"
+                    className="min-h-[44px] px-4 py-2 text-xs font-semibold bg-slate-100 rounded-lg cursor-pointer"
                   >
                     Cancel
                   </button>
@@ -1034,7 +1205,7 @@ export default function ProductList({
                         category: bulkCategoryVal.trim(),
                       })
                     }
-                    className="px-4 py-2 text-xs font-semibold bg-slate-900 text-white rounded-lg cursor-pointer"
+                    className="min-h-[44px] px-4 py-2 text-xs font-semibold bg-slate-900 text-white rounded-lg cursor-pointer"
                   >
                     Assign Category
                   </button>
@@ -1053,14 +1224,14 @@ export default function ProductList({
                     value={bulkBrandVal}
                     onChange={(e) => setBulkBrandVal(e.target.value)}
                     placeholder="e.g. StepStyle Elite"
-                    className="w-full px-3 py-2 text-sm border border-slate-300 rounded-lg"
+                    className="w-full min-h-[44px] px-3 py-2 text-base sm:text-sm border border-slate-300 rounded-lg"
                   />
                 </div>
                 <div className="flex justify-end gap-2 pt-2">
                   <button
                     type="button"
                     onClick={() => setBulkModal(null)}
-                    className="px-4 py-2 text-xs font-semibold bg-slate-100 rounded-lg cursor-pointer"
+                    className="min-h-[44px] px-4 py-2 text-xs font-semibold bg-slate-100 rounded-lg cursor-pointer"
                   >
                     Cancel
                   </button>
@@ -1073,7 +1244,7 @@ export default function ProductList({
                         brand: bulkBrandVal.trim(),
                       })
                     }
-                    className="px-4 py-2 text-xs font-semibold bg-slate-900 text-white rounded-lg cursor-pointer"
+                    className="min-h-[44px] px-4 py-2 text-xs font-semibold bg-slate-900 text-white rounded-lg cursor-pointer"
                   >
                     Assign Brand
                   </button>
@@ -1087,7 +1258,7 @@ export default function ProductList({
       {/* Bulk Delete Confirmation Dialog */}
       {confirmDeleteOpen && (
         <div className="fixed inset-0 z-50 bg-slate-950/60 flex items-center justify-center p-4">
-          <div className="bg-white rounded-xl border border-slate-200 max-w-md w-full p-6 space-y-4">
+          <div className="bg-white rounded-xl border border-slate-200 max-w-md w-full p-5 sm:p-6 space-y-4">
             <h3 className="text-base font-bold text-slate-900">
               Delete {selectedIds.length} Selected Shoe(s)?
             </h3>
@@ -1098,7 +1269,7 @@ export default function ProductList({
               <button
                 type="button"
                 onClick={() => setConfirmDeleteOpen(false)}
-                className="px-4 py-2 text-xs font-semibold bg-slate-100 hover:bg-slate-200 text-slate-800 rounded-lg cursor-pointer"
+                className="min-h-[44px] px-4 py-2 text-xs font-semibold bg-slate-100 hover:bg-slate-200 text-slate-800 rounded-lg cursor-pointer"
               >
                 Cancel
               </button>
@@ -1106,7 +1277,7 @@ export default function ProductList({
                 type="button"
                 disabled={isBulkRunning}
                 onClick={() => runBulkAction({ action: 'bulk_delete' })}
-                className="px-4 py-2 text-xs font-semibold bg-rose-600 hover:bg-rose-700 text-white rounded-lg cursor-pointer"
+                className="min-h-[44px] px-4 py-2 text-xs font-semibold bg-rose-600 hover:bg-rose-700 text-white rounded-lg cursor-pointer"
               >
                 {isBulkRunning ? 'Deleting...' : 'Confirm Bulk Delete'}
               </button>

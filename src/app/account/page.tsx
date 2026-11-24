@@ -111,20 +111,20 @@ export default function AccountPage() {
 
   if (isLoading) {
     return (
-      <div className="min-h-screen flex items-center justify-center">
+      <div className="min-h-[calc(100dvh-5rem)] flex items-center justify-center">
         <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-indigo-600" />
       </div>
     );
   }
 
   return (
-    <div className="container mx-auto px-4 py-6 sm:py-8">
+    <div className="container mx-auto max-w-7xl px-3.5 sm:px-4 py-6 sm:py-8">
       <div className="max-w-3xl mx-auto space-y-6">
-        <div className="flex items-center justify-between">
+        <div className="flex flex-wrap items-center justify-between gap-2">
           <h1 className="text-xl sm:text-2xl font-bold text-slate-900">My Account</h1>
           <Link
             href="/track-order"
-            className="inline-flex items-center gap-1.5 text-sm font-semibold text-indigo-600 hover:text-indigo-700 transition-colors"
+            className="min-h-[44px] inline-flex items-center gap-1.5 text-sm font-semibold text-indigo-600 hover:text-indigo-700 transition-colors"
           >
             <Truck className="w-4 h-4" />
             <span>Order Tracking</span>
@@ -182,26 +182,27 @@ export default function AccountPage() {
             <div className="flex flex-col sm:flex-row flex-wrap gap-2.5">
               <Link
                 href="/track-order"
-                className="w-full sm:w-auto inline-flex items-center justify-center gap-2 px-4 py-2 rounded-lg text-sm font-semibold text-white bg-indigo-600 hover:bg-indigo-700 transition-colors"
+                className="w-full sm:w-auto min-h-[44px] inline-flex items-center justify-center gap-2 px-4 py-2 rounded-lg text-sm font-semibold text-white bg-indigo-600 hover:bg-indigo-700 transition-colors"
               >
                 <Truck className="h-4 w-4" />
                 <span>Order Tracking</span>
               </Link>
               <Link
                 href="/wishlist"
-                className="w-full sm:w-auto inline-flex items-center justify-center gap-2 px-4 py-2 border border-slate-300 rounded-lg text-sm font-medium text-slate-700 bg-white hover:bg-slate-50 transition-colors"
+                className="w-full sm:w-auto min-h-[44px] inline-flex items-center justify-center gap-2 px-4 py-2 border border-slate-300 rounded-lg text-sm font-medium text-slate-700 bg-white hover:bg-slate-50 transition-colors"
               >
                 <Heart className="h-4 w-4 text-slate-500" />
                 <span>My Wishlist</span>
               </Link>
               <button
+                type="button"
                 onClick={() => {
                   localStorage.removeItem('isAuthenticated');
                   localStorage.removeItem('authUser');
                   window.dispatchEvent(new Event('authUpdated'));
                   router.push('/auth/login');
                 }}
-                className="w-full sm:w-auto inline-flex items-center justify-center gap-2 px-4 py-2 border border-rose-300 rounded-lg text-sm font-medium text-rose-700 bg-white hover:bg-rose-50 transition-colors cursor-pointer"
+                className="w-full sm:w-auto min-h-[44px] inline-flex items-center justify-center gap-2 px-4 py-2 border border-rose-300 rounded-lg text-sm font-medium text-rose-700 bg-white hover:bg-rose-50 transition-colors cursor-pointer"
               >
                 <LogOut className="h-4 w-4 text-rose-500" />
                 <span>Sign Out</span>
@@ -226,7 +227,7 @@ export default function AccountPage() {
             </div>
             <Link
               href="/track-order"
-              className="inline-flex items-center gap-1 text-xs font-bold text-indigo-600 hover:text-indigo-700 transition-colors"
+              className="min-h-[44px] inline-flex items-center gap-1 text-xs font-bold text-indigo-600 hover:text-indigo-700 transition-colors"
             >
               <span>Open Full Tracker</span>
               <ArrowRight className="w-3.5 h-3.5" />
@@ -241,12 +242,12 @@ export default function AccountPage() {
                 value={quickOrderId}
                 onChange={(e) => setQuickOrderId(e.target.value)}
                 placeholder="Enter Order ID (e.g. STEP-4829-1034)"
-                className="w-full pl-9 pr-3 py-2.5 rounded-lg border border-slate-300 text-sm font-mono placeholder:font-sans focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-600"
+                className="w-full min-h-[44px] pl-9 pr-3 py-2.5 rounded-lg border border-slate-300 text-base sm:text-sm font-mono placeholder:font-sans focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-600"
               />
             </div>
             <button
               type="submit"
-              className="px-5 py-2.5 rounded-lg bg-slate-900 hover:bg-slate-800 text-white text-sm font-semibold inline-flex items-center justify-center gap-1.5 transition-colors cursor-pointer"
+              className="min-h-[44px] px-5 py-2.5 rounded-lg bg-slate-900 hover:bg-slate-800 text-white text-sm font-semibold inline-flex items-center justify-center gap-1.5 transition-colors cursor-pointer whitespace-nowrap"
             >
               <span>Track Order</span>
               <ArrowRight className="w-4 h-4" />
@@ -293,7 +294,7 @@ export default function AccountPage() {
 
                       <Link
                         href={`/track-order?orderId=${encodeURIComponent(code)}`}
-                        className="inline-flex items-center justify-center gap-1.5 px-3.5 py-2 rounded-lg border border-indigo-200 bg-indigo-50 hover:bg-indigo-100 text-indigo-700 text-xs font-bold transition-colors shrink-0"
+                        className="min-h-[44px] inline-flex items-center justify-center gap-1.5 px-3.5 py-2 rounded-lg border border-indigo-200 bg-indigo-50 hover:bg-indigo-100 text-indigo-700 text-xs font-bold transition-colors shrink-0"
                       >
                         <Truck className="w-3.5 h-3.5" />
                         <span>Track Status</span>

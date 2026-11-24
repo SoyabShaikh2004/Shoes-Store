@@ -384,14 +384,14 @@ export default function OrderTrackingClient() {
                 onChange={(e) => setOrderIdInput(e.target.value)}
                 placeholder="Enter Order ID (e.g. STEP-4829-1034)"
                 aria-label="Order ID"
-                className="w-full min-h-[46px] pl-10 pr-10 py-3 rounded-xl border border-slate-300 bg-slate-50 text-sm font-mono font-semibold text-slate-900 placeholder:font-sans placeholder:font-normal placeholder:text-slate-400 focus:bg-white focus:border-indigo-600 focus:ring-2 focus:ring-indigo-500/20 focus:outline-none transition-colors"
+                className="w-full min-h-[46px] pl-10 pr-10 py-3 rounded-xl border border-slate-300 bg-slate-50 text-base sm:text-sm font-mono font-semibold text-slate-900 placeholder:font-sans placeholder:font-normal placeholder:text-slate-400 focus:bg-white focus:border-indigo-600 focus:ring-2 focus:ring-indigo-500/20 focus:outline-none transition-colors"
               />
               {orderIdInput && (
                 <button
                   type="button"
                   onClick={handleClear}
                   aria-label="Clear order ID"
-                  className="absolute right-3 top-1/2 -translate-y-1/2 p-1 rounded-full text-slate-400 hover:text-slate-700 hover:bg-slate-200/60 transition-colors cursor-pointer"
+                  className="absolute right-1.5 top-1/2 -translate-y-1/2 min-w-[36px] min-h-[36px] inline-flex items-center justify-center rounded-full text-slate-400 hover:text-slate-700 hover:bg-slate-200/60 transition-colors cursor-pointer"
                 >
                   <X className="w-4 h-4" />
                 </button>
@@ -439,7 +439,7 @@ export default function OrderTrackingClient() {
                         activeVerifyRef.current = '';
                         lookupOrder(code, { updateUrl: true });
                       }}
-                      className={`inline-flex items-center gap-2 px-3 py-1.5 rounded-lg border text-xs font-medium transition-colors cursor-pointer ${
+                      className={`min-h-[44px] inline-flex items-center gap-2 px-3 py-2 rounded-lg border text-xs font-medium transition-colors cursor-pointer ${
                         isActive
                           ? 'bg-indigo-600 text-white border-indigo-600'
                           : 'bg-slate-50 hover:bg-indigo-50 text-slate-800 border-slate-200 hover:border-indigo-200'
@@ -478,14 +478,14 @@ export default function OrderTrackingClient() {
           <div className="mt-4 flex flex-wrap justify-center gap-3">
             <Link
               href="/account"
-              className="inline-flex items-center gap-1.5 px-4 py-2 rounded-lg bg-white border border-slate-300 text-xs font-semibold text-slate-800 hover:bg-slate-50 transition-colors"
+              className="min-h-[44px] inline-flex items-center gap-1.5 px-4 py-2 rounded-lg bg-white border border-slate-300 text-xs font-semibold text-slate-800 hover:bg-slate-50 transition-colors"
             >
               <User className="w-3.5 h-3.5" />
               <span>Go to My Account</span>
             </Link>
             <Link
               href="/products"
-              className="inline-flex items-center gap-1.5 px-4 py-2 rounded-lg bg-slate-900 text-xs font-semibold text-white hover:bg-slate-800 transition-colors"
+              className="min-h-[44px] inline-flex items-center gap-1.5 px-4 py-2 rounded-lg bg-slate-900 text-xs font-semibold text-white hover:bg-slate-800 transition-colors"
             >
               <ShoppingBag className="w-3.5 h-3.5" />
               <span>Browse Footwear</span>
@@ -517,17 +517,17 @@ export default function OrderTrackingClient() {
                   </p>
                 </div>
               </div>
-              <form onSubmit={handleVerifyOwner} className="flex items-center gap-2 shrink-0">
+              <form onSubmit={handleVerifyOwner} className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2 w-full md:w-auto shrink-0">
                 <input
                   type="text"
                   value={verifyInput}
                   onChange={(e) => setVerifyInput(e.target.value)}
                   placeholder="Email or last 4 phone digits"
-                  className="px-3 py-2 text-xs rounded-lg border border-amber-300 bg-white text-slate-900 focus:outline-none focus:ring-2 focus:ring-amber-500/30 min-w-[200px]"
+                  className="min-h-[44px] px-3 py-2 text-base sm:text-xs rounded-lg border border-amber-300 bg-white text-slate-900 focus:outline-none focus:ring-2 focus:ring-amber-500/30 w-full sm:min-w-[210px]"
                 />
                 <button
                   type="submit"
-                  className="px-3.5 py-2 rounded-lg bg-amber-700 hover:bg-amber-800 text-white text-xs font-semibold cursor-pointer whitespace-nowrap"
+                  className="min-h-[44px] px-4 py-2 rounded-lg bg-amber-700 hover:bg-amber-800 text-white text-xs font-semibold cursor-pointer whitespace-nowrap"
                 >
                   Verify
                 </button>
@@ -571,7 +571,7 @@ export default function OrderTrackingClient() {
                     <button
                       type="button"
                       onClick={() => setShowReturnModal(true)}
-                      className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg border border-slate-300 hover:bg-slate-50 text-slate-700 text-xs font-semibold cursor-pointer"
+                      className="min-h-[44px] inline-flex items-center gap-1.5 px-3.5 py-2 rounded-lg border border-slate-300 hover:bg-slate-50 text-slate-700 text-xs font-semibold cursor-pointer shrink-0"
                     >
                       <RotateCcw className="w-3.5 h-3.5" />
                       <span>Request Return</span>
@@ -722,9 +722,9 @@ export default function OrderTrackingClient() {
                     </div>
                   )}
                   {foundOrder.transactionId && (
-                    <div className="flex justify-between text-slate-600">
-                      <span>Transaction ID</span>
-                      <span className="font-mono text-slate-800">
+                    <div className="flex justify-between gap-3 text-slate-600">
+                      <span className="shrink-0">Transaction ID</span>
+                      <span className="font-mono text-slate-800 break-all text-right">
                         {foundOrder.transactionId}
                       </span>
                     </div>
@@ -795,17 +795,18 @@ export default function OrderTrackingClient() {
       {/* Return Request Modal */}
       {showReturnModal && foundOrder && (
         <div className="fixed inset-0 z-50 bg-slate-950/60 flex items-center justify-center p-4">
-          <div className="bg-white rounded-2xl border border-slate-200 max-w-md w-full p-6 space-y-4">
-            <div className="flex items-center justify-between">
+          <div className="bg-white rounded-2xl border border-slate-200 max-w-md w-full max-h-[90dvh] overflow-y-auto p-5 sm:p-6 space-y-4">
+            <div className="flex items-center justify-between gap-2">
               <h3 className="text-base font-bold text-slate-900">
                 Request Return — {foundOrder.orderNumber || foundOrder.orderId}
               </h3>
               <button
                 type="button"
                 onClick={() => setShowReturnModal(false)}
-                className="p-1 rounded-lg text-slate-400 hover:text-slate-700 cursor-pointer"
+                aria-label="Close return modal"
+                className="min-w-[44px] min-h-[44px] -mr-2 inline-flex items-center justify-center rounded-lg text-slate-400 hover:text-slate-700 cursor-pointer shrink-0"
               >
-                <X className="w-4 h-4" />
+                <X className="w-5 h-5" />
               </button>
             </div>
             <form onSubmit={handleRequestReturn} className="space-y-4">
@@ -819,21 +820,21 @@ export default function OrderTrackingClient() {
                   value={returnReason}
                   onChange={(e) => setReturnReason(e.target.value)}
                   placeholder="e.g. Size runs small — requesting exchange or refund"
-                  className="w-full px-3 py-2 text-sm border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-600"
+                  className="w-full px-3 py-2.5 text-base sm:text-sm border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-600"
                 />
               </div>
               <div className="flex justify-end gap-2">
                 <button
                   type="button"
                   onClick={() => setShowReturnModal(false)}
-                  className="px-4 py-2 text-xs font-semibold text-slate-700 bg-slate-100 hover:bg-slate-200 rounded-lg cursor-pointer"
+                  className="min-h-[44px] px-4 py-2 text-xs font-semibold text-slate-700 bg-slate-100 hover:bg-slate-200 rounded-lg cursor-pointer"
                 >
                   Cancel
                 </button>
                 <button
                   type="submit"
                   disabled={isSubmittingReturn}
-                  className="px-4 py-2 text-xs font-semibold text-white bg-slate-900 hover:bg-slate-800 rounded-lg cursor-pointer disabled:opacity-60"
+                  className="min-h-[44px] px-4 py-2 text-xs font-semibold text-white bg-slate-900 hover:bg-slate-800 rounded-lg cursor-pointer disabled:opacity-60"
                 >
                   {isSubmittingReturn ? 'Submitting...' : 'Submit Return Request'}
                 </button>

@@ -351,9 +351,9 @@ export default function AdminBulkUpload({ onImportComplete }: AdminBulkUploadPro
   return (
     <div className="space-y-6">
       {/* Step 1 & Step 2 Grid */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 sm:gap-6">
         {/* Step 1: Sample Template */}
-        <div className="bg-white rounded-xl border border-slate-200 p-5 sm:p-6 space-y-4">
+        <div className="bg-white rounded-xl border border-slate-200 p-4 sm:p-6 space-y-4">
           <div className="flex items-start justify-between gap-3">
             <div>
               <span className="text-xs font-semibold uppercase tracking-wider text-indigo-600">
@@ -375,28 +375,28 @@ export default function AdminBulkUpload({ onImportComplete }: AdminBulkUploadPro
             Additional Images, Product Tags, Featured Product, Active / Inactive, Gender, Shoe Type.
           </div>
 
-          <div className="flex flex-wrap gap-2.5">
+          <div className="flex flex-col sm:flex-row gap-2.5">
             <button
               type="button"
               onClick={() => handleDownloadTemplate('xlsx')}
-              className="flex-1 min-h-[40px] px-4 py-2 rounded-lg bg-slate-900 hover:bg-slate-800 text-white text-xs font-semibold inline-flex items-center justify-center gap-2 cursor-pointer"
+              className="flex-1 min-h-[44px] px-4 py-2 rounded-lg bg-slate-900 hover:bg-slate-800 text-white text-xs font-semibold inline-flex items-center justify-center gap-2 cursor-pointer whitespace-nowrap"
             >
-              <Download className="w-4 h-4" />
+              <Download className="w-4 h-4 shrink-0" />
               <span>Download Excel (.xlsx)</span>
             </button>
             <button
               type="button"
               onClick={() => handleDownloadTemplate('csv')}
-              className="flex-1 min-h-[40px] px-4 py-2 rounded-lg border border-slate-300 hover:bg-slate-50 text-slate-800 text-xs font-semibold inline-flex items-center justify-center gap-2 cursor-pointer"
+              className="flex-1 min-h-[44px] px-4 py-2 rounded-lg border border-slate-300 hover:bg-slate-50 text-slate-800 text-xs font-semibold inline-flex items-center justify-center gap-2 cursor-pointer whitespace-nowrap"
             >
-              <Download className="w-4 h-4" />
+              <Download className="w-4 h-4 shrink-0" />
               <span>Download CSV (.csv)</span>
             </button>
           </div>
         </div>
 
         {/* Step 2: Bulk Images or ZIP */}
-        <div className="bg-white rounded-xl border border-slate-200 p-5 sm:p-6 space-y-4">
+        <div className="bg-white rounded-xl border border-slate-200 p-4 sm:p-6 space-y-4">
           <div className="flex items-start justify-between gap-3">
             <div>
               <span className="text-xs font-semibold uppercase tracking-wider text-indigo-600">
@@ -406,7 +406,7 @@ export default function AdminBulkUpload({ onImportComplete }: AdminBulkUploadPro
                 Upload Shoe Images or ZIP Archive
               </h3>
               <p className="text-xs text-slate-500 mt-1">
-                Name files after your SKU (e.g. <span className="font-mono">STEP-RUN-901.jpg</span>) or exact filename used in the sheet.
+                Name files after your SKU (e.g. <span className="font-mono break-all">STEP-RUN-901.jpg</span>) or exact filename used in the sheet.
               </p>
             </div>
             <Images className="w-6 h-6 text-indigo-600 shrink-0" />
@@ -425,7 +425,7 @@ export default function AdminBulkUpload({ onImportComplete }: AdminBulkUploadPro
             type="button"
             disabled={isUploadingImages}
             onClick={() => imageInputRef.current?.click()}
-            className="w-full min-h-[76px] border-2 border-dashed border-slate-300 hover:border-indigo-500 rounded-xl bg-slate-50/70 hover:bg-indigo-50/30 p-4 flex flex-col items-center justify-center gap-1 text-xs cursor-pointer transition-colors"
+            className="w-full min-h-[84px] border-2 border-dashed border-slate-300 hover:border-indigo-500 rounded-xl bg-slate-50/70 hover:bg-indigo-50/30 p-4 flex flex-col items-center justify-center gap-1 text-xs cursor-pointer transition-colors text-center"
           >
             {isUploadingImages ? (
               <span className="font-semibold text-indigo-700">Uploading & extracting media...</span>
@@ -446,7 +446,7 @@ export default function AdminBulkUpload({ onImportComplete }: AdminBulkUploadPro
       </div>
 
       {/* Step 3: Upload Spreadsheet & Validate */}
-      <div className="bg-white rounded-xl border border-slate-200 p-5 sm:p-6 space-y-5">
+      <div className="bg-white rounded-xl border border-slate-200 p-4 sm:p-6 space-y-5">
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
           <div>
             <span className="text-xs font-semibold uppercase tracking-wider text-indigo-600">
@@ -462,7 +462,7 @@ export default function AdminBulkUpload({ onImportComplete }: AdminBulkUploadPro
             </p>
           </div>
 
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-2 shrink-0">
             <input
               ref={sheetInputRef}
               type="file"
@@ -474,9 +474,9 @@ export default function AdminBulkUpload({ onImportComplete }: AdminBulkUploadPro
               type="button"
               disabled={isParsingSheet}
               onClick={() => sheetInputRef.current?.click()}
-              className="min-h-[42px] px-4 py-2 rounded-lg bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-semibold inline-flex items-center gap-2 cursor-pointer"
+              className="w-full sm:w-auto min-h-[44px] px-4 py-2 rounded-lg bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-semibold inline-flex items-center justify-center gap-2 cursor-pointer whitespace-nowrap"
             >
-              <UploadCloud className="w-4 h-4" />
+              <UploadCloud className="w-4 h-4 shrink-0" />
               <span>{isParsingSheet ? 'Validating...' : 'Upload Excel / CSV'}</span>
             </button>
           </div>
@@ -505,7 +505,7 @@ export default function AdminBulkUpload({ onImportComplete }: AdminBulkUploadPro
                 <span className="text-amber-800 block">Duplicate SKUs</span>
                 <strong className="text-lg text-amber-900 tabular-nums">{dupCount}</strong>
               </div>
-              <div className="p-3 rounded-lg bg-slate-50 border border-slate-200">
+              <div className="p-3 rounded-lg bg-slate-50 border border-slate-200 col-span-2 sm:col-span-1">
                 <span className="text-slate-600 block">Missing Images</span>
                 <strong className="text-lg text-slate-900 tabular-nums">
                   {missingImgCount}
@@ -514,15 +514,15 @@ export default function AdminBulkUpload({ onImportComplete }: AdminBulkUploadPro
             </div>
 
             {/* Filter & Import Trigger */}
-            <div className="flex flex-wrap items-center justify-between gap-3">
-              <div className="flex items-center gap-1.5 text-xs">
+            <div className="flex flex-col md:flex-row md:items-center justify-between gap-3">
+              <div className="flex flex-wrap items-center gap-2 text-xs">
                 <button
                   type="button"
                   onClick={() => setRowFilter('all')}
-                  className={`px-3 py-1.5 rounded-lg font-medium cursor-pointer ${
+                  className={`min-h-[44px] px-3.5 py-2 rounded-lg font-medium cursor-pointer whitespace-nowrap ${
                     rowFilter === 'all'
                       ? 'bg-slate-900 text-white'
-                      : 'bg-slate-100 text-slate-700'
+                      : 'bg-slate-100 text-slate-700 hover:bg-slate-200'
                   }`}
                 >
                   All ({previewRows.length})
@@ -530,10 +530,10 @@ export default function AdminBulkUpload({ onImportComplete }: AdminBulkUploadPro
                 <button
                   type="button"
                   onClick={() => setRowFilter('valid')}
-                  className={`px-3 py-1.5 rounded-lg font-medium cursor-pointer ${
+                  className={`min-h-[44px] px-3.5 py-2 rounded-lg font-medium cursor-pointer whitespace-nowrap ${
                     rowFilter === 'valid'
                       ? 'bg-emerald-600 text-white'
-                      : 'bg-emerald-50 text-emerald-800'
+                      : 'bg-emerald-50 text-emerald-800 hover:bg-emerald-100'
                   }`}
                 >
                   Valid ({validCount})
@@ -541,22 +541,22 @@ export default function AdminBulkUpload({ onImportComplete }: AdminBulkUploadPro
                 <button
                   type="button"
                   onClick={() => setRowFilter('invalid')}
-                  className={`px-3 py-1.5 rounded-lg font-medium cursor-pointer ${
+                  className={`min-h-[44px] px-3.5 py-2 rounded-lg font-medium cursor-pointer whitespace-nowrap ${
                     rowFilter === 'invalid'
                       ? 'bg-rose-600 text-white'
-                      : 'bg-rose-50 text-rose-800'
+                      : 'bg-rose-50 text-rose-800 hover:bg-rose-100'
                   }`}
                 >
                   Invalid ({invalidCount})
                 </button>
               </div>
 
-              <div className="flex items-center gap-2">
+              <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2">
                 {invalidCount > 0 && (
                   <button
                     type="button"
                     onClick={() => handleDownloadFailedRows('csv')}
-                    className="px-3 py-2 rounded-lg border border-rose-200 bg-rose-50 text-rose-700 text-xs font-semibold cursor-pointer"
+                    className="min-h-[44px] px-3.5 py-2 rounded-lg border border-rose-200 bg-rose-50 hover:bg-rose-100 text-rose-700 text-xs font-semibold cursor-pointer whitespace-nowrap text-center"
                   >
                     Export Invalid Rows CSV
                   </button>
@@ -565,9 +565,9 @@ export default function AdminBulkUpload({ onImportComplete }: AdminBulkUploadPro
                   type="button"
                   disabled={isImporting || validCount === 0}
                   onClick={handleExecuteImport}
-                  className="px-4 py-2 rounded-lg bg-emerald-600 hover:bg-emerald-700 disabled:opacity-50 text-white text-xs font-semibold inline-flex items-center gap-1.5 cursor-pointer"
+                  className="min-h-[44px] px-4 py-2 rounded-lg bg-emerald-600 hover:bg-emerald-700 disabled:opacity-50 text-white text-xs font-semibold inline-flex items-center justify-center gap-1.5 cursor-pointer whitespace-nowrap"
                 >
-                  <Play className="w-3.5 h-3.5" />
+                  <Play className="w-3.5 h-3.5 shrink-0" />
                   <span>
                     {isImporting
                       ? 'Importing...'
@@ -593,8 +593,144 @@ export default function AdminBulkUpload({ onImportComplete }: AdminBulkUploadPro
               </div>
             )}
 
-            {/* Editable Validation Table */}
-            <div className="border border-slate-200 rounded-xl overflow-x-auto max-h-[460px]">
+            {/* Mobile & Tablet Card Validator */}
+            <div className="lg:hidden space-y-3 max-h-[540px] overflow-y-auto pr-0.5">
+              {visibleRows.map((row) => {
+                const actualIdx = previewRows.findIndex(
+                  (r) => r.rowNumber === row.rowNumber
+                );
+                return (
+                  <div
+                    key={row.rowNumber}
+                    className={`rounded-xl border p-3.5 space-y-3 ${
+                      row.isValid
+                        ? 'border-slate-200 bg-white'
+                        : 'border-rose-200 bg-rose-50/40'
+                    }`}
+                  >
+                    <div className="flex items-center justify-between gap-2 border-b border-slate-100 pb-2">
+                      <span className="text-xs font-mono font-bold text-slate-700 tabular-nums">
+                        Row #{row.rowNumber}
+                      </span>
+                      {row.isValid ? (
+                        <span className="inline-flex items-center gap-1 text-xs text-emerald-700 font-semibold">
+                          <CheckCircle2 className="w-3.5 h-3.5" />
+                          Valid
+                        </span>
+                      ) : (
+                        <span className="inline-flex items-center gap-1 text-xs text-rose-700 font-semibold">
+                          <XCircle className="w-3.5 h-3.5" />
+                          Error
+                        </span>
+                      )}
+                    </div>
+
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
+                      <div className="space-y-1">
+                        <label className="block text-[11px] font-semibold text-slate-600">
+                          Product Name
+                        </label>
+                        <input
+                          type="text"
+                          value={row.name}
+                          onChange={(e) =>
+                            updatePreviewCell(actualIdx, 'name', e.target.value)
+                          }
+                          className="w-full min-h-[44px] px-3 py-2 text-base sm:text-xs border border-slate-200 rounded-lg bg-white"
+                        />
+                      </div>
+
+                      <div className="space-y-1">
+                        <label className="block text-[11px] font-semibold text-slate-600">
+                          SKU
+                        </label>
+                        <input
+                          type="text"
+                          value={row.sku}
+                          onChange={(e) =>
+                            updatePreviewCell(actualIdx, 'sku', e.target.value)
+                          }
+                          className="w-full min-h-[44px] px-3 py-2 text-base sm:text-xs font-mono border border-slate-200 rounded-lg bg-white"
+                        />
+                      </div>
+
+                      <div className="space-y-1">
+                        <label className="block text-[11px] font-semibold text-slate-600">
+                          Category
+                        </label>
+                        <input
+                          type="text"
+                          value={row.category}
+                          onChange={(e) =>
+                            updatePreviewCell(actualIdx, 'category', e.target.value)
+                          }
+                          className="w-full min-h-[44px] px-3 py-2 text-base sm:text-xs border border-slate-200 rounded-lg bg-white"
+                        />
+                      </div>
+
+                      <div className="grid grid-cols-2 gap-2">
+                        <div className="space-y-1">
+                          <label className="block text-[11px] font-semibold text-slate-600">
+                            Price (₹)
+                          </label>
+                          <input
+                            type="number"
+                            value={row.price}
+                            onChange={(e) =>
+                              updatePreviewCell(actualIdx, 'price', e.target.value)
+                            }
+                            className="w-full min-h-[44px] px-3 py-2 text-base sm:text-xs border border-slate-200 rounded-lg bg-white tabular-nums"
+                          />
+                        </div>
+                        <div className="space-y-1">
+                          <label className="block text-[11px] font-semibold text-slate-600">
+                            Stock
+                          </label>
+                          <input
+                            type="number"
+                            value={row.stockQuantity}
+                            onChange={(e) =>
+                              updatePreviewCell(actualIdx, 'stockQuantity', e.target.value)
+                            }
+                            className="w-full min-h-[44px] px-3 py-2 text-base sm:text-xs border border-slate-200 rounded-lg bg-white tabular-nums"
+                          />
+                        </div>
+                      </div>
+                    </div>
+
+                    <div className="space-y-1">
+                      <label className="block text-[11px] font-semibold text-slate-600">
+                        Image Path / Filename
+                      </label>
+                      <input
+                        type="text"
+                        value={row.imagePath}
+                        onChange={(e) =>
+                          updatePreviewCell(actualIdx, 'imagePath', e.target.value)
+                        }
+                        placeholder="Image URL or filename"
+                        className="w-full min-h-[44px] px-3 py-2 text-base sm:text-xs font-mono border border-slate-200 rounded-lg bg-white"
+                      />
+                    </div>
+
+                    {row.errors.length > 0 && (
+                      <p className="text-xs text-rose-700 font-medium">
+                        {row.errors.join(' · ')}
+                      </p>
+                    )}
+                    {row.warnings.length > 0 && row.errors.length === 0 && (
+                      <p className="text-xs text-amber-700 flex items-center gap-1.5">
+                        <AlertTriangle className="w-3.5 h-3.5 shrink-0" />
+                        <span>{row.warnings[0]}</span>
+                      </p>
+                    )}
+                  </div>
+                );
+              })}
+            </div>
+
+            {/* Desktop Editable Validation Table */}
+            <div className="hidden lg:block border border-slate-200 rounded-xl overflow-x-auto max-h-[460px]">
               <table className="w-full text-left text-xs text-slate-600">
                 <thead className="bg-slate-50 border-b border-slate-200 sticky top-0 z-10 text-[11px] font-semibold uppercase text-slate-500">
                   <tr>
@@ -641,7 +777,7 @@ export default function AdminBulkUpload({ onImportComplete }: AdminBulkUploadPro
                             onChange={(e) =>
                               updatePreviewCell(actualIdx, 'name', e.target.value)
                             }
-                            className="w-44 px-2 py-1 text-xs border border-slate-200 rounded bg-white"
+                            className="w-44 px-2 py-1.5 text-xs border border-slate-200 rounded bg-white"
                           />
                         </td>
                         <td className="py-2 px-3">
@@ -651,7 +787,7 @@ export default function AdminBulkUpload({ onImportComplete }: AdminBulkUploadPro
                             onChange={(e) =>
                               updatePreviewCell(actualIdx, 'sku', e.target.value)
                             }
-                            className="w-32 px-2 py-1 text-xs font-mono border border-slate-200 rounded bg-white"
+                            className="w-32 px-2 py-1.5 text-xs font-mono border border-slate-200 rounded bg-white"
                           />
                         </td>
                         <td className="py-2 px-3">
@@ -661,7 +797,7 @@ export default function AdminBulkUpload({ onImportComplete }: AdminBulkUploadPro
                             onChange={(e) =>
                               updatePreviewCell(actualIdx, 'category', e.target.value)
                             }
-                            className="w-24 px-2 py-1 text-xs border border-slate-200 rounded bg-white"
+                            className="w-24 px-2 py-1.5 text-xs border border-slate-200 rounded bg-white"
                           />
                         </td>
                         <td className="py-2 px-3">
@@ -671,7 +807,7 @@ export default function AdminBulkUpload({ onImportComplete }: AdminBulkUploadPro
                             onChange={(e) =>
                               updatePreviewCell(actualIdx, 'price', e.target.value)
                             }
-                            className="w-20 px-2 py-1 text-xs border border-slate-200 rounded bg-white tabular-nums"
+                            className="w-20 px-2 py-1.5 text-xs border border-slate-200 rounded bg-white tabular-nums"
                           />
                         </td>
                         <td className="py-2 px-3">
@@ -681,7 +817,7 @@ export default function AdminBulkUpload({ onImportComplete }: AdminBulkUploadPro
                             onChange={(e) =>
                               updatePreviewCell(actualIdx, 'stockQuantity', e.target.value)
                             }
-                            className="w-16 px-2 py-1 text-xs border border-slate-200 rounded bg-white tabular-nums"
+                            className="w-16 px-2 py-1.5 text-xs border border-slate-200 rounded bg-white tabular-nums"
                           />
                         </td>
                         <td className="py-2 px-3 min-w-[220px]">
@@ -692,7 +828,7 @@ export default function AdminBulkUpload({ onImportComplete }: AdminBulkUploadPro
                               updatePreviewCell(actualIdx, 'imagePath', e.target.value)
                             }
                             placeholder="Image URL or filename"
-                            className="w-full px-2 py-1 text-xs font-mono border border-slate-200 rounded bg-white mb-1"
+                            className="w-full px-2 py-1.5 text-xs font-mono border border-slate-200 rounded bg-white mb-1"
                           />
                           {row.errors.length > 0 && (
                             <p className="text-[11px] text-rose-700 font-medium">
@@ -718,7 +854,7 @@ export default function AdminBulkUpload({ onImportComplete }: AdminBulkUploadPro
 
       {/* Step 4: Final Import Report */}
       {importReport && (
-        <div className="bg-white rounded-xl border border-slate-200 p-5 sm:p-6 space-y-5">
+        <div className="bg-white rounded-xl border border-slate-200 p-4 sm:p-6 space-y-5">
           <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-slate-100 pb-4">
             <div>
               <span className="text-xs font-semibold uppercase tracking-wider text-emerald-700">
@@ -726,20 +862,20 @@ export default function AdminBulkUpload({ onImportComplete }: AdminBulkUploadPro
               </span>
               <h3 className="text-lg font-bold text-slate-900">Final Bulk Import Report</h3>
             </div>
-            <div className="flex flex-wrap gap-2">
+            <div className="flex flex-col sm:flex-row flex-wrap gap-2">
               {importReport.failedRows > 0 && (
                 <>
                   <button
                     type="button"
                     onClick={() => handleDownloadFailedRows('csv')}
-                    className="px-3 py-2 rounded-lg border border-rose-200 bg-rose-50 text-rose-700 text-xs font-semibold cursor-pointer"
+                    className="min-h-[44px] px-3.5 py-2 rounded-lg border border-rose-200 bg-rose-50 hover:bg-rose-100 text-rose-700 text-xs font-semibold cursor-pointer whitespace-nowrap"
                   >
                     Download Failed CSV
                   </button>
                   <button
                     type="button"
                     onClick={() => handleDownloadFailedRows('xlsx')}
-                    className="px-3 py-2 rounded-lg border border-rose-200 bg-rose-50 text-rose-700 text-xs font-semibold cursor-pointer"
+                    className="min-h-[44px] px-3.5 py-2 rounded-lg border border-rose-200 bg-rose-50 hover:bg-rose-100 text-rose-700 text-xs font-semibold cursor-pointer whitespace-nowrap"
                   >
                     Download Failed Excel
                   </button>
@@ -748,9 +884,9 @@ export default function AdminBulkUpload({ onImportComplete }: AdminBulkUploadPro
               <button
                 type="button"
                 onClick={onImportComplete}
-                className="px-3.5 py-2 rounded-lg bg-slate-900 text-white text-xs font-semibold inline-flex items-center gap-1.5 cursor-pointer"
+                className="min-h-[44px] px-4 py-2 rounded-lg bg-slate-900 hover:bg-slate-800 text-white text-xs font-semibold inline-flex items-center justify-center gap-1.5 cursor-pointer whitespace-nowrap"
               >
-                <RefreshCw className="w-3.5 h-3.5" />
+                <RefreshCw className="w-3.5 h-3.5 shrink-0" />
                 <span>Refresh Storefront</span>
               </button>
             </div>

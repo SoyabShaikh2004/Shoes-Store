@@ -137,9 +137,9 @@ export default function SignupPage() {
   };
 
   return (
-    <div className="min-h-screen flex flex-col items-center justify-center px-4 py-12 sm:px-6 lg:px-8">
+    <div className="min-h-[calc(100dvh-5rem)] flex flex-col items-center justify-center px-4 py-8 sm:py-12 sm:px-6 lg:px-8">
       <div className="w-full max-w-md">
-        <div className="text-center mb-8">
+        <div className="text-center mb-6 sm:mb-8">
           <Link href="/" className="inline-block">
             <Image
               src="/images/logo.svg"
@@ -159,7 +159,7 @@ export default function SignupPage() {
           </p>
         </div>
 
-        <div className="bg-white rounded-lg shadow-lg p-4 sm:p-6 mb-6">
+        <div className="bg-white rounded-xl border border-slate-200 shadow-lg p-5 sm:p-6 mb-6">
           {error && (
             <div className="mb-4 p-3 bg-red-50 text-red-700 text-xs sm:text-sm rounded-md border border-red-200">
               {error}
@@ -178,7 +178,7 @@ export default function SignupPage() {
                   id="name"
                   value={name}
                   onChange={(e) => setName(e.target.value)}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                  className="w-full min-h-[44px] px-3.5 py-2 border border-gray-300 rounded-lg text-base sm:text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
                   placeholder="Enter your full name"
                   disabled={isLoading}
                   required
@@ -194,7 +194,7 @@ export default function SignupPage() {
                   id="identifier"
                   value={identifier}
                   onChange={(e) => setIdentifier(e.target.value)}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                  className="w-full min-h-[44px] px-3.5 py-2 border border-gray-300 rounded-lg text-base sm:text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
                   placeholder="Enter your email or phone number"
                   disabled={isLoading}
                   required
@@ -202,7 +202,7 @@ export default function SignupPage() {
                   autoComplete="email"
                 />
                 <p className="mt-1 text-xs text-gray-500">
-                  We'll send a verification code to this {identifierType === 'email' ? 'email' : 'phone number'}
+                  We&apos;ll send a verification code to this {identifierType === 'email' ? 'email' : 'phone number'}
                 </p>
               </div>
               <div>
@@ -214,7 +214,7 @@ export default function SignupPage() {
                   id="password"
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                  className="w-full min-h-[44px] px-3.5 py-2 border border-gray-300 rounded-lg text-base sm:text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
                   placeholder="Create a password (minimum 6 characters)"
                   disabled={isLoading}
                   required
@@ -230,7 +230,7 @@ export default function SignupPage() {
                   id="confirmPassword"
                   value={confirmPassword}
                   onChange={(e) => setConfirmPassword(e.target.value)}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                  className="w-full min-h-[44px] px-3.5 py-2 border border-gray-300 rounded-lg text-base sm:text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
                   placeholder="Confirm your password"
                   disabled={isLoading}
                   required
@@ -239,7 +239,7 @@ export default function SignupPage() {
               </div>
               <button
                 type="submit"
-                className={`w-full py-2.5 text-white font-medium rounded-md transition ${
+                className={`w-full min-h-[48px] py-2.5 text-white text-sm font-semibold rounded-lg transition cursor-pointer ${
                   isLoading
                     ? 'bg-indigo-400 cursor-not-allowed'
                     : 'bg-indigo-600 hover:bg-indigo-700'
@@ -267,8 +267,8 @@ export default function SignupPage() {
               <div>
                 <div className="p-3 sm:p-4 bg-indigo-50 border border-indigo-100 rounded-md mb-4">
                   <p className="text-xs sm:text-sm text-indigo-800">
-                    We've sent a 6-digit verification code to your {identifierType}:
-                    <span className="block mt-1 font-medium word-break-all">{
+                    We&apos;ve sent a 6-digit verification code to your {identifierType}:
+                    <span className="block mt-1 font-medium break-all">{
                       identifierType === 'email' 
                         ? identifier 
                         : `+91 ${identifier.slice(0, 5)}****${identifier.slice(-2)}`
@@ -288,7 +288,7 @@ export default function SignupPage() {
                       setOtp(value);
                     }
                   }}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                  className="w-full min-h-[44px] px-3.5 py-2 border border-gray-300 rounded-lg text-base sm:text-sm font-mono tabular-nums focus:outline-none focus:ring-2 focus:ring-indigo-500"
                   placeholder="Enter 6-digit code"
                   maxLength={6}
                   disabled={isLoading}
@@ -297,14 +297,14 @@ export default function SignupPage() {
                   autoComplete="one-time-code"
                 />
                 {countdown > 0 ? (
-                  <p className="mt-2 text-xs text-gray-500">
+                  <p className="mt-2 text-xs text-gray-500 tabular-nums">
                     Resend code in {countdown}s
                   </p>
                 ) : (
                   <button
                     type="button"
                     onClick={handleResendOtp}
-                    className="mt-2 text-xs text-indigo-600 hover:text-indigo-800 focus:outline-none"
+                    className="mt-1 min-h-[44px] inline-flex items-center text-xs font-medium text-indigo-600 hover:text-indigo-800 focus:outline-none cursor-pointer"
                     disabled={isLoading}
                   >
                     Resend verification code
@@ -315,7 +315,7 @@ export default function SignupPage() {
                 <button
                   type="button"
                   onClick={handleVerifyOtp}
-                  className={`w-full py-2.5 text-white font-medium rounded-md transition ${
+                  className={`w-full min-h-[48px] py-2.5 text-white text-sm font-semibold rounded-lg transition cursor-pointer ${
                     isLoading || otp.length !== 6
                       ? 'bg-indigo-400 cursor-not-allowed'
                       : 'bg-indigo-600 hover:bg-indigo-700'
@@ -337,7 +337,7 @@ export default function SignupPage() {
                 <button
                   type="button"
                   onClick={() => setStep('details')}
-                  className="w-full py-2 text-gray-700 font-medium rounded-md border border-gray-300 hover:bg-gray-50 transition"
+                  className="w-full min-h-[44px] py-2 text-sm text-gray-700 font-medium rounded-lg border border-gray-300 hover:bg-gray-50 transition cursor-pointer"
                 >
                   Back
                 </button>

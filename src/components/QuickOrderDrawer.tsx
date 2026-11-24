@@ -37,6 +37,7 @@ function resolveProductImage(product: Product): string {
   if (
     product.imagePath &&
     (product.imagePath.startsWith('/uploads/') ||
+      product.imagePath.startsWith('/api/uploads/') ||
       product.imagePath.startsWith('http') ||
       product.imagePath.startsWith('data:') ||
       /\.(jpg|jpeg|png|webp|svg)$/i.test(product.imagePath))
@@ -248,7 +249,7 @@ export default function QuickOrderDrawer({ product, onClose }: QuickOrderDrawerP
             animate={prefersReducedMotion ? { opacity: 1 } : { y: 0, opacity: 1 }}
             exit={prefersReducedMotion ? { opacity: 0 } : { y: '100%', opacity: 0.9 }}
             transition={{ duration: prefersReducedMotion ? 0 : 0.22, ease: [0.16, 1, 0.3, 1] }}
-            className="relative z-10 w-full sm:max-w-lg bg-white rounded-t-3xl sm:rounded-2xl border border-slate-200 shadow-2xl max-h-[90vh] flex flex-col overflow-hidden"
+            className="relative z-10 w-full sm:max-w-lg bg-white rounded-t-3xl sm:rounded-2xl border border-slate-200 shadow-2xl max-h-[90dvh] flex flex-col overflow-hidden"
           >
             {/* Mobile Drag Handle */}
             <div className="sm:hidden pt-3 pb-1 flex justify-center">
@@ -329,7 +330,7 @@ export default function QuickOrderDrawer({ product, onClose }: QuickOrderDrawerP
                       </span>
                     </div>
 
-                    <div className="grid grid-cols-5 gap-2">
+                    <div className="grid grid-cols-4 sm:grid-cols-5 gap-2">
                       {product.sizes.map((size) => {
                         const active = selectedSize === size;
                         return (
@@ -453,7 +454,7 @@ export default function QuickOrderDrawer({ product, onClose }: QuickOrderDrawerP
                         value={identifier}
                         onChange={(e) => setIdentifier(e.target.value)}
                         placeholder="you@example.com or 9876543210"
-                        className="w-full min-h-[44px] px-3.5 py-2 text-sm bg-white border border-slate-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                        className="w-full min-h-[44px] px-3.5 py-2 text-base sm:text-sm bg-white border border-slate-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-indigo-500"
                       />
                     </div>
                     <div>
@@ -465,7 +466,7 @@ export default function QuickOrderDrawer({ product, onClose }: QuickOrderDrawerP
                         value={password}
                         onChange={(e) => setPassword(e.target.value)}
                         placeholder="Minimum 6 characters"
-                        className="w-full min-h-[44px] px-3.5 py-2 text-sm bg-white border border-slate-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                        className="w-full min-h-[44px] px-3.5 py-2 text-base sm:text-sm bg-white border border-slate-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-indigo-500"
                       />
                     </div>
 

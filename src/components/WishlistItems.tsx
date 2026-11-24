@@ -48,11 +48,15 @@ export default function WishlistItems() {
   }, []);
 
   // Get the correct image path based on product ID
-  const getImagePath = (item: WishlistItem) => {
+  const getImagePath = (item: WishlistItem & { images?: string[] }) => {
+    if (item.images && item.images.length > 0 && item.images[0]) {
+      return item.images[0];
+    }
     // If direct uploads or full URL, return directly
     if (
       item.imagePath &&
       (item.imagePath.startsWith('/uploads/') ||
+        item.imagePath.startsWith('/api/uploads/') ||
         item.imagePath.startsWith('http') ||
         item.imagePath.startsWith('data:') ||
         /\.(jpg|jpeg|png|webp|svg)$/i.test(item.imagePath))
@@ -161,7 +165,7 @@ export default function WishlistItems() {
         <p className="mb-3 sm:mb-4 text-base sm:text-lg text-gray-600">Your wishlist is empty</p>
         <Link 
           href="/products" 
-          className="rounded-full bg-black px-4 sm:px-6 py-2.5 sm:py-3 text-sm sm:text-base font-medium text-white transition-opacity hover:opacity-90"
+          className="inline-flex min-h-[44px] items-center justify-center rounded-full bg-black px-5 sm:px-6 py-2.5 sm:py-3 text-sm sm:text-base font-medium text-white transition-opacity hover:opacity-90"
         >
           Explore Products
         </Link>
@@ -170,39 +174,44 @@ export default function WishlistItems() {
   }
 
   return (
-    <div className="grid grid-cols-1 gap-4 sm:gap-6 sm:grid-cols-2 md:grid-cols-3">
+    <div className="grid grid-cols-2 gap-3 sm:gap-5 md:grid-cols-3 lg:grid-cols-4">
       {items.map((item) => {
         const imagePath = getImagePath(item);
         
         return (
-          <div key={item.id} className="group relative overflow-hidden rounded-lg border border-gray-200 bg-white">
-            <div className="relative aspect-square overflow-hidden">
+          <div key={item.id} className="group relative flex flex-col overflow-hidden rounded-xl border border-gray-200 bg-white">
+            <Link href={`/products/${item.id}`} className="relative aspect-square overflow-hidden bg-slate-50">
               <Image 
                 src={failedImages[imagePath] ? '/images/Empty-cart.jpg' : imagePath} 
                 alt={item.name} 
                 fill 
-                className="object-contain p-2"
+                sizes="(max-width: 768px) 50vw, (max-width: 1024px) 33vw, 25vw"
+                className="object-contain p-2.5 transition-transform duration-300 group-hover:scale-105"
                 onError={() => handleImageError(imagePath)}
               />
-            </div>
-            <div className="p-3 sm:p-4">
-              <div className="mb-2 flex items-center justify-between">
-                <h3 className="text-sm sm:text-base md:text-lg font-medium line-clamp-2">{item.name}</h3>
-                <span className="text-sm sm:text-base font-bold">₹{item.price}</span>
+            </Link>
+            <div className="flex flex-1 flex-col justify-between p-3 sm:p-4">
+              <div className="mb-3 flex flex-col sm:flex-row sm:items-start justify-between gap-1.5">
+                <Link href={`/products/${item.id}`} className="text-xs sm:text-sm md:text-base font-semibold text-slate-900 hover:text-indigo-600 line-clamp-2 leading-snug">
+                  {item.name}
+                </Link>
+                <span className="text-sm sm:text-base font-bold text-slate-900 tabular-nums shrink-0">₹{item.price.toLocaleString('en-IN')}</span>
               </div>
-              <div className="mt-3 sm:mt-4 flex items-center justify-between">
+              <div className="flex items-center gap-2">
                 <button
-                  className="w-full rounded-full bg-black py-1.5 sm:py-2 px-3 sm:px-4 text-xs sm:text-sm font-medium text-white transition-opacity hover:opacity-90"
+                  type="button"
+                  className="flex-1 min-h-[44px] rounded-full bg-black py-2 px-3 text-xs sm:text-sm font-medium text-white transition-opacity hover:opacity-90 whitespace-nowrap cursor-pointer"
                   onClick={() => handleAddToCart(item)}
                 >
                   Add to Cart
                 </button>
                 <button
-                  className="ml-2 rounded-full bg-red-50 p-1.5 sm:p-2 text-red-500 transition-colors hover:bg-red-100"
+                  type="button"
+                  className="min-w-[44px] min-h-[44px] inline-flex items-center justify-center rounded-full bg-red-50 text-red-500 transition-colors hover:bg-red-100 shrink-0 cursor-pointer"
                   aria-label={`Remove ${item.name} from wishlist`}
                   onClick={() => handleRemoveFromWishlist(item.id)}
                 >
-                  <svg xmlns="http://www.w3.org/2000/svg" fill="currentColor" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="h-5 w-5 sm:h-6 sm:w-6">
+                  <svg xmlns="http://www.w3.org/2000/svg" fill="currentColor" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="h-5 w-5">
                     <path strokeLinecap="round" strokeLinejoin="round" d="M14.74 9l-.346 9m-4.788 0L9.26 9m9.968-3.21c.342.052.682.107 1.022.166m-1.022-.165L18.16 19.673a2.25 2.25 0 01-2.244 2.077H8.084a2.25 2.25 0 01-2.244-2.077L4.772 5.79m14.456 0a48.108 48.108 0 00-3.478-.397m-12 .562c.34-.059.68-.114 1.022-.165m0 0a48.11 48.11 0 013.478-.397m7.5 0v-.916c0-1.18-.91-2.164-2.09-2.201a51.964 51.964 0 00-3.32 0c-1.18.037-2.09 1.022-2.09 2.201v.916m7.5 0a48.667 48.667 0 00-7.5 0" />
                   </svg>
                 </button>

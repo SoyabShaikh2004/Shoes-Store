@@ -45,6 +45,7 @@ export default async function ProductDetailPage({ params }: ProductDetailPagePro
     if (
       imagePath &&
       (imagePath.startsWith('/uploads/') ||
+        imagePath.startsWith('/api/uploads/') ||
         imagePath.startsWith('http') ||
         imagePath.startsWith('data:') ||
         /\.(jpg|jpeg|png|webp|svg)$/i.test(imagePath))
@@ -108,11 +109,11 @@ export default async function ProductDetailPage({ params }: ProductDetailPagePro
     : 0;
   
   return (
-    <div className="container mx-auto px-4 py-4 sm:py-6 md:py-8">
+    <div className="container mx-auto max-w-7xl px-3.5 sm:px-4 py-4 sm:py-6 md:py-8">
       {/* Breadcrumb Navigation */}
       <div className="mb-4">
-        <nav className="flex text-xs sm:text-sm">
-          <ol className="inline-flex items-center space-x-1 md:space-x-2 text-gray-500">
+        <nav aria-label="Breadcrumb" className="flex text-xs sm:text-sm">
+          <ol className="flex flex-wrap items-center gap-y-1 space-x-1 md:space-x-2 text-gray-500">
             <li className="inline-flex items-center">
               <Link href="/" className="hover:text-indigo-600 transition-colors">Home</Link>
             </li>
@@ -172,7 +173,7 @@ export default async function ProductDetailPage({ params }: ProductDetailPagePro
             </h1>
             
             {/* Pricing Section with MRP */}
-            <div className="mt-3 flex items-baseline flex-wrap gap-3">
+            <div className="mt-3 flex items-baseline flex-wrap gap-3 tabular-nums">
               <span className="text-2xl sm:text-3xl font-extrabold text-indigo-600">
                 ₹{product.price.toLocaleString('en-IN')}
               </span>

@@ -108,8 +108,8 @@ export default function ImageCarousel({ slides }: CarouselProps) {
       onTouchStart={handleTouchStart}
       onTouchEnd={handleTouchEnd}
     >
-      {/* Tall 4:3 Mobile Hero Showcase -> 16:7 Tablet/Desktop Showcase (Zero Overlaid Text) */}
-      <div className="relative w-full aspect-[4/3] sm:aspect-[16/7] max-h-[460px] bg-slate-100 overflow-hidden rounded-2xl sm:rounded-none border border-slate-200 sm:border-x-0 sm:border-t-0 group">
+      {/* Tall 4:3 Mobile Hero -> 16:8 Tablet -> 16:7 Desktop Showcase (Zero Overlaid Text) */}
+      <div className="relative w-full aspect-[4/3] md:aspect-[16/8] lg:aspect-[16/7] max-h-[460px] bg-slate-100 overflow-hidden rounded-2xl border border-slate-200 group">
         {activeSlides.map((slide, index) => {
           const isActive = index === currentIndex;
           const fallbackImg = DEFAULT_SLIDES[index % DEFAULT_SLIDES.length].image;

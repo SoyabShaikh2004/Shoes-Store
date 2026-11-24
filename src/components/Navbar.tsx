@@ -125,13 +125,13 @@ export default function Navbar() {
         isScrolled ? 'bg-white shadow-md' : 'bg-white'
       }`}
     >
-      <div className="container mx-auto px-4">
-        <div className="flex h-14 sm:h-16 md:h-20 items-center justify-between">
-          <div className="flex items-center">
+      <div className="container mx-auto max-w-7xl px-3.5 sm:px-4">
+        <div className="flex h-14 sm:h-16 md:h-20 items-center justify-between gap-2">
+          <div className="flex items-center shrink-0">
             {/* Mobile menu button */}
             <button
               onClick={() => setIsMenuOpen(!isMenuOpen)}
-              className="mr-2 min-w-[44px] min-h-[44px] flex items-center justify-center rounded-xl p-2 text-gray-700 hover:bg-gray-100 md:hidden cursor-pointer transition-colors"
+              className="mr-1.5 min-w-[44px] min-h-[44px] flex items-center justify-center rounded-xl p-2 text-gray-700 hover:bg-gray-100 md:hidden cursor-pointer transition-colors"
               aria-label="Toggle menu"
             >
               {isMenuOpen ? (
@@ -145,26 +145,26 @@ export default function Navbar() {
               )}
             </button>
             
-            <Link href="/" className="flex items-center">
+            <Link href="/" className="flex items-center shrink-0">
               <Image
                 src="/images/logo.svg"
                 alt="StepStyle Logo"
                 width={48}
                 height={48}
-                className="mr-2 w-10 h-10 sm:w-12 sm:h-12"
+                className="w-10 h-10 sm:w-11 sm:h-11 md:w-12 md:h-12"
               />
             </Link>
           </div>
 
-          {/* Desktop Navigation */}
+          {/* Tablet & Desktop Navigation */}
           <nav className="hidden md:block">
-            <ul className="flex space-x-8">
+            <ul className="flex items-center space-x-5 lg:space-x-8">
               <li>
                 <Link
                   href="/"
-                  className="flex items-center text-base font-medium text-gray-900 transition-colors hover:text-black hover:underline"
+                  className="flex items-center min-h-[44px] text-sm lg:text-base font-medium text-gray-900 transition-colors hover:text-black hover:underline whitespace-nowrap shrink-0"
                 >
-                  <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="w-5 h-5 mr-1">
+                  <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="hidden lg:inline-block w-5 h-5 mr-1.5 shrink-0">
                     <path strokeLinecap="round" strokeLinejoin="round" d="M2.25 12l8.954-8.955c.44-.439 1.152-.439 1.591 0L21.75 12M4.5 9.75v10.125c0 .621.504 1.125 1.125 1.125H9.75v-4.875c0-.621.504-1.125 1.125-1.125h2.25c.621 0 1.125.504 1.125 1.125V21h4.125c.621 0 1.125-.504 1.125-1.125V9.75M8.25 21h8.25" />
                   </svg>
                   Home
@@ -173,9 +173,9 @@ export default function Navbar() {
               <li>
                 <Link
                   href="/about"
-                  className="flex items-center text-base font-medium text-gray-900 transition-colors hover:text-black hover:underline"
+                  className="flex items-center min-h-[44px] text-sm lg:text-base font-medium text-gray-900 transition-colors hover:text-black hover:underline whitespace-nowrap shrink-0"
                 >
-                  <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="w-5 h-5 mr-1">
+                  <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="hidden lg:inline-block w-5 h-5 mr-1.5 shrink-0">
                     <path strokeLinecap="round" strokeLinejoin="round" d="M11.25 11.25l.041-.02a.75.75 0 011.063.852l-.708 2.836a.75.75 0 001.063.853l.041-.021M21 12a9 9 0 11-18 0 9 9 0 0118 0zm-9-3.75h.008v.008H12V8.25z" />
                   </svg>
                   About
@@ -184,9 +184,9 @@ export default function Navbar() {
               <li>
                 <Link
                   href="/products"
-                  className="flex items-center text-base font-medium text-gray-900 transition-colors hover:text-black hover:underline"
+                  className="flex items-center min-h-[44px] text-sm lg:text-base font-medium text-gray-900 transition-colors hover:text-black hover:underline whitespace-nowrap shrink-0"
                 >
-                  <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="w-5 h-5 mr-1">
+                  <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="hidden lg:inline-block w-5 h-5 mr-1.5 shrink-0">
                     <path strokeLinecap="round" strokeLinejoin="round" d="M9.568 3H5.25A2.25 2.25 0 003 5.25v4.318c0 .597.237 1.17.659 1.591l9.581 9.581c.699.699 1.78.872 2.607.33a18.095 18.095 0 005.223-5.223c.542-.827.369-1.908-.33-2.607L11.16 3.66A2.25 2.25 0 009.568 3z" />
                     <path strokeLinecap="round" strokeLinejoin="round" d="M6 6h.008v.008H6V6z" />
                   </svg>
@@ -196,25 +196,24 @@ export default function Navbar() {
               <li>
                 <Link
                   href="/contact"
-                  className="flex items-center text-base font-medium text-gray-900 transition-colors hover:text-black hover:underline"
+                  className="flex items-center min-h-[44px] text-sm lg:text-base font-medium text-gray-900 transition-colors hover:text-black hover:underline whitespace-nowrap shrink-0"
                 >
-                  <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="w-5 h-5 mr-1">
+                  <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="hidden lg:inline-block w-5 h-5 mr-1.5 shrink-0">
                     <path strokeLinecap="round" strokeLinejoin="round" d="M21.75 6.75v10.5a2.25 2.25 0 01-2.25 2.25h-15a2.25 2.25 0 01-2.25-2.25V6.75m19.5 0A2.25 2.25 0 0019.5 4.5h-15a2.25 2.25 0 00-2.25 2.25m19.5 0v.243a2.25 2.25 0 01-1.07 1.916l-7.5 4.615a2.25 2.25 0 01-2.36 0L3.32 8.91a2.25 2.25 0 01-1.07-1.916V6.75" />
                   </svg>
                   Contact
                 </Link>
               </li>
-
             </ul>
           </nav>
 
-          <div className="flex items-center">
+          <div className="flex items-center shrink-0">
             {/* User Account Icon/Menu */}
             <div className="relative user-menu-container">
               {isAuthenticated ? (
                 <button
                   onClick={() => setShowUserMenu(!showUserMenu)}
-                  className="mr-1 sm:mr-2 md:mr-3 min-w-[44px] min-h-[44px] flex items-center justify-center rounded-full p-2 text-gray-900 transition-colors hover:bg-gray-100 relative cursor-pointer"
+                  className="mr-0.5 sm:mr-1.5 md:mr-2 min-w-[44px] min-h-[44px] flex items-center justify-center rounded-full p-2 text-gray-900 transition-colors hover:bg-gray-100 relative cursor-pointer"
                   aria-label="User profile"
                 >
                   <div className="h-8 w-8 rounded-full bg-indigo-600 text-white flex items-center justify-center text-sm font-semibold shadow-xs">
@@ -224,7 +223,7 @@ export default function Navbar() {
               ) : (
                 <Link
                   href="/auth/login"
-                  className="mr-1 sm:mr-2 md:mr-3 min-w-[44px] min-h-[44px] flex items-center justify-center rounded-full p-2 text-gray-900 transition-colors hover:bg-gray-100"
+                  className="mr-0.5 sm:mr-1.5 md:mr-2 min-w-[44px] min-h-[44px] flex items-center justify-center rounded-full p-2 text-gray-900 transition-colors hover:bg-gray-100"
                   aria-label="Account sign in"
                 >
                   <svg
@@ -246,36 +245,35 @@ export default function Navbar() {
               
               {/* User dropdown menu */}
               {showUserMenu && (
-                <div className="absolute right-0 mt-2 w-48 origin-top-right rounded-xl bg-white py-1 shadow-lg ring-1 ring-black/5 focus:outline-none z-20">
-                  <div className="border-b border-gray-100 px-4 py-2">
+                <div className="absolute right-0 mt-2 w-52 origin-top-right rounded-xl bg-white py-1 shadow-lg ring-1 ring-black/5 focus:outline-none z-20">
+                  <div className="border-b border-gray-100 px-4 py-2.5">
                     <p className="text-sm font-bold text-gray-900">{authUser?.name || 'User'}</p>
                     <p className="truncate text-xs text-gray-500">{authUser?.email}</p>
                   </div>
                   <Link
                     href="/account"
-                    className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-50"
+                    className="flex items-center min-h-[44px] px-4 py-2 text-sm text-gray-700 hover:bg-gray-50"
                     onClick={() => setShowUserMenu(false)}
                   >
                     Your Account
                   </Link>
                   <Link
                     href="/track-order"
-                    className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-50"
+                    className="flex items-center min-h-[44px] px-4 py-2 text-sm text-gray-700 hover:bg-gray-50"
                     onClick={() => setShowUserMenu(false)}
                   >
                     Order Tracking
                   </Link>
-
                   <Link
                     href="/wishlist"
-                    className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-50"
+                    className="flex items-center min-h-[44px] px-4 py-2 text-sm text-gray-700 hover:bg-gray-50"
                     onClick={() => setShowUserMenu(false)}
                   >
                     Wishlist
                   </Link>
                   <button
                     onClick={handleLogout}
-                    className="block w-full text-left px-4 py-2 text-sm text-red-600 hover:bg-red-50 font-medium"
+                    className="flex items-center w-full text-left min-h-[44px] px-4 py-2 text-sm text-red-600 hover:bg-red-50 font-medium cursor-pointer"
                   >
                     Sign Out
                   </button>
@@ -286,7 +284,7 @@ export default function Navbar() {
             {/* Wishlist */}
             <Link
               href="/wishlist"
-              className="relative mr-1 sm:mr-2 md:mr-3 min-w-[44px] min-h-[44px] flex items-center justify-center rounded-full p-2 text-gray-900 transition-colors hover:bg-gray-100"
+              className="relative mr-0.5 sm:mr-1.5 md:mr-2 min-w-[44px] min-h-[44px] flex items-center justify-center rounded-full p-2 text-gray-900 transition-colors hover:bg-gray-100"
               aria-label="Wishlist"
             >
               <svg
@@ -342,12 +340,12 @@ export default function Navbar() {
 
       {/* Mobile menu */}
       {isMenuOpen && (
-        <div className="mobile-menu-container md:hidden bg-white fixed top-14 sm:top-16 left-0 w-full h-screen z-50 overflow-auto pb-24">
+        <div className="mobile-menu-container md:hidden bg-white fixed top-14 sm:top-16 left-0 w-full h-[calc(100dvh-3.5rem)] sm:h-[calc(100dvh-4rem)] z-50 overflow-y-auto pb-24">
           <div className="divide-y divide-gray-200">
             <div className="space-y-1 px-4 py-4">
               <Link
                 href="/"
-                className="block rounded-md px-3 py-2 text-base font-medium text-gray-900 hover:bg-gray-100 flex items-center"
+                className="min-h-[44px] rounded-xl px-3 py-2.5 text-base font-medium text-gray-900 hover:bg-gray-100 flex items-center"
                 onClick={() => setIsMenuOpen(false)}
               >
                 <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="w-5 h-5 mr-3">
@@ -357,7 +355,7 @@ export default function Navbar() {
               </Link>
               <Link
                 href="/about"
-                className="block rounded-md px-3 py-2 text-base font-medium text-gray-900 hover:bg-gray-100 flex items-center"
+                className="min-h-[44px] rounded-xl px-3 py-2.5 text-base font-medium text-gray-900 hover:bg-gray-100 flex items-center"
                 onClick={() => setIsMenuOpen(false)}
               >
                 <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="w-5 h-5 mr-3">
@@ -367,7 +365,7 @@ export default function Navbar() {
               </Link>
               <Link
                 href="/products"
-                className="block rounded-md px-3 py-2 text-base font-medium text-gray-900 hover:bg-gray-100 flex items-center"
+                className="min-h-[44px] rounded-xl px-3 py-2.5 text-base font-medium text-gray-900 hover:bg-gray-100 flex items-center"
                 onClick={() => setIsMenuOpen(false)}
               >
                 <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="w-5 h-5 mr-3">
@@ -378,7 +376,7 @@ export default function Navbar() {
               </Link>
               <Link
                 href="/contact"
-                className="block rounded-md px-3 py-2 text-base font-medium text-gray-900 hover:bg-gray-100 flex items-center"
+                className="min-h-[44px] rounded-xl px-3 py-2.5 text-base font-medium text-gray-900 hover:bg-gray-100 flex items-center"
                 onClick={() => setIsMenuOpen(false)}
               >
                 <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="w-5 h-5 mr-3">
@@ -386,7 +384,6 @@ export default function Navbar() {
                 </svg>
                 Contact
               </Link>
-
             </div>
             
             {isAuthenticated ? (
@@ -395,29 +392,29 @@ export default function Navbar() {
                   <div className="h-10 w-10 rounded-full bg-indigo-600 text-white flex items-center justify-center text-lg font-medium mr-3">
                     {authUser?.email?.charAt(0).toUpperCase() || 'U'}
                   </div>
-                  <div>
-                    <p className="font-medium text-gray-900">{authUser?.name || 'User'}</p>
-                    <p className="text-sm text-gray-500">{authUser?.email}</p>
+                  <div className="min-w-0">
+                    <p className="font-medium text-gray-900 truncate">{authUser?.name || 'User'}</p>
+                    <p className="text-sm text-gray-500 truncate">{authUser?.email}</p>
                   </div>
                 </div>
                 <div className="space-y-1">
                   <Link
                     href="/account"
-                    className="block rounded-md px-3 py-2 text-base font-medium text-gray-900 hover:bg-gray-100"
+                    className="flex items-center min-h-[44px] rounded-xl px-3 py-2 text-base font-medium text-gray-900 hover:bg-gray-100"
                     onClick={() => setIsMenuOpen(false)}
                   >
                     Your Account
                   </Link>
                   <Link
                     href="/track-order"
-                    className="block rounded-md px-3 py-2 text-base font-medium text-gray-900 hover:bg-gray-100"
+                    className="flex items-center min-h-[44px] rounded-xl px-3 py-2 text-base font-medium text-gray-900 hover:bg-gray-100"
                     onClick={() => setIsMenuOpen(false)}
                   >
                     Order Tracking
                   </Link>
                   <Link
                     href="/wishlist"
-                    className="block rounded-md px-3 py-2 text-base font-medium text-gray-900 hover:bg-gray-100"
+                    className="flex items-center min-h-[44px] rounded-xl px-3 py-2 text-base font-medium text-gray-900 hover:bg-gray-100"
                     onClick={() => setIsMenuOpen(false)}
                   >
                     Wishlist
@@ -429,7 +426,7 @@ export default function Navbar() {
                   </Link>
                   <Link
                     href="/cart"
-                    className="block rounded-md px-3 py-2 text-base font-medium text-gray-900 hover:bg-gray-100"
+                    className="flex items-center min-h-[44px] rounded-xl px-3 py-2 text-base font-medium text-gray-900 hover:bg-gray-100"
                     onClick={() => setIsMenuOpen(false)}
                   >
                     Cart
@@ -444,24 +441,24 @@ export default function Navbar() {
                       handleLogout();
                       setIsMenuOpen(false);
                     }}
-                    className="w-full text-left block rounded-md px-3 py-2 text-base font-medium text-red-600 hover:bg-gray-100"
+                    className="w-full text-left flex items-center min-h-[44px] rounded-xl px-3 py-2 text-base font-medium text-red-600 hover:bg-gray-100 cursor-pointer"
                   >
                     Sign Out
                   </button>
                 </div>
               </div>
             ) : (
-              <div className="px-4 py-4">
+              <div className="px-4 py-4 space-y-2.5">
                 <Link
                   href="/auth/login"
-                  className="block w-full rounded-md bg-indigo-600 px-4 py-2 text-center font-medium text-white hover:bg-indigo-700"
+                  className="flex items-center justify-center w-full min-h-[44px] rounded-xl bg-indigo-600 px-4 py-2.5 font-medium text-white hover:bg-indigo-700"
                   onClick={() => setIsMenuOpen(false)}
                 >
                   Sign In
                 </Link>
                 <Link
                   href="/auth/signup"
-                  className="mt-2 block w-full rounded-md border border-gray-300 bg-white px-4 py-2 text-center font-medium text-gray-700 hover:bg-gray-50"
+                  className="flex items-center justify-center w-full min-h-[44px] rounded-xl border border-gray-300 bg-white px-4 py-2.5 font-medium text-gray-700 hover:bg-gray-50"
                   onClick={() => setIsMenuOpen(false)}
                 >
                   Sign Up

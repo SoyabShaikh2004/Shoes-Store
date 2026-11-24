@@ -21,7 +21,7 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
   return (
     <QuickOrderProvider>
       <Navbar />
-      <main className="flex-grow pt-14 sm:pt-16 md:pt-20 pb-20 md:pb-0">{children}</main>
+      <main className="flex-grow pt-14 sm:pt-16 md:pt-20">{children}</main>
       <Footer />
       <MobileBottomNav />
     </QuickOrderProvider>

@@ -10,12 +10,12 @@ export const metadata = {
 
 export default function TrackOrderPage() {
   return (
-    <div className="min-h-screen bg-gray-50/50 py-8 sm:py-12">
-      <div className="container mx-auto px-4 max-w-5xl">
-        <div className="mb-6 flex items-center justify-between">
+    <div className="min-h-[calc(100dvh-5rem)] bg-gray-50/50 py-6 sm:py-10">
+      <div className="container mx-auto px-3.5 sm:px-4 max-w-5xl">
+        <div className="mb-4 sm:mb-6 flex flex-wrap items-center justify-between gap-2">
           <Link
             href="/account"
-            className="inline-flex items-center gap-1.5 text-sm font-medium text-gray-600 hover:text-black transition-colors"
+            className="min-h-[44px] inline-flex items-center gap-1.5 text-sm font-medium text-gray-600 hover:text-black transition-colors"
           >
             <ArrowLeft className="w-4 h-4" />
             <span>Back to Account</span>
@@ -23,7 +23,7 @@ export default function TrackOrderPage() {
 
           <Link
             href="/products"
-            className="text-sm font-medium text-indigo-600 hover:text-indigo-700 transition-colors"
+            className="min-h-[44px] inline-flex items-center text-sm font-medium text-indigo-600 hover:text-indigo-700 transition-colors"
           >
             Continue Shopping →
           </Link>

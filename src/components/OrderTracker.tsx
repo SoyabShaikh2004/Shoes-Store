@@ -231,7 +231,7 @@ export default function OrderTracker({
               type="button"
               onClick={onRefresh}
               disabled={isRefreshing}
-              className="min-h-[40px] inline-flex items-center gap-1.5 px-3.5 py-2 rounded-lg border border-slate-200 bg-white hover:bg-slate-50 text-slate-700 text-xs font-semibold transition-colors cursor-pointer disabled:opacity-60 whitespace-nowrap"
+              className="min-h-[44px] inline-flex items-center gap-1.5 px-3.5 py-2 rounded-lg border border-slate-200 bg-white hover:bg-slate-50 text-slate-700 text-xs font-semibold transition-colors cursor-pointer disabled:opacity-60 whitespace-nowrap"
             >
               <RefreshCw className={`w-3.5 h-3.5 ${isRefreshing ? 'animate-spin' : ''}`} />
               <span>{isRefreshing ? 'Syncing' : 'Refresh'}</span>
@@ -240,7 +240,7 @@ export default function OrderTracker({
           <button
             type="button"
             onClick={handlePrint}
-            className="min-h-[40px] inline-flex items-center gap-1.5 px-3.5 py-2 rounded-lg border border-slate-200 bg-white hover:bg-slate-50 text-slate-700 text-xs font-semibold transition-colors cursor-pointer whitespace-nowrap print:hidden"
+            className="min-h-[44px] inline-flex items-center gap-1.5 px-3.5 py-2 rounded-lg border border-slate-200 bg-white hover:bg-slate-50 text-slate-700 text-xs font-semibold transition-colors cursor-pointer whitespace-nowrap print:hidden"
           >
             <Printer className="w-3.5 h-3.5" />
             <span>Print Summary</span>
@@ -249,7 +249,7 @@ export default function OrderTracker({
             type="button"
             onClick={handleDownloadInvoice}
             disabled={isDownloadingInvoice}
-            className="min-h-[40px] inline-flex items-center gap-1.5 px-4 py-2 rounded-lg bg-slate-900 hover:bg-slate-800 text-white text-xs font-semibold transition-colors cursor-pointer disabled:opacity-60 whitespace-nowrap print:hidden"
+            className="min-h-[44px] inline-flex items-center gap-1.5 px-4 py-2 rounded-lg bg-slate-900 hover:bg-slate-800 text-white text-xs font-semibold transition-colors cursor-pointer disabled:opacity-60 whitespace-nowrap print:hidden"
           >
             <FileText className="w-3.5 h-3.5" />
             <span>{isDownloadingInvoice ? 'Generating...' : 'Download Tax Invoice'}</span>
@@ -517,14 +517,14 @@ export default function OrderTracker({
               Reach our StepStyle logistics desk directly on WhatsApp or download your GST tax invoice for warranty claims.
             </p>
           </div>
-          <div className="flex gap-2 print:hidden">
+          <div className="flex flex-col sm:flex-row gap-2 print:hidden">
             <a
               href={`https://wa.me/918830422747?text=${encodeURIComponent(
                 `Hello StepStyle, I am checking order ${order.orderNumber || order.orderId} (Current status: ${currentStatus}).`
               )}`}
               target="_blank"
               rel="noopener noreferrer"
-              className="flex-1 min-h-[38px] px-3 py-2 rounded-lg bg-emerald-600 hover:bg-emerald-700 text-white font-semibold flex items-center justify-center gap-1.5 transition-colors"
+              className="flex-1 min-h-[44px] px-3 py-2 rounded-lg bg-emerald-600 hover:bg-emerald-700 text-white font-semibold flex items-center justify-center gap-1.5 transition-colors whitespace-nowrap"
             >
               <MessageCircle className="w-3.5 h-3.5" />
               <span>WhatsApp Support</span>
@@ -532,7 +532,7 @@ export default function OrderTracker({
             <button
               type="button"
               onClick={handleDownloadInvoice}
-              className="flex-1 min-h-[38px] px-3 py-2 rounded-lg bg-white border border-slate-300 hover:bg-slate-100 text-slate-800 font-semibold flex items-center justify-center gap-1.5 transition-colors cursor-pointer"
+              className="flex-1 min-h-[44px] px-3 py-2 rounded-lg bg-white border border-slate-300 hover:bg-slate-100 text-slate-800 font-semibold flex items-center justify-center gap-1.5 transition-colors cursor-pointer whitespace-nowrap"
             >
               <FileText className="w-3.5 h-3.5 text-indigo-600" />
               <span>Tax Invoice PDF</span>

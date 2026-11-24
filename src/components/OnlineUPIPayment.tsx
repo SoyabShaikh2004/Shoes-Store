@@ -215,7 +215,7 @@ export default function OnlineUPIPayment({
           role="tab"
           aria-selected={activeTab === 'apps'}
           onClick={() => setActiveTab('apps')}
-          className={`min-h-[40px] px-2 flex items-center justify-center gap-1.5 rounded-lg transition-all whitespace-nowrap cursor-pointer ${
+          className={`min-h-[44px] px-2 flex items-center justify-center gap-1.5 rounded-lg transition-all whitespace-nowrap cursor-pointer ${
             activeTab === 'apps'
               ? 'bg-white text-slate-900 shadow-xs'
               : 'text-slate-600 hover:text-slate-900'
@@ -230,7 +230,7 @@ export default function OnlineUPIPayment({
           role="tab"
           aria-selected={activeTab === 'qr'}
           onClick={() => setActiveTab('qr')}
-          className={`min-h-[40px] px-2 flex items-center justify-center gap-1.5 rounded-lg transition-all whitespace-nowrap cursor-pointer ${
+          className={`min-h-[44px] px-2 flex items-center justify-center gap-1.5 rounded-lg transition-all whitespace-nowrap cursor-pointer ${
             activeTab === 'qr'
               ? 'bg-white text-slate-900 shadow-xs'
               : 'text-slate-600 hover:text-slate-900'
@@ -245,7 +245,7 @@ export default function OnlineUPIPayment({
           role="tab"
           aria-selected={activeTab === 'manual'}
           onClick={() => setActiveTab('manual')}
-          className={`min-h-[40px] px-2 flex items-center justify-center gap-1.5 rounded-lg transition-all whitespace-nowrap cursor-pointer ${
+          className={`min-h-[44px] px-2 flex items-center justify-center gap-1.5 rounded-lg transition-all whitespace-nowrap cursor-pointer ${
             activeTab === 'manual'
               ? 'bg-white text-slate-900 shadow-xs'
               : 'text-slate-600 hover:text-slate-900'
@@ -328,7 +328,7 @@ export default function OnlineUPIPayment({
             <button
               type="button"
               onClick={() => handleCopy(MERCHANT_UPI_ID, 'UPI ID')}
-              className="min-h-[36px] px-2.5 rounded-lg border border-slate-200 bg-slate-50 hover:bg-slate-100 text-xs font-semibold text-slate-700 inline-flex items-center gap-1 shrink-0 cursor-pointer"
+              className="min-h-[44px] px-3 rounded-lg border border-slate-200 bg-slate-50 hover:bg-slate-100 text-xs font-semibold text-slate-700 inline-flex items-center gap-1 shrink-0 cursor-pointer"
             >
               {copiedField === 'UPI ID' ? (
                 <>
@@ -434,7 +434,7 @@ export default function OnlineUPIPayment({
             value={utrNumber}
             onChange={(e) => setUtrNumber(e.target.value.replace(/\D/g, '').slice(0, 16))}
             placeholder="e.g. 423874920183"
-            className="w-full min-h-[44px] px-3 py-2 text-sm bg-white border border-slate-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-indigo-500 font-mono tabular-nums"
+            className="w-full min-h-[44px] px-3 py-2 text-base sm:text-sm bg-white border border-slate-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-indigo-500 font-mono tabular-nums"
             maxLength={16}
           />
         </div>

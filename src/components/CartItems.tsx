@@ -219,6 +219,7 @@ export default function CartItems() {
     if (
       item.imagePath &&
       (item.imagePath.startsWith('/uploads/') ||
+        item.imagePath.startsWith('/api/uploads/') ||
         item.imagePath.startsWith('http') ||
         item.imagePath.startsWith('data:') ||
         /\.(jpg|jpeg|png|webp|svg)$/i.test(item.imagePath))
@@ -994,7 +995,7 @@ export default function CartItems() {
                       setStep(s.id);
                     }
                   }}
-                  className={`w-full min-h-[40px] rounded-xl px-2 py-1.5 flex items-center justify-center gap-1.5 text-xs sm:text-sm font-bold transition-colors ${
+                  className={`w-full min-h-[44px] rounded-xl px-2 py-1.5 flex items-center justify-center gap-1.5 text-xs sm:text-sm font-bold transition-colors ${
                     isCurrent
                       ? 'bg-slate-900 text-white'
                       : isCompleted
@@ -1066,7 +1067,7 @@ export default function CartItems() {
                               type="button"
                               onClick={() => handleRemoveItem(item)}
                               aria-label={`Remove ${item.name}`}
-                              className="min-w-[36px] min-h-[36px] -mr-1.5 -mt-1 flex items-center justify-center rounded-lg text-slate-400 hover:text-rose-600 hover:bg-rose-50 transition-colors cursor-pointer shrink-0"
+                              className="min-w-[44px] min-h-[44px] -mr-2 -mt-2 flex items-center justify-center rounded-lg text-slate-400 hover:text-rose-600 hover:bg-rose-50 transition-colors cursor-pointer shrink-0"
                             >
                               <Trash2 className="w-4 h-4" />
                             </button>
@@ -1101,7 +1102,7 @@ export default function CartItems() {
                               type="button"
                               onClick={() => handleQuantityChange(item, item.quantity - 1)}
                               aria-label="Decrease quantity"
-                              className="min-w-[40px] min-h-[40px] flex items-center justify-center text-slate-700 hover:text-slate-900 cursor-pointer"
+                              className="min-w-[44px] min-h-[44px] flex items-center justify-center text-slate-700 hover:text-slate-900 cursor-pointer"
                             >
                               <Minus className="w-3.5 h-3.5" />
                             </button>
@@ -1112,7 +1113,7 @@ export default function CartItems() {
                               type="button"
                               onClick={() => handleQuantityChange(item, item.quantity + 1)}
                               aria-label="Increase quantity"
-                              className="min-w-[40px] min-h-[40px] flex items-center justify-center text-slate-700 hover:text-slate-900 cursor-pointer"
+                              className="min-w-[44px] min-h-[44px] flex items-center justify-center text-slate-700 hover:text-slate-900 cursor-pointer"
                             >
                               <Plus className="w-3.5 h-3.5" />
                             </button>
@@ -1140,7 +1141,7 @@ export default function CartItems() {
                 <button
                   type="button"
                   onClick={() => setStep('cart')}
-                  className="text-xs font-bold text-indigo-600 hover:underline inline-flex items-center gap-1 cursor-pointer"
+                  className="min-h-[44px] px-2 text-xs sm:text-sm font-bold text-indigo-600 hover:underline inline-flex items-center gap-1 cursor-pointer"
                 >
                   <ArrowLeft className="w-3.5 h-3.5" />
                   <span>Edit Bag</span>
@@ -1193,7 +1194,7 @@ export default function CartItems() {
                         value={customerName}
                         onChange={(e) => setCustomerName(e.target.value)}
                         placeholder="e.g. Rohan Sharma"
-                        className="w-full min-h-[44px] px-3.5 py-2 text-sm bg-white border border-slate-300 rounded-xl focus:ring-2 focus:ring-indigo-500 focus:outline-none"
+                        className="w-full min-h-[44px] px-3.5 py-2 text-base sm:text-sm bg-white border border-slate-300 rounded-xl focus:ring-2 focus:ring-indigo-500 focus:outline-none"
                       />
                     </div>
 
@@ -1209,7 +1210,7 @@ export default function CartItems() {
                         value={customerPhone}
                         onChange={(e) => setCustomerPhone(e.target.value.replace(/\D/g, '').slice(0, 10))}
                         placeholder="10-digit mobile number"
-                        className="w-full min-h-[44px] px-3.5 py-2 text-sm bg-white border border-slate-300 rounded-xl font-mono tabular-nums focus:ring-2 focus:ring-indigo-500 focus:outline-none"
+                        className="w-full min-h-[44px] px-3.5 py-2 text-base sm:text-sm bg-white border border-slate-300 rounded-xl font-mono tabular-nums focus:ring-2 focus:ring-indigo-500 focus:outline-none"
                         maxLength={10}
                       />
                     </div>
@@ -1226,7 +1227,7 @@ export default function CartItems() {
                       onChange={(e) => setDeliveryAddress(e.target.value)}
                       placeholder="House / Flat No., Building, Street, Area, Landmark"
                       rows={3}
-                      className="w-full px-3.5 py-2.5 text-sm bg-white border border-slate-300 rounded-xl focus:ring-2 focus:ring-indigo-500 focus:outline-none"
+                      className="w-full px-3.5 py-2.5 text-base sm:text-sm bg-white border border-slate-300 rounded-xl focus:ring-2 focus:ring-indigo-500 focus:outline-none"
                     />
                   </div>
 
@@ -1242,7 +1243,7 @@ export default function CartItems() {
                       value={customerPincode}
                       onChange={(e) => setCustomerPincode(e.target.value.replace(/\D/g, '').slice(0, 6))}
                       placeholder="6-digit pincode"
-                      className="w-full min-h-[44px] px-3.5 py-2 text-sm bg-white border border-slate-300 rounded-xl font-mono tabular-nums focus:ring-2 focus:ring-indigo-500 focus:outline-none"
+                      className="w-full min-h-[44px] px-3.5 py-2 text-base sm:text-sm bg-white border border-slate-300 rounded-xl font-mono tabular-nums focus:ring-2 focus:ring-indigo-500 focus:outline-none"
                       maxLength={6}
                     />
                   </div>
@@ -1285,7 +1286,7 @@ export default function CartItems() {
                 <button
                   type="button"
                   onClick={() => setStep('delivery')}
-                  className="min-h-[36px] px-3 rounded-lg border border-slate-200 bg-slate-50 hover:bg-slate-100 text-xs font-bold text-slate-700 shrink-0 cursor-pointer"
+                  className="min-h-[44px] px-3.5 rounded-lg border border-slate-200 bg-slate-50 hover:bg-slate-100 text-xs font-bold text-slate-700 shrink-0 cursor-pointer"
                 >
                   Change
                 </button>
@@ -1453,7 +1454,7 @@ export default function CartItems() {
                               }
                             }}
                             placeholder="XXXX XXXX XXXX XXXX"
-                            className="w-full min-h-[44px] px-3 py-2 border border-slate-300 rounded-xl text-sm pr-24 font-mono tabular-nums focus:ring-2 focus:ring-indigo-500 focus:outline-none"
+                            className="w-full min-h-[44px] px-3 py-2 border border-slate-300 rounded-xl text-base sm:text-sm pr-24 font-mono tabular-nums focus:ring-2 focus:ring-indigo-500 focus:outline-none"
                             maxLength={19}
                           />
                           {cardNetwork && (
@@ -1475,7 +1476,7 @@ export default function CartItems() {
                               setCardDetails({ ...cardDetails, expiryDate: formatExpiryDate(e.target.value) })
                             }
                             placeholder="MM/YY"
-                            className="w-full min-h-[44px] px-3 py-2 border border-slate-300 rounded-xl text-sm font-mono tabular-nums focus:ring-2 focus:ring-indigo-500 focus:outline-none"
+                            className="w-full min-h-[44px] px-3 py-2 border border-slate-300 rounded-xl text-base sm:text-sm font-mono tabular-nums focus:ring-2 focus:ring-indigo-500 focus:outline-none"
                             maxLength={5}
                           />
                         </div>
@@ -1492,7 +1493,7 @@ export default function CartItems() {
                               }
                             }}
                             placeholder="•••"
-                            className="w-full min-h-[44px] px-3 py-2 border border-slate-300 rounded-xl text-sm font-mono tabular-nums focus:ring-2 focus:ring-indigo-500 focus:outline-none"
+                            className="w-full min-h-[44px] px-3 py-2 border border-slate-300 rounded-xl text-base sm:text-sm font-mono tabular-nums focus:ring-2 focus:ring-indigo-500 focus:outline-none"
                             maxLength={4}
                           />
                         </div>
@@ -1505,7 +1506,7 @@ export default function CartItems() {
                           value={cardDetails.name}
                           onChange={(e) => setCardDetails({ ...cardDetails, name: e.target.value })}
                           placeholder="Name printed on card"
-                          className="w-full min-h-[44px] px-3 py-2 border border-slate-300 rounded-xl text-sm focus:ring-2 focus:ring-indigo-500 focus:outline-none"
+                          className="w-full min-h-[44px] px-3 py-2 border border-slate-300 rounded-xl text-base sm:text-sm focus:ring-2 focus:ring-indigo-500 focus:outline-none"
                         />
                       </div>
 
@@ -1559,9 +1560,9 @@ export default function CartItems() {
         </aside>
       </div>
 
-      {/* MOBILE STICKY BOTTOM PAYABLE BAR (replaces global tab bar on /cart so aggregate sticky height <= 15%) */}
+      {/* MOBILE & TABLET STICKY BOTTOM PAYABLE BAR (replaces global tab bar on /cart so aggregate sticky height <= 15%) */}
       <div className="fixed bottom-0 left-0 right-0 z-40 lg:hidden bg-white/95 backdrop-blur-md border-t border-slate-200 px-4 py-2.5 pb-safe shadow-[0_-4px_20px_rgba(15,23,42,0.08)]">
-        <div className="flex items-center justify-between gap-3 max-w-md mx-auto">
+        <div className="flex items-center justify-between gap-3 max-w-3xl mx-auto">
           <button
             type="button"
             onClick={() => {

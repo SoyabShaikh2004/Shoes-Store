@@ -99,6 +99,7 @@ export default function ProductForm({
       } else if (initialProduct.imagePath) {
         if (
           initialProduct.imagePath.startsWith('/uploads/') ||
+          initialProduct.imagePath.startsWith('/api/uploads/') ||
           initialProduct.imagePath.startsWith('http') ||
           initialProduct.imagePath.startsWith('data:')
         ) {
@@ -278,7 +279,7 @@ export default function ProductForm({
   };
 
   return (
-    <form onSubmit={handleSubmit} className="space-y-8 bg-white p-6 sm:p-8 rounded-2xl border border-gray-200 shadow-sm">
+    <form onSubmit={handleSubmit} className="space-y-8 bg-white p-4 sm:p-6 lg:p-8 rounded-2xl border border-gray-200 shadow-sm">
       {/* Top Banner / Heading */}
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between pb-6 border-b border-gray-100 gap-4">
         <div>
@@ -287,7 +288,7 @@ export default function ProductForm({
               <button
                 type="button"
                 onClick={onCancel}
-                className="p-1 text-gray-400 hover:text-gray-700 rounded-md hover:bg-gray-100 transition-colors"
+                className="min-w-[44px] min-h-[44px] inline-flex items-center justify-center text-gray-400 hover:text-gray-700 rounded-md hover:bg-gray-100 transition-colors cursor-pointer"
                 title="Back to list"
               >
                 <ArrowLeft className="w-5 h-5" />
@@ -302,12 +303,12 @@ export default function ProductForm({
           </p>
         </div>
 
-        <div className="flex items-center gap-2">
+        <div className="flex flex-wrap items-center gap-2">
           {onCancel && (
             <button
               type="button"
               onClick={onCancel}
-              className="px-4 py-2 text-sm font-medium text-gray-700 bg-gray-100 hover:bg-gray-200 rounded-lg transition-colors"
+              className="min-h-[44px] px-4 py-2 text-sm font-medium text-gray-700 bg-gray-100 hover:bg-gray-200 rounded-lg transition-colors cursor-pointer"
             >
               Cancel
             </button>
@@ -315,7 +316,7 @@ export default function ProductForm({
           <button
             type="submit"
             disabled={isSubmitting}
-            className="flex items-center gap-2 px-5 py-2.5 bg-indigo-600 hover:bg-indigo-700 active:scale-[0.98] text-white text-sm font-semibold rounded-lg shadow-sm transition-all disabled:opacity-50"
+            className="min-h-[44px] flex items-center justify-center gap-2 px-5 py-2.5 bg-indigo-600 hover:bg-indigo-700 active:scale-[0.98] text-white text-sm font-semibold rounded-lg shadow-sm transition-all disabled:opacity-50 cursor-pointer"
           >
             <Save className="w-4 h-4" />
             {isSubmitting ? 'Saving...' : isEditing ? 'Update Shoe' : 'Publish Shoe'}
@@ -342,7 +343,7 @@ export default function ProductForm({
               value={name}
               onChange={(e) => setName(e.target.value)}
               placeholder="e.g. Air Zoom Pegasus 40, UltraBoost Light"
-              className="w-full text-base bg-white border border-gray-300 rounded-lg px-3.5 py-2.5 focus:outline-none focus:ring-2 focus:ring-indigo-500"
+              className="w-full min-h-[44px] text-base bg-white border border-gray-300 rounded-lg px-3.5 py-2.5 focus:outline-none focus:ring-2 focus:ring-indigo-500"
             />
           </div>
 
@@ -356,7 +357,7 @@ export default function ProductForm({
               value={brand}
               onChange={(e) => setBrand(e.target.value)}
               placeholder="e.g. StepStyle Elite, Nike, Adidas"
-              className="w-full text-sm bg-white border border-gray-300 rounded-lg px-3.5 py-2.5 focus:outline-none focus:ring-2 focus:ring-indigo-500"
+              className="w-full min-h-[44px] text-base sm:text-sm bg-white border border-gray-300 rounded-lg px-3.5 py-2.5 focus:outline-none focus:ring-2 focus:ring-indigo-500"
             />
           </div>
 
@@ -376,7 +377,7 @@ export default function ProductForm({
                     setCategory(e.target.value);
                   }
                 }}
-                className="w-full text-sm bg-white border border-gray-300 rounded-lg px-3.5 py-2.5 focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                className="w-full min-h-[44px] text-base sm:text-sm bg-white border border-gray-300 rounded-lg px-3.5 py-2.5 focus:outline-none focus:ring-2 focus:ring-indigo-500"
               >
                 {categories.map((cat) => (
                   <option key={cat} value={cat}>
@@ -394,7 +395,7 @@ export default function ProductForm({
                   value={customCategory}
                   onChange={(e) => setCustomCategory(e.target.value)}
                   placeholder="Type new category name (e.g. Trail, Sneaker)"
-                  className="w-full text-sm bg-indigo-50/50 border border-indigo-300 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                  className="w-full min-h-[44px] text-base sm:text-sm bg-indigo-50/50 border border-indigo-300 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-indigo-500"
                   autoFocus
                 />
               </div>
@@ -411,7 +412,7 @@ export default function ProductForm({
               value={sku}
               onChange={(e) => setSku(e.target.value.toUpperCase())}
               placeholder="Auto-generated if left blank (e.g. STEP-RUN-101)"
-              className="w-full text-sm font-mono bg-white border border-gray-300 rounded-lg px-3.5 py-2.5 focus:outline-none focus:ring-2 focus:ring-indigo-500"
+              className="w-full min-h-[44px] text-base sm:text-sm font-mono bg-white border border-gray-300 rounded-lg px-3.5 py-2.5 focus:outline-none focus:ring-2 focus:ring-indigo-500"
             />
           </div>
 
@@ -430,7 +431,7 @@ export default function ProductForm({
                 if (Number(v) === 0) setInStock(false);
                 else if (Number(v) > 0) setInStock(true);
               }}
-              className="w-full text-sm font-semibold bg-white border border-gray-300 rounded-lg px-3.5 py-2.5 focus:outline-none focus:ring-2 focus:ring-indigo-500"
+              className="w-full min-h-[44px] text-base sm:text-sm font-semibold tabular-nums bg-white border border-gray-300 rounded-lg px-3.5 py-2.5 focus:outline-none focus:ring-2 focus:ring-indigo-500"
             />
           </div>
 
@@ -442,7 +443,7 @@ export default function ProductForm({
             <select
               value={gender}
               onChange={(e) => setGender(e.target.value as 'Men' | 'Women' | 'Unisex' | 'Kids')}
-              className="w-full text-sm bg-white border border-gray-300 rounded-lg px-3.5 py-2.5 focus:outline-none focus:ring-2 focus:ring-indigo-500"
+              className="w-full min-h-[44px] text-base sm:text-sm bg-white border border-gray-300 rounded-lg px-3.5 py-2.5 focus:outline-none focus:ring-2 focus:ring-indigo-500"
             >
               <option value="Men">Men</option>
               <option value="Women">Women</option>
@@ -461,7 +462,7 @@ export default function ProductForm({
               value={shoeType}
               onChange={(e) => setShoeType(e.target.value)}
               placeholder="e.g. Running Shoes, Sneakers, High Tops"
-              className="w-full text-sm bg-white border border-gray-300 rounded-lg px-3.5 py-2.5 focus:outline-none focus:ring-2 focus:ring-indigo-500"
+              className="w-full min-h-[44px] text-base sm:text-sm bg-white border border-gray-300 rounded-lg px-3.5 py-2.5 focus:outline-none focus:ring-2 focus:ring-indigo-500"
             />
           </div>
 
@@ -473,7 +474,7 @@ export default function ProductForm({
             <select
               value={status}
               onChange={(e) => setStatus(e.target.value as 'active' | 'inactive')}
-              className="w-full text-sm bg-white border border-gray-300 rounded-lg px-3.5 py-2.5 focus:outline-none focus:ring-2 focus:ring-indigo-500"
+              className="w-full min-h-[44px] text-base sm:text-sm bg-white border border-gray-300 rounded-lg px-3.5 py-2.5 focus:outline-none focus:ring-2 focus:ring-indigo-500"
             >
               <option value="active">Active (Visible on Storefront)</option>
               <option value="inactive">Inactive (Hidden from Storefront)</option>
@@ -489,7 +490,7 @@ export default function ProductForm({
               value={tagsInput}
               onChange={(e) => setTagsInput(e.target.value)}
               placeholder="Comma separated: Breathable, Lightweight, Carbon"
-              className="w-full text-sm bg-white border border-gray-300 rounded-lg px-3.5 py-2.5 focus:outline-none focus:ring-2 focus:ring-indigo-500"
+              className="w-full min-h-[44px] text-base sm:text-sm bg-white border border-gray-300 rounded-lg px-3.5 py-2.5 focus:outline-none focus:ring-2 focus:ring-indigo-500"
             />
           </div>
 
@@ -503,7 +504,7 @@ export default function ProductForm({
               value={description}
               onChange={(e) => setDescription(e.target.value)}
               placeholder="Detailed description of features, materials, cushioning technology, and feel..."
-              className="w-full text-sm bg-white border border-gray-300 rounded-lg px-3.5 py-2.5 focus:outline-none focus:ring-2 focus:ring-indigo-500"
+              className="w-full text-base sm:text-sm bg-white border border-gray-300 rounded-lg px-3.5 py-2.5 focus:outline-none focus:ring-2 focus:ring-indigo-500"
             />
           </div>
         </div>
@@ -621,7 +622,7 @@ export default function ProductForm({
           </label>
 
           {/* Quick presets */}
-          <div className="flex flex-wrap gap-1.5 mb-3">
+          <div className="flex flex-wrap gap-2 mb-3">
             {COMMON_COLOR_PRESETS.map((preset) => {
               const isSelected = colors.includes(preset);
               return (
@@ -629,7 +630,7 @@ export default function ProductForm({
                   key={preset}
                   type="button"
                   onClick={() => handleToggleColorPreset(preset)}
-                  className={`text-xs px-2.5 py-1 rounded-full border transition-all ${
+                  className={`min-h-[36px] text-xs px-3 py-1.5 rounded-lg border transition-all cursor-pointer ${
                     isSelected
                       ? 'bg-indigo-600 text-white border-indigo-600 shadow-sm'
                       : 'bg-gray-50 text-gray-700 border-gray-200 hover:border-gray-400'
@@ -646,28 +647,29 @@ export default function ProductForm({
             {colors.map((c) => (
               <span
                 key={c}
-                className="inline-flex items-center gap-1 bg-gray-100 text-gray-800 text-xs font-medium px-2.5 py-1 rounded-lg border border-gray-200"
+                className="inline-flex items-center gap-1.5 bg-gray-100 text-gray-800 text-xs font-medium pl-2.5 pr-1 py-1 rounded-lg border border-gray-200"
               >
                 {c}
                 <button
                   type="button"
                   onClick={() => handleRemoveColor(c)}
-                  className="hover:text-red-600"
+                  aria-label={`Remove ${c}`}
+                  className="min-w-[28px] min-h-[28px] inline-flex items-center justify-center rounded hover:bg-gray-200 hover:text-red-600 cursor-pointer"
                 >
-                  <X className="w-3 h-3" />
+                  <X className="w-3.5 h-3.5" />
                 </button>
               </span>
             ))}
           </div>
 
           {/* Add custom color input */}
-          <div className="flex max-w-sm gap-2">
+          <div className="flex flex-col sm:flex-row max-w-sm gap-2">
             <input
               type="text"
               value={newColorInput}
               onChange={(e) => setNewColorInput(e.target.value)}
               placeholder="Add custom color (e.g. Neon Lime)"
-              className="flex-1 text-xs bg-white border border-gray-300 rounded-lg px-3 py-1.5 focus:outline-none focus:ring-2 focus:ring-indigo-500"
+              className="flex-1 min-h-[44px] text-base sm:text-xs bg-white border border-gray-300 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-indigo-500"
               onKeyDown={(e) => {
                 if (e.key === 'Enter') {
                   e.preventDefault();
@@ -678,7 +680,7 @@ export default function ProductForm({
             <button
               type="button"
               onClick={handleAddColor}
-              className="text-xs bg-gray-800 text-white px-3 py-1.5 rounded-lg hover:bg-black transition-colors"
+              className="min-h-[44px] text-xs font-semibold bg-gray-800 text-white px-4 py-2 rounded-lg hover:bg-black transition-colors cursor-pointer shrink-0"
             >
               Add Color
             </button>
@@ -687,15 +689,15 @@ export default function ProductForm({
 
         {/* Shoe Size Run */}
         <div>
-          <div className="flex items-center justify-between mb-2">
+          <div className="flex flex-wrap items-center justify-between gap-2 mb-2">
             <label className="block text-xs font-semibold uppercase tracking-wider text-gray-700">
               Available Sizes (UK/US) ({sizes.length} active)
             </label>
-            <div className="flex gap-2">
+            <div className="flex items-center gap-2">
               <button
                 type="button"
                 onClick={handleSelectStandardSizes}
-                className="text-[11px] text-indigo-600 hover:text-indigo-800 font-medium"
+                className="min-h-[36px] px-2 text-xs text-indigo-600 hover:text-indigo-800 font-medium cursor-pointer"
               >
                 Standard (7-11)
               </button>
@@ -703,7 +705,7 @@ export default function ProductForm({
               <button
                 type="button"
                 onClick={handleSelectAllSizes}
-                className="text-[11px] text-indigo-600 hover:text-indigo-800 font-medium"
+                className="min-h-[36px] px-2 text-xs text-indigo-600 hover:text-indigo-800 font-medium cursor-pointer"
               >
                 Select All
               </button>
@@ -768,12 +770,12 @@ export default function ProductForm({
       </div>
 
       {/* Footer Actions */}
-      <div className="pt-6 border-t border-gray-100 flex items-center justify-end gap-3">
+      <div className="pt-6 border-t border-gray-100 flex flex-wrap items-center justify-end gap-3">
         {onCancel && (
           <button
             type="button"
             onClick={onCancel}
-            className="px-5 py-2.5 text-sm font-medium text-gray-700 bg-gray-100 hover:bg-gray-200 rounded-lg transition-colors"
+            className="min-h-[44px] px-5 py-2.5 text-sm font-medium text-gray-700 bg-gray-100 hover:bg-gray-200 rounded-lg transition-colors cursor-pointer"
           >
             Cancel
           </button>
@@ -781,7 +783,7 @@ export default function ProductForm({
         <button
           type="submit"
           disabled={isSubmitting}
-          className="flex items-center gap-2 px-6 py-2.5 bg-indigo-600 hover:bg-indigo-700 active:scale-[0.98] text-white text-sm font-semibold rounded-lg shadow transition-all disabled:opacity-50"
+          className="min-h-[48px] flex-1 sm:flex-none flex items-center justify-center gap-2 px-6 py-2.5 bg-indigo-600 hover:bg-indigo-700 active:scale-[0.98] text-white text-sm font-semibold rounded-lg shadow transition-all disabled:opacity-50 cursor-pointer"
         >
           <Save className="w-4 h-4" />
           {isSubmitting ? 'Saving...' : isEditing ? 'Update Shoe' : 'Publish Shoe to Store'}

@@ -23,6 +23,7 @@ export default function ProductCard({ product }: ProductCardProps) {
     if (
       product.imagePath &&
       (product.imagePath.startsWith('/uploads/') ||
+        product.imagePath.startsWith('/api/uploads/') ||
         product.imagePath.startsWith('http') ||
         product.imagePath.startsWith('data:') ||
         /\.(jpg|jpeg|png|webp|svg)$/i.test(product.imagePath))

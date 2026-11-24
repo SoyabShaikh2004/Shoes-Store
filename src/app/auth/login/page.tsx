@@ -130,9 +130,9 @@ export default function LoginPage() {
   };
 
   return (
-    <div className="min-h-screen flex flex-col items-center justify-center px-4 py-12 sm:px-6 lg:px-8">
+    <div className="min-h-[calc(100dvh-5rem)] flex flex-col items-center justify-center px-4 py-8 sm:py-12 sm:px-6 lg:px-8">
       <div className="w-full max-w-md">
-        <div className="text-center mb-8">
+        <div className="text-center mb-6 sm:mb-8">
           <Link href="/" className="inline-block">
             <Image
               src="/images/logo.svg"
@@ -146,10 +146,11 @@ export default function LoginPage() {
           <p className="mt-2 text-sm sm:text-base text-gray-600">Sign in to your StepStyle account</p>
         </div>
 
-        <div className="bg-white rounded-lg shadow-lg p-4 sm:p-6 mb-6">
+        <div className="bg-white rounded-xl border border-slate-200 shadow-lg p-5 sm:p-6 mb-6">
           <div className="flex border-b border-gray-200 mb-6">
             <button
-              className={`pb-3 px-3 sm:px-4 text-sm sm:text-base font-medium ${
+              type="button"
+              className={`min-h-[44px] px-4 text-sm sm:text-base font-medium cursor-pointer ${
                 loginMethod === 'password'
                   ? 'text-indigo-600 border-b-2 border-indigo-600'
                   : 'text-gray-500 hover:text-gray-700'
@@ -163,7 +164,8 @@ export default function LoginPage() {
               Password
             </button>
             <button
-              className={`pb-3 px-3 sm:px-4 text-sm sm:text-base font-medium ${
+              type="button"
+              className={`min-h-[44px] px-4 text-sm sm:text-base font-medium cursor-pointer ${
                 loginMethod === 'otp'
                   ? 'text-indigo-600 border-b-2 border-indigo-600'
                   : 'text-gray-500 hover:text-gray-700'
@@ -195,7 +197,7 @@ export default function LoginPage() {
                   id="identifier"
                   value={identifier}
                   onChange={(e) => setIdentifier(e.target.value)}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                  className="w-full min-h-[44px] px-3.5 py-2 border border-gray-300 rounded-lg text-base sm:text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
                   placeholder="Enter your email or phone number"
                   disabled={isLoading}
                   required
@@ -204,11 +206,11 @@ export default function LoginPage() {
                 />
               </div>
               <div>
-                <div className="flex justify-between mb-1">
+                <div className="flex justify-between items-center mb-1">
                   <label htmlFor="password" className="block text-sm font-medium text-gray-700">
                     Password
                   </label>
-                  <Link href="/auth/forgot-password" className="text-xs text-indigo-600 hover:text-indigo-800">
+                  <Link href="/auth/forgot-password" className="text-xs text-indigo-600 hover:text-indigo-800 py-1">
                     Forgot password?
                   </Link>
                 </div>
@@ -217,7 +219,7 @@ export default function LoginPage() {
                   id="password"
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                  className="w-full min-h-[44px] px-3.5 py-2 border border-gray-300 rounded-lg text-base sm:text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
                   placeholder="Enter your password"
                   disabled={isLoading}
                   required
@@ -226,7 +228,7 @@ export default function LoginPage() {
               </div>
               <button
                 type="submit"
-                className={`w-full py-2.5 text-white font-medium rounded-md transition ${
+                className={`w-full min-h-[48px] py-2.5 text-white text-sm font-semibold rounded-lg transition cursor-pointer ${
                   isLoading
                     ? 'bg-indigo-400 cursor-not-allowed'
                     : 'bg-indigo-600 hover:bg-indigo-700'
@@ -255,12 +257,12 @@ export default function LoginPage() {
                 <label htmlFor="identifier-otp" className="block text-sm font-medium text-gray-700 mb-1">
                   Email or Phone
                 </label>
-                <input
+              <input
                   type="text"
                   id="identifier-otp"
                   value={identifier}
                   onChange={(e) => setIdentifier(e.target.value)}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                  className="w-full min-h-[44px] px-3.5 py-2 border border-gray-300 rounded-lg text-base sm:text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
                   placeholder="Enter your email or phone number"
                   disabled={isLoading}
                   required
@@ -271,7 +273,7 @@ export default function LoginPage() {
               <button
                 type="button"
                 onClick={handleSendOtp}
-                className={`w-full py-2.5 text-white font-medium rounded-md transition ${
+                className={`w-full min-h-[48px] py-2.5 text-white text-sm font-semibold rounded-lg transition cursor-pointer ${
                   isLoading || !isValidIdentifier
                     ? 'bg-indigo-400 cursor-not-allowed'
                     : 'bg-indigo-600 hover:bg-indigo-700'
@@ -301,8 +303,8 @@ export default function LoginPage() {
                   Enter OTP
                 </label>
                 <div className="mb-2">
-                  <p className="text-xs sm:text-sm text-gray-600">
-                    We've sent a 6-digit code to {identifier}
+                  <p className="text-xs sm:text-sm text-gray-600 break-words">
+                    We&apos;ve sent a 6-digit code to {identifier}
                   </p>
                 </div>
                 <input
@@ -315,7 +317,7 @@ export default function LoginPage() {
                       setOtp(value);
                     }
                   }}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                  className="w-full min-h-[44px] px-3.5 py-2 border border-gray-300 rounded-lg text-base sm:text-sm font-mono tabular-nums focus:outline-none focus:ring-2 focus:ring-indigo-500"
                   placeholder="Enter 6-digit OTP"
                   maxLength={6}
                   disabled={isLoading}
@@ -324,14 +326,14 @@ export default function LoginPage() {
                   autoComplete="one-time-code"
                 />
                 {countdown > 0 ? (
-                  <p className="mt-2 text-xs text-gray-500">
+                  <p className="mt-2 text-xs text-gray-500 tabular-nums">
                     Resend OTP in {countdown}s
                   </p>
                 ) : (
                   <button
                     type="button"
                     onClick={handleSendOtp}
-                    className="mt-2 text-xs text-indigo-600 hover:text-indigo-800 focus:outline-none"
+                    className="mt-1 min-h-[44px] inline-flex items-center text-xs font-medium text-indigo-600 hover:text-indigo-800 focus:outline-none cursor-pointer"
                     disabled={isLoading}
                   >
                     Resend OTP
@@ -341,7 +343,7 @@ export default function LoginPage() {
               <button
                 type="button"
                 onClick={handleVerifyOtp}
-                className={`w-full py-2.5 text-white font-medium rounded-md transition ${
+                className={`w-full min-h-[48px] py-2.5 text-white text-sm font-semibold rounded-lg transition cursor-pointer ${
                   isLoading || otp.length !== 6
                     ? 'bg-indigo-400 cursor-not-allowed'
                     : 'bg-indigo-600 hover:bg-indigo-700'
@@ -366,23 +368,15 @@ export default function LoginPage() {
 
         <div className="text-center">
           <p className="text-xs sm:text-sm text-gray-600">
-            Don't have an account?{' '}
+            Don&apos;t have an account?{' '}
             <Link
               href={redirectPath !== '/' ? `/auth/signup?redirect=${encodeURIComponent(redirectPath)}` : '/auth/signup'}
-              className="text-indigo-600 hover:text-indigo-800 font-medium"
+              className="text-indigo-600 hover:text-indigo-800 font-medium py-1 inline-block"
             >
               Sign up
             </Link>
           </p>
         </div>
-
-        {isLoading && (
-          <div className="p-4 mt-6 text-sm rounded-md bg-red-50 text-red-800 border border-red-200">
-            <p>
-              Login failed. Please check your credentials and try again. If you don&apos;t have an account, please sign up.
-            </p>
-          </div>
-        )}
       </div>
     </div>
   );

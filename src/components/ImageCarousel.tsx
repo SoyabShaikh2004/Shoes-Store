@@ -140,7 +140,11 @@ export default function ImageCarousel({ slides }: CarouselProps) {
                   sizes="(max-width: 768px) 100vw, 1280px"
                   className="object-cover object-center"
                   quality={95}
-                  unoptimized={imgSrc.startsWith('http') || imgSrc.startsWith('/uploads/')}
+                  unoptimized={
+                    imgSrc.startsWith('http') ||
+                    imgSrc.startsWith('/uploads/') ||
+                    imgSrc.startsWith('/api/uploads/')
+                  }
                   onError={() =>
                     setFailedSlides((prev) => ({
                       ...prev,

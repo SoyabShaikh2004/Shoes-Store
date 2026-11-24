@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { promises as fs } from 'fs';
 import path from 'path';
 import { requireAdmin } from '@/lib/server/adminSession';
+import { resolveUploadStorage } from '@/lib/server/uploadStorage';
 
 const ALLOWED_MIME_TYPES = new Set([
   'image/jpeg',
@@ -20,7 +21,8 @@ export async function POST(req: NextRequest) {
   }
 
   try {
-    const uploadDir = path.resolve(process.cwd(), 'public/uploads');
+    const uploadStorage = await resolveUploadStorage();
+    const uploadDir = uploadStorage.baseDir;
     await fs.mkdir(uploadDir, { recursive: true });
 
     const contentType = req.headers.get('content-type') || '';
@@ -95,7 +97,7 @@ export async function POST(req: NextRequest) {
         }
 
         await fs.writeFile(resolvedPath, buffer);
-        uploadedUrls.push(`/uploads/${fileName}`);
+        uploadedUrls.push(`${uploadStorage.baseUrlPrefix}${fileName}`);
       }
 
       return NextResponse.json({
@@ -157,7 +159,7 @@ export async function POST(req: NextRequest) {
 
       return NextResponse.json({
         success: true,
-        url: `/uploads/${fileName}`,
+        url: `${uploadStorage.baseUrlPrefix}${fileName}`,
       });
     }
 

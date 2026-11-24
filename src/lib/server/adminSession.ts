@@ -1,25 +1,50 @@
 import crypto from 'crypto';
+import fs from 'fs';
+import path from 'path';
 import { NextRequest } from 'next/server';
 import type { AdminRole } from '@/lib/db/schema';
 import { getAdminUserById } from '@/lib/db/store';
 
 export const ADMIN_COOKIE_NAME = 'stepstyle_admin_token';
 
-// Shared process-wide in-memory fallback key when ADMIN_SESSION_SECRET env var is not configured
+// Shared fallback key cached per instance; prefers ADMIN_SESSION_SECRET env var,
+// then derives deterministically from the deployment's seeded database hash so
+// multiple serverless function instances verify the same admin tokens.
 const globalForAdminSession = globalThis as typeof globalThis & {
   __stepstyleAdminFallbackKey?: string;
 };
-
-if (!globalForAdminSession.__stepstyleAdminFallbackKey) {
-  globalForAdminSession.__stepstyleAdminFallbackKey = crypto.randomBytes(32).toString('hex');
-}
 
 function getSigningSecret(): string {
   const envSecret = process.env.ADMIN_SESSION_SECRET;
   if (envSecret && envSecret.trim().length >= 16) {
     return envSecret.trim();
   }
-  return globalForAdminSession.__stepstyleAdminFallbackKey!;
+
+  if (globalForAdminSession.__stepstyleAdminFallbackKey) {
+    return globalForAdminSession.__stepstyleAdminFallbackKey;
+  }
+
+  try {
+    const bundledDbPath = path.join(process.cwd(), 'src/lib/data/database.json');
+    const raw = fs.readFileSync(bundledDbPath, 'utf8');
+    const parsed = JSON.parse(raw) as {
+      adminUsers?: Array<{ passwordHash?: string; passwordSalt?: string }>;
+    };
+    const primaryAdmin = parsed?.adminUsers?.[0];
+    if (primaryAdmin?.passwordHash && primaryAdmin?.passwordSalt) {
+      const derived = crypto
+        .createHash('sha256')
+        .update(`${primaryAdmin.passwordHash}:${primaryAdmin.passwordSalt}`)
+        .digest('hex');
+      globalForAdminSession.__stepstyleAdminFallbackKey = derived;
+      return derived;
+    }
+  } catch {
+    // fallback to ephemeral random key if bundled database is unavailable
+  }
+
+  globalForAdminSession.__stepstyleAdminFallbackKey = crypto.randomBytes(32).toString('hex');
+  return globalForAdminSession.__stepstyleAdminFallbackKey;
 }
 
 export interface AdminTokenPayload {

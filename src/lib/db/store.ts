@@ -1,4 +1,5 @@
 import { promises as fs } from 'fs';
+import os from 'os';
 import path from 'path';
 import crypto from 'crypto';
 import {
@@ -68,18 +69,56 @@ function sanitizeBannerImage(raw: string, fallback: string): string {
   return fallback;
 }
 
-const DB_FILE_PATH = path.join(process.cwd(), 'src/lib/data/database.json');
-const PRODUCTS_FILE_PATH = path.join(process.cwd(), 'src/lib/data/products.json');
-const DEFAULT_PRODUCTS_FILE_PATH = path.join(
-  process.cwd(),
-  'src/lib/data/default-products.json'
-);
-const ORDERS_FILE_PATH = path.join(process.cwd(), 'src/lib/data/orders.json');
+const BUNDLED_DATA_DIR = path.join(process.cwd(), 'src/lib/data');
+const BUNDLED_DB_FILE_PATH = path.join(BUNDLED_DATA_DIR, 'database.json');
+const PRODUCTS_FILE_PATH = path.join(BUNDLED_DATA_DIR, 'products.json');
+const DEFAULT_PRODUCTS_FILE_PATH = path.join(BUNDLED_DATA_DIR, 'default-products.json');
+const ORDERS_FILE_PATH = path.join(BUNDLED_DATA_DIR, 'orders.json');
+
+const TMP_DATA_DIR = path.join(os.tmpdir(), 'stepstyle-data');
+const TMP_DB_FILE_PATH = path.join(TMP_DATA_DIR, 'database.json');
 
 // Serialize all database mutations through a single process-wide promise mutex
 const globalForDb = globalThis as typeof globalThis & {
   __stepstyleDbMutex?: Promise<unknown>;
+  __stepstyleDbCache?: DatabaseSchema;
+  __stepstyleStorageTarget?: { dbPath: string; bundledWritable: boolean };
 };
+
+async function isDirectoryWritable(dirPath: string): Promise<boolean> {
+  const probeFile = path.join(dirPath, `.probe-${process.pid}-${Date.now()}`);
+  try {
+    await fs.mkdir(dirPath, { recursive: true });
+    await fs.writeFile(probeFile, '');
+    await fs.unlink(probeFile);
+    return true;
+  } catch {
+    return false;
+  }
+}
+
+async function resolveStorageTarget(): Promise<{ dbPath: string; bundledWritable: boolean }> {
+  if (globalForDb.__stepstyleStorageTarget) {
+    return globalForDb.__stepstyleStorageTarget;
+  }
+
+  const customDir = process.env.STEPSTYLE_DATA_DIR?.trim();
+  if (customDir && (await isDirectoryWritable(customDir))) {
+    const target = { dbPath: path.join(customDir, 'database.json'), bundledWritable: false };
+    globalForDb.__stepstyleStorageTarget = target;
+    return target;
+  }
+
+  if (await isDirectoryWritable(BUNDLED_DATA_DIR)) {
+    const target = { dbPath: BUNDLED_DB_FILE_PATH, bundledWritable: true };
+    globalForDb.__stepstyleStorageTarget = target;
+    return target;
+  }
+
+  const target = { dbPath: TMP_DB_FILE_PATH, bundledWritable: false };
+  globalForDb.__stepstyleStorageTarget = target;
+  return target;
+}
 
 function runLocked<T>(fn: () => Promise<T>): Promise<T> {
   const current = globalForDb.__stepstyleDbMutex || Promise.resolve();
@@ -279,13 +318,66 @@ async function syncLegacyFiles(db: DatabaseSchema): Promise<void> {
   await writeAtomicJson(ORDERS_FILE_PATH, legacyOrders);
 }
 
+async function persistDatabase(
+  db: DatabaseSchema,
+  storage: { dbPath: string; bundledWritable: boolean }
+): Promise<void> {
+  globalForDb.__stepstyleDbCache = db;
+  try {
+    await writeAtomicJson(storage.dbPath, db);
+  } catch (err) {
+    // Fallback to temp path if primary became read-only
+    if (storage.dbPath !== TMP_DB_FILE_PATH) {
+      try {
+        await writeAtomicJson(TMP_DB_FILE_PATH, db);
+        globalForDb.__stepstyleStorageTarget = {
+          dbPath: TMP_DB_FILE_PATH,
+          bundledWritable: false,
+        };
+      } catch {
+        console.warn('Database persisted in memory fallback:', err);
+      }
+    }
+  }
+
+  if (storage.bundledWritable) {
+    try {
+      await syncLegacyFiles(db);
+    } catch {
+      // Non-fatal if legacy sync fails
+    }
+  }
+}
+
 async function bootstrapDatabase(): Promise<DatabaseSchema> {
-  const existingDb = await readJsonSafe<DatabaseSchema | null>(DB_FILE_PATH, null);
+  const storage = await resolveStorageTarget();
+  let existingDb = await readJsonSafe<DatabaseSchema | null>(storage.dbPath, null);
+
+  // When running from read-only deployment (/var/task), hydrate initial state from bundled database.json
+  if (!existingDb && storage.dbPath !== BUNDLED_DB_FILE_PATH) {
+    if (globalForDb.__stepstyleDbCache) {
+      return globalForDb.__stepstyleDbCache;
+    }
+    existingDb = await readJsonSafe<DatabaseSchema | null>(BUNDLED_DB_FILE_PATH, null);
+    if (existingDb && existingDb.version === 1 && Array.isArray(existingDb.products)) {
+      if (!Array.isArray(existingDb.heroBanners) || existingDb.heroBanners.length === 0) {
+        existingDb.heroBanners = DEFAULT_HERO_BANNERS.map((b) => ({ ...b }));
+      }
+      await persistDatabase(existingDb, storage);
+      return existingDb;
+    }
+  }
+
   if (existingDb && existingDb.version === 1 && Array.isArray(existingDb.products)) {
     if (!Array.isArray(existingDb.heroBanners) || existingDb.heroBanners.length === 0) {
       existingDb.heroBanners = DEFAULT_HERO_BANNERS.map((b) => ({ ...b }));
     }
+    globalForDb.__stepstyleDbCache = existingDb;
     return existingDb;
+  }
+
+  if (globalForDb.__stepstyleDbCache) {
+    return globalForDb.__stepstyleDbCache;
   }
 
   const now = new Date().toISOString();
@@ -583,8 +675,7 @@ async function bootstrapDatabase(): Promise<DatabaseSchema> {
     heroBanners: DEFAULT_HERO_BANNERS.map((b) => ({ ...b })),
   };
 
-  await writeAtomicJson(DB_FILE_PATH, db);
-  await syncLegacyFiles(db);
+  await persistDatabase(db, storage);
   return db;
 }
 
@@ -597,11 +688,11 @@ export async function withTransaction<T>(
 ): Promise<T> {
   return runLocked(async () => {
     const db = await bootstrapDatabase();
+    const storage = await resolveStorageTarget();
     // Clone to preserve rollback safety on thrown errors
     const workingCopy = JSON.parse(JSON.stringify(db)) as DatabaseSchema;
     const result = await mutator(workingCopy);
-    await writeAtomicJson(DB_FILE_PATH, workingCopy);
-    await syncLegacyFiles(workingCopy);
+    await persistDatabase(workingCopy, storage);
     return result;
   });
 }

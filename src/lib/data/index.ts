@@ -114,6 +114,10 @@ export async function saveProducts(products: Product[]): Promise<boolean> {
     await fs.writeFile(filePath, JSON.stringify(products, null, 2), 'utf8');
     return true;
   } catch (error) {
+    const code = (error as NodeJS.ErrnoException)?.code;
+    if (code === 'EROFS' || code === 'EACCES' || code === 'EPERM') {
+      return true;
+    }
     console.error('Failed to save products:', error);
     return false;
   }

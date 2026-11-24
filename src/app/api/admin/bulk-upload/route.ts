@@ -9,6 +9,7 @@ import {
   getProductsFromDb,
 } from '@/lib/db/store';
 import { requireAdmin } from '@/lib/server/adminSession';
+import { resolveUploadStorage } from '@/lib/server/uploadStorage';
 
 export const dynamic = 'force-dynamic';
 
@@ -101,7 +102,10 @@ function escapeCsvCell(value: unknown): string {
 
 async function listExistingUploadLookup(): Promise<Record<string, string>> {
   const map: Record<string, string> = {};
+  const storage = await resolveUploadStorage();
   const dirs = [
+    { dir: storage.bulkDir, prefix: storage.bulkUrlPrefix },
+    { dir: storage.baseDir, prefix: storage.baseUrlPrefix },
     { dir: path.resolve(process.cwd(), 'public/uploads/bulk'), prefix: '/uploads/bulk/' },
     { dir: path.resolve(process.cwd(), 'public/uploads'), prefix: '/uploads/' },
   ];
@@ -277,7 +281,8 @@ export async function POST(req: NextRequest) {
 
       // 1A. Bulk image or ZIP archive upload
       if (mode === 'upload_images') {
-        const bulkUploadDir = path.resolve(process.cwd(), 'public/uploads/bulk');
+        const storage = await resolveUploadStorage();
+        const bulkUploadDir = storage.bulkDir;
         await fs.mkdir(bulkUploadDir, { recursive: true });
 
         const files = formData.getAll('files').filter((f): f is File => f instanceof File);
@@ -350,7 +355,7 @@ export async function POST(req: NextRequest) {
               }
 
               await fs.writeFile(resolvedDest, buf);
-              const publicUrl = `/uploads/bulk/${outName}`;
+              const publicUrl = `${storage.bulkUrlPrefix}${outName}`;
               uploadedMap[baseName.toLowerCase()] = publicUrl;
               uploadedMap[normalizeKey(baseName)] = publicUrl;
               uploadedList.push({ originalName: baseName, url: publicUrl });
@@ -389,7 +394,7 @@ export async function POST(req: NextRequest) {
 
           const buf = Buffer.from(await file.arrayBuffer());
           await fs.writeFile(resolvedDest, buf);
-          const publicUrl = `/uploads/bulk/${outName}`;
+          const publicUrl = `${storage.bulkUrlPrefix}${outName}`;
           uploadedMap[baseName.toLowerCase()] = publicUrl;
           uploadedMap[normalizeKey(baseName)] = publicUrl;
           uploadedList.push({ originalName: baseName, url: publicUrl });

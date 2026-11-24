@@ -21,7 +21,8 @@
       "passwordSalt": "b1a8b1451d762d62dd950c2114e79991",
       "role": "Super Admin",
       "status": "active",
-      "createdAt": "2026-01-01T00:00:00.000Z"
+      "createdAt": "2026-01-01T00:00:00.000Z",
+      "lastLogin": "2026-11-24T17:45:12.731Z"
     }
   ],
   "categories": [
@@ -4059,5 +4060,28 @@
   "returns": [],
   "refunds": [],
   "adminNotes": [],
-  "notifications": []
+  "notifications": [],
+  "heroBanners": [
+    {
+      "id": "slide-1",
+      "image": "/images/Slide-1.png",
+      "alt": "Kinetic Running Series",
+      "link": "/products?category=Running",
+      "updatedAt": "2026-11-24T17:40:28.551Z"
+    },
+    {
+      "id": "slide-2",
+      "image": "/images/Slide-2.png",
+      "alt": "Urban Casual Collection",
+      "link": "/products?category=Casual",
+      "updatedAt": "2026-11-24T17:40:28.551Z"
+    },
+    {
+      "id": "slide-3",
+      "image": "/images/Slide-3.png",
+      "alt": "High-Traction Sports Range",
+      "link": "/products?category=Sports",
+      "updatedAt": "2026-11-24T17:40:28.551Z"
+    }
+  ]
 }

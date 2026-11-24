@@ -14,6 +14,7 @@ import {
   Store,
   CheckCircle2,
   KeyRound,
+  AlertCircle,
 } from 'lucide-react';
 import { AdminUser, adminSignIn, adminSignUp } from '@/lib/adminAuth';
 
@@ -25,6 +26,7 @@ export default function AdminAuth({ onSuccess }: AdminAuthProps) {
   const [mode, setMode] = useState<'signin' | 'signup'>('signin');
   const [isLoading, setIsLoading] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
+  const [authError, setAuthError] = useState<string | null>(null);
 
   // Sign In Form State
   const [signInEmail, setSignInEmail] = useState('');
@@ -40,6 +42,7 @@ export default function AdminAuth({ onSuccess }: AdminAuthProps) {
 
   const handleSignIn = async (e: React.FormEvent) => {
     e.preventDefault();
+    setAuthError(null);
     setIsLoading(true);
     const result = await adminSignIn(signInEmail, signInPassword);
     setIsLoading(false);
@@ -48,15 +51,20 @@ export default function AdminAuth({ onSuccess }: AdminAuthProps) {
       toast.success(`Welcome back, ${result.user.name} (${result.user.role})`);
       onSuccess(result.user);
     } else {
-      toast.error(result.error || 'Authentication failed');
+      const msg = result.error || 'Authentication failed';
+      setAuthError(msg);
+      toast.error(msg);
     }
   };
 
   const handleSignUp = async (e: React.FormEvent) => {
     e.preventDefault();
+    setAuthError(null);
 
     if (signUpPassword !== signUpConfirmPassword) {
-      toast.error('Passwords do not match.');
+      const msg = 'Passwords do not match.';
+      setAuthError(msg);
+      toast.error(msg);
       return;
     }
 
@@ -74,7 +82,9 @@ export default function AdminAuth({ onSuccess }: AdminAuthProps) {
       toast.success(`Admin account created for ${result.user.name}`);
       onSuccess(result.user);
     } else {
-      toast.error(result.error || 'Registration failed');
+      const msg = result.error || 'Registration failed';
+      setAuthError(msg);
+      toast.error(msg);
     }
   };
 
@@ -97,7 +107,10 @@ export default function AdminAuth({ onSuccess }: AdminAuthProps) {
           <div className="grid grid-cols-2 border-b border-slate-200 bg-slate-50 p-1">
             <button
               type="button"
-              onClick={() => setMode('signin')}
+              onClick={() => {
+                setMode('signin');
+                setAuthError(null);
+              }}
               className={`py-2.5 text-xs sm:text-sm font-semibold rounded-lg transition-colors cursor-pointer ${
                 mode === 'signin'
                   ? 'bg-white text-slate-900 shadow-sm'
@@ -108,7 +121,10 @@ export default function AdminAuth({ onSuccess }: AdminAuthProps) {
             </button>
             <button
               type="button"
-              onClick={() => setMode('signup')}
+              onClick={() => {
+                setMode('signup');
+                setAuthError(null);
+              }}
               className={`py-2.5 text-xs sm:text-sm font-semibold rounded-lg transition-colors cursor-pointer ${
                 mode === 'signup'
                   ? 'bg-white text-slate-900 shadow-sm'
@@ -120,6 +136,15 @@ export default function AdminAuth({ onSuccess }: AdminAuthProps) {
           </div>
 
           <div className="p-6 sm:p-8">
+            {authError && (
+              <div
+                role="alert"
+                className="mb-4 flex items-start gap-2.5 rounded-lg border border-rose-200 bg-rose-50 px-3.5 py-2.5 text-xs text-rose-800"
+              >
+                <AlertCircle className="w-4 h-4 text-rose-600 shrink-0 mt-0.5" />
+                <span>{authError}</span>
+              </div>
+            )}
             {mode === 'signin' ? (
               <form onSubmit={handleSignIn} className="space-y-4">
                 <div>

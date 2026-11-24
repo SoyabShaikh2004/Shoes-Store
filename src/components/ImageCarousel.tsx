@@ -5,53 +5,67 @@ import Image from 'next/image';
 import Link from 'next/link';
 import { ChevronLeft, ChevronRight } from 'lucide-react';
 
-interface CarouselSlide {
+export interface HeroSlideItem {
+  id?: string;
   image: string;
-  title: string;
+  alt?: string;
+  title?: string;
   link: string;
 }
 
-const DEFAULT_SLIDES: CarouselSlide[] = [
+const DEFAULT_SLIDES: HeroSlideItem[] = [
   {
+    id: 'slide-1',
     image: '/images/Slide-1.png',
-    title: 'Kinetic Running Series',
+    alt: 'Kinetic Running Series',
     link: '/products?category=Running',
   },
   {
+    id: 'slide-2',
     image: '/images/Slide-2.png',
-    title: 'Urban Casual Collection',
+    alt: 'Urban Casual Collection',
     link: '/products?category=Casual',
   },
   {
+    id: 'slide-3',
     image: '/images/Slide-3.png',
-    title: 'High-Traction Sports Range',
+    alt: 'High-Traction Sports Range',
     link: '/products?category=Sports',
   },
 ];
 
 interface CarouselProps {
-  slides?: CarouselSlide[];
+  slides?: HeroSlideItem[];
 }
 
-export default function ImageCarousel({ slides = DEFAULT_SLIDES }: CarouselProps) {
+export default function ImageCarousel({ slides }: CarouselProps) {
+  const activeSlides = slides && slides.length > 0 ? slides : DEFAULT_SLIDES;
+
   const [currentIndex, setCurrentIndex] = useState(0);
   const [isTransitioning, setIsTransitioning] = useState(false);
   const [isPaused, setIsPaused] = useState(false);
+  const [failedSlides, setFailedSlides] = useState<Record<number, boolean>>({});
   const touchStartX = useRef<number | null>(null);
 
+  useEffect(() => {
+    if (currentIndex >= activeSlides.length) {
+      setCurrentIndex(0);
+    }
+  }, [activeSlides.length, currentIndex]);
+
   const goToNext = useCallback(() => {
-    if (isTransitioning) return;
+    if (isTransitioning || activeSlides.length <= 1) return;
     setIsTransitioning(true);
-    setCurrentIndex((prev) => (prev + 1) % slides.length);
+    setCurrentIndex((prev) => (prev + 1) % activeSlides.length);
     setTimeout(() => setIsTransitioning(false), 450);
-  }, [isTransitioning, slides.length]);
+  }, [isTransitioning, activeSlides.length]);
 
   const goToPrevious = useCallback(() => {
-    if (isTransitioning) return;
+    if (isTransitioning || activeSlides.length <= 1) return;
     setIsTransitioning(true);
-    setCurrentIndex((prev) => (prev === 0 ? slides.length - 1 : prev - 1));
+    setCurrentIndex((prev) => (prev === 0 ? activeSlides.length - 1 : prev - 1));
     setTimeout(() => setIsTransitioning(false), 450);
-  }, [isTransitioning, slides.length]);
+  }, [isTransitioning, activeSlides.length]);
 
   const goToSlide = useCallback(
     (index: number) => {
@@ -64,12 +78,12 @@ export default function ImageCarousel({ slides = DEFAULT_SLIDES }: CarouselProps
   );
 
   useEffect(() => {
-    if (isPaused || isTransitioning) return;
+    if (isPaused || isTransitioning || activeSlides.length <= 1) return;
     const interval = setInterval(() => {
       goToNext();
     }, 5000);
     return () => clearInterval(interval);
-  }, [goToNext, isPaused, isTransitioning]);
+  }, [goToNext, isPaused, isTransitioning, activeSlides.length]);
 
   const handleTouchStart = (e: React.TouchEvent) => {
     touchStartX.current = e.touches[0].clientX;
@@ -94,74 +108,97 @@ export default function ImageCarousel({ slides = DEFAULT_SLIDES }: CarouselProps
       onTouchStart={handleTouchStart}
       onTouchEnd={handleTouchEnd}
     >
-      {/* Pure Shoe Showcase Image Frame (Zero Overlaid Text or Letterboxing) */}
-      <div className="relative w-full aspect-[16/7] max-h-[420px] bg-slate-100 overflow-hidden rounded-2xl sm:rounded-none border border-slate-200 sm:border-x-0 sm:border-t-0 group">
-        {slides.map((slide, index) => {
+      {/* Tall 4:3 Mobile Hero Showcase -> 16:7 Tablet/Desktop Showcase (Zero Overlaid Text) */}
+      <div className="relative w-full aspect-[4/3] sm:aspect-[16/7] max-h-[460px] bg-slate-100 overflow-hidden rounded-2xl sm:rounded-none border border-slate-200 sm:border-x-0 sm:border-t-0 group">
+        {activeSlides.map((slide, index) => {
           const isActive = index === currentIndex;
+          const fallbackImg = DEFAULT_SLIDES[index % DEFAULT_SLIDES.length].image;
+          const imgSrc = failedSlides[index] ? fallbackImg : slide.image || fallbackImg;
+          const label = slide.alt || slide.title || `Featured shoe slide ${index + 1}`;
+          const targetHref =
+            slide.link && slide.link.startsWith('/') && !slide.link.startsWith('//')
+              ? slide.link
+              : '/products';
+
           return (
             <div
-              key={index}
+              key={slide.id || index}
               className={`absolute inset-0 transition-opacity duration-500 ease-out ${
                 isActive ? 'opacity-100 z-10' : 'opacity-0 z-0 pointer-events-none'
               }`}
             >
               <Link
-                href={slide.link}
+                href={targetHref}
                 className="block relative w-full h-full cursor-pointer focus:outline-none"
-                aria-label={slide.title}
+                aria-label={label}
               >
                 <Image
-                  src={slide.image}
-                  alt={slide.title}
+                  src={imgSrc}
+                  alt={label}
                   fill
                   priority={index === 0}
                   sizes="(max-width: 768px) 100vw, 1280px"
                   className="object-cover object-center"
                   quality={95}
+                  unoptimized={imgSrc.startsWith('http') || imgSrc.startsWith('/uploads/')}
+                  onError={() =>
+                    setFailedSlides((prev) => ({
+                      ...prev,
+                      [index]: true,
+                    }))
+                  }
                 />
               </Link>
             </div>
           );
         })}
 
-        {/* Desktop Navigation Arrows */}
-        <button
-          type="button"
-          onClick={goToPrevious}
-          className="hidden sm:flex absolute left-4 top-1/2 -translate-y-1/2 z-20 min-w-[44px] min-h-[44px] items-center justify-center rounded-full bg-white/85 hover:bg-white text-slate-900 border border-slate-200 shadow-sm backdrop-blur-md transition-opacity opacity-0 group-hover:opacity-100 cursor-pointer"
-          aria-label="Previous slide"
-        >
-          <ChevronLeft className="w-5 h-5" />
-        </button>
+        {/* Desktop & Tablet Arrows */}
+        {activeSlides.length > 1 && (
+          <>
+            <button
+              type="button"
+              onClick={goToPrevious}
+              className="hidden sm:flex absolute left-4 top-1/2 -translate-y-1/2 z-20 min-w-[44px] min-h-[44px] items-center justify-center rounded-full bg-white/85 hover:bg-white text-slate-900 border border-slate-200 shadow-sm backdrop-blur-md transition-opacity opacity-0 group-hover:opacity-100 cursor-pointer"
+              aria-label="Previous slide"
+            >
+              <ChevronLeft className="w-5 h-5" />
+            </button>
 
-        <button
-          type="button"
-          onClick={goToNext}
-          className="hidden sm:flex absolute right-4 top-1/2 -translate-y-1/2 z-20 min-w-[44px] min-h-[44px] items-center justify-center rounded-full bg-white/85 hover:bg-white text-slate-900 border border-slate-200 shadow-sm backdrop-blur-md transition-opacity opacity-0 group-hover:opacity-100 cursor-pointer"
-          aria-label="Next slide"
-        >
-          <ChevronRight className="w-5 h-5" />
-        </button>
+            <button
+              type="button"
+              onClick={goToNext}
+              className="hidden sm:flex absolute right-4 top-1/2 -translate-y-1/2 z-20 min-w-[44px] min-h-[44px] items-center justify-center rounded-full bg-white/85 hover:bg-white text-slate-900 border border-slate-200 shadow-sm backdrop-blur-md transition-opacity opacity-0 group-hover:opacity-100 cursor-pointer"
+              aria-label="Next slide"
+            >
+              <ChevronRight className="w-5 h-5" />
+            </button>
+          </>
+        )}
       </div>
 
-      {/* Minimal Slide Dots Below (Zero Text) */}
-      <div className="flex items-center justify-center gap-1.5 pt-2.5 pb-1">
-        {slides.map((_, index) => (
-          <button
-            key={index}
-            type="button"
-            aria-label={`Slide ${index + 1}`}
-            onClick={() => goToSlide(index)}
-            className="px-1 py-1 cursor-pointer"
-          >
-            <span
-              className={`block h-1.5 rounded-full transition-all duration-300 ${
-                index === currentIndex ? 'bg-slate-900 w-5' : 'bg-slate-300 hover:bg-slate-400 w-1.5'
-              }`}
-            />
-          </button>
-        ))}
-      </div>
+      {/* Minimal Indicator Dots Below */}
+      {activeSlides.length > 1 && (
+        <div className="flex items-center justify-center gap-1.5 pt-2.5 pb-1">
+          {activeSlides.map((_, index) => (
+            <button
+              key={index}
+              type="button"
+              aria-label={`Slide ${index + 1}`}
+              onClick={() => goToSlide(index)}
+              className="px-1.5 py-1.5 cursor-pointer"
+            >
+              <span
+                className={`block h-1.5 rounded-full transition-all duration-300 ${
+                  index === currentIndex
+                    ? 'bg-slate-900 w-5'
+                    : 'bg-slate-300 hover:bg-slate-400 w-1.5'
+                }`}
+              />
+            </button>
+          ))}
+        </div>
+      )}
     </div>
   );
 }

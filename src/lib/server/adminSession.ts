@@ -159,10 +159,25 @@ export async function requireAdmin(
   };
 }
 
-export function buildAdminCookieHeader(token: string, maxAgeSeconds = 60 * 60 * 24 * 7): string {
-  return `${ADMIN_COOKIE_NAME}=${token}; Path=/; Max-Age=${maxAgeSeconds}; HttpOnly; Secure; SameSite=None; Partitioned`;
+export function isHttpsRequest(req: NextRequest): boolean {
+  const proto = req.headers.get('x-forwarded-proto') || req.nextUrl.protocol || '';
+  return proto.toLowerCase().includes('https');
 }
 
-export function clearAdminCookieHeader(): string {
-  return `${ADMIN_COOKIE_NAME}=; Path=/; Max-Age=0; HttpOnly; Secure; SameSite=None; Partitioned`;
+export function buildAdminCookieHeader(
+  token: string,
+  maxAgeSeconds = 60 * 60 * 24 * 7,
+  isHttps = true
+): string {
+  if (isHttps) {
+    return `${ADMIN_COOKIE_NAME}=${token}; Path=/; Max-Age=${maxAgeSeconds}; HttpOnly; Secure; SameSite=None; Partitioned`;
+  }
+  return `${ADMIN_COOKIE_NAME}=${token}; Path=/; Max-Age=${maxAgeSeconds}; HttpOnly; SameSite=Lax`;
+}
+
+export function clearAdminCookieHeader(isHttps = true): string {
+  if (isHttps) {
+    return `${ADMIN_COOKIE_NAME}=; Path=/; Max-Age=0; HttpOnly; Secure; SameSite=None; Partitioned`;
+  }
+  return `${ADMIN_COOKIE_NAME}=; Path=/; Max-Age=0; HttpOnly; SameSite=Lax`;
 }

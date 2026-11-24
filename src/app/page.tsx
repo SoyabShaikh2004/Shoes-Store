@@ -1,4 +1,5 @@
 import { getProducts } from '@/lib/data';
+import { getHeroBannersFromDb } from '@/lib/db/store';
 import HomeMobileShopShell from '@/components/HomeMobileShopShell';
 import HomeSpotlightDeal from '@/components/HomeSpotlightDeal';
 import HomeReviewsSection from '@/components/HomeReviewsSection';
@@ -17,7 +18,10 @@ import {
 export const dynamic = 'force-dynamic';
 
 export default async function Home() {
-  const allProducts = await getProducts();
+  const [allProducts, heroBanners] = await Promise.all([
+    getProducts(),
+    getHeroBannersFromDb(),
+  ]);
 
   // Only expose active, in-stock purchasable shoes on the storefront feed
   const availableProducts = allProducts
@@ -31,8 +35,8 @@ export default async function Home() {
 
   return (
     <div className="flex flex-col min-h-screen bg-white">
-      {/* 1. Mobile-First Instant Search + Compact Hero + Category Tabs + 2-Column Shoe Grid */}
-      <HomeMobileShopShell products={availableProducts} />
+      {/* 1. Mobile-First Instant Search + Tall 4:3 Hero + Category Tabs + 2-Column Shoe Grid */}
+      <HomeMobileShopShell products={availableProducts} heroBanners={heroBanners} />
 
       {/* 2. Featured Spotlight Shoe with Instant Quick Buy */}
       <HomeSpotlightDeal product={spotlightProduct} />

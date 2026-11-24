@@ -237,6 +237,14 @@ export interface NotificationRecord {
   sentAt: string;
 }
 
+export interface HeroBannerRecord {
+  id: string;
+  image: string;
+  alt: string;
+  link: string;
+  updatedAt: string;
+}
+
 export interface DatabaseSchema {
   version: number;
   users: UserRecord[];
@@ -255,4 +263,5 @@ export interface DatabaseSchema {
   refunds: RefundRecord[];
   adminNotes: AdminNoteRecord[];
   notifications: NotificationRecord[];
+  heroBanners?: HeroBannerRecord[];
 }

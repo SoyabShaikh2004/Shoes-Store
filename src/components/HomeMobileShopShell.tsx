@@ -4,14 +4,15 @@ import { useMemo, useState } from 'react';
 import Link from 'next/link';
 import { Search, X, ArrowRight, RotateCcw } from 'lucide-react';
 import { Product } from '@/lib/data';
-import ImageCarousel from '@/components/ImageCarousel';
+import ImageCarousel, { HeroSlideItem } from '@/components/ImageCarousel';
 import ProductCard from '@/components/ProductCard';
 
 interface HomeMobileShopShellProps {
   products: Product[];
+  heroBanners?: HeroSlideItem[];
 }
 
-export default function HomeMobileShopShell({ products }: HomeMobileShopShellProps) {
+export default function HomeMobileShopShell({ products, heroBanners }: HomeMobileShopShellProps) {
   const [searchQuery, setSearchQuery] = useState('');
   const [activeTab, setActiveTab] = useState<string>('all');
 
@@ -101,10 +102,10 @@ export default function HomeMobileShopShell({ products }: HomeMobileShopShellPro
         </div>
       </section>
 
-      {/* 2. Compact Hero Banner (Collapses while actively searching on mobile so shoes snap to top) */}
+      {/* 2. Tall Mobile Hero Banner (Collapses while actively searching on mobile so shoes snap to top) */}
       {!isSearching && (
-        <section className="px-4 pt-3 sm:px-0 sm:pt-0">
-          <ImageCarousel />
+        <section className="px-3.5 pt-3 sm:px-0 sm:pt-0">
+          <ImageCarousel slides={heroBanners} />
         </section>
       )}
 

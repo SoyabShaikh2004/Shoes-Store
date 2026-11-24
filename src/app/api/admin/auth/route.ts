@@ -7,6 +7,7 @@ import {
 import {
   buildAdminCookieHeader,
   clearAdminCookieHeader,
+  isHttpsRequest,
   requireAdmin,
   signAdminToken,
 } from '@/lib/server/adminSession';
@@ -37,7 +38,7 @@ export async function POST(req: NextRequest) {
 
     if (action === 'logout') {
       const res = NextResponse.json({ success: true });
-      res.headers.set('Set-Cookie', clearAdminCookieHeader());
+      res.headers.set('Set-Cookie', clearAdminCookieHeader(isHttpsRequest(req)));
       return res;
     }
 
@@ -62,7 +63,10 @@ export async function POST(req: NextRequest) {
         user: result.user,
         token,
       });
-      res.headers.set('Set-Cookie', buildAdminCookieHeader(token));
+      res.headers.set(
+        'Set-Cookie',
+        buildAdminCookieHeader(token, 60 * 60 * 24 * 7, isHttpsRequest(req))
+      );
       return res;
     }
 
@@ -117,7 +121,10 @@ export async function POST(req: NextRequest) {
         user: result.user,
         token,
       });
-      res.headers.set('Set-Cookie', buildAdminCookieHeader(token));
+      res.headers.set(
+        'Set-Cookie',
+        buildAdminCookieHeader(token, 60 * 60 * 24 * 7, isHttpsRequest(req))
+      );
       return res;
     }
 

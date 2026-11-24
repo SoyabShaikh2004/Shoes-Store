@@ -8,6 +8,7 @@ import {
   BrandRecord,
   CategoryRecord,
   DatabaseSchema,
+  HeroBannerRecord,
   NotificationRecord,
   OrderItemRecord,
   OrderRecord,
@@ -22,6 +23,50 @@ import {
   ShippingRecord,
   UserRecord,
 } from './schema';
+
+export const DEFAULT_HERO_BANNERS: HeroBannerRecord[] = [
+  {
+    id: 'slide-1',
+    image: '/images/Slide-1.png',
+    alt: 'Kinetic Running Series',
+    link: '/products?category=Running',
+    updatedAt: '2026-01-01T00:00:00.000Z',
+  },
+  {
+    id: 'slide-2',
+    image: '/images/Slide-2.png',
+    alt: 'Urban Casual Collection',
+    link: '/products?category=Casual',
+    updatedAt: '2026-01-01T00:00:00.000Z',
+  },
+  {
+    id: 'slide-3',
+    image: '/images/Slide-3.png',
+    alt: 'High-Traction Sports Range',
+    link: '/products?category=Sports',
+    updatedAt: '2026-01-01T00:00:00.000Z',
+  },
+];
+
+function sanitizeStorefrontLink(raw: string): string {
+  const trimmed = String(raw || '').trim();
+  if (!trimmed.startsWith('/') || trimmed.startsWith('//')) {
+    return '/products';
+  }
+  return trimmed.slice(0, 200);
+}
+
+function sanitizeBannerImage(raw: string, fallback: string): string {
+  const trimmed = String(raw || '').trim();
+  if (!trimmed) return fallback;
+  if (trimmed.startsWith('/') && !trimmed.startsWith('//')) {
+    return trimmed.slice(0, 300);
+  }
+  if (/^https?:\/\//i.test(trimmed)) {
+    return trimmed.slice(0, 500);
+  }
+  return fallback;
+}
 
 const DB_FILE_PATH = path.join(process.cwd(), 'src/lib/data/database.json');
 const PRODUCTS_FILE_PATH = path.join(process.cwd(), 'src/lib/data/products.json');
@@ -237,6 +282,9 @@ async function syncLegacyFiles(db: DatabaseSchema): Promise<void> {
 async function bootstrapDatabase(): Promise<DatabaseSchema> {
   const existingDb = await readJsonSafe<DatabaseSchema | null>(DB_FILE_PATH, null);
   if (existingDb && existingDb.version === 1 && Array.isArray(existingDb.products)) {
+    if (!Array.isArray(existingDb.heroBanners) || existingDb.heroBanners.length === 0) {
+      existingDb.heroBanners = DEFAULT_HERO_BANNERS.map((b) => ({ ...b }));
+    }
     return existingDb;
   }
 
@@ -532,6 +580,7 @@ async function bootstrapDatabase(): Promise<DatabaseSchema> {
     refunds: [],
     adminNotes: [],
     notifications,
+    heroBanners: DEFAULT_HERO_BANNERS.map((b) => ({ ...b })),
   };
 
   await writeAtomicJson(DB_FILE_PATH, db);
@@ -1903,4 +1952,56 @@ export async function getAdminAnalyticsAndEntities() {
     }),
     notifications: db.notifications.slice(0, 100),
   };
+}
+
+// ---------- Hero Banner Operations ----------
+
+export async function getHeroBannersFromDb(): Promise<HeroBannerRecord[]> {
+  const db = await getDatabase();
+  const list = Array.isArray(db.heroBanners) && db.heroBanners.length > 0
+    ? db.heroBanners
+    : DEFAULT_HERO_BANNERS;
+  return list.slice(0, 3).map((b, idx) => {
+    const def = DEFAULT_HERO_BANNERS[idx] || DEFAULT_HERO_BANNERS[0];
+    return {
+      id: b.id || `slide-${idx + 1}`,
+      image: sanitizeBannerImage(b.image, def.image),
+      alt: String(b.alt || def.alt).trim().slice(0, 100) || def.alt,
+      link: sanitizeStorefrontLink(b.link || def.link),
+      updatedAt: b.updatedAt || def.updatedAt,
+    };
+  });
+}
+
+export async function updateHeroBannersInDb(
+  slides: Array<{ id?: string; image: string; alt?: string; link: string }>
+): Promise<HeroBannerRecord[]> {
+  return withTransaction((db) => {
+    const now = new Date().toISOString();
+    const normalized: HeroBannerRecord[] = [0, 1, 2].map((idx) => {
+      const def = DEFAULT_HERO_BANNERS[idx];
+      const input = slides[idx];
+      return {
+        id: `slide-${idx + 1}`,
+        image: sanitizeBannerImage(input?.image || '', def.image),
+        alt: String(input?.alt || def.alt).trim().slice(0, 100) || def.alt,
+        link: sanitizeStorefrontLink(input?.link || def.link),
+        updatedAt: now,
+      };
+    });
+    db.heroBanners = normalized;
+    return normalized;
+  });
+}
+
+export async function resetHeroBannersInDb(): Promise<HeroBannerRecord[]> {
+  return withTransaction((db) => {
+    const now = new Date().toISOString();
+    const defaults = DEFAULT_HERO_BANNERS.map((b) => ({
+      ...b,
+      updatedAt: now,
+    }));
+    db.heroBanners = defaults;
+    return defaults;
+  });
 }

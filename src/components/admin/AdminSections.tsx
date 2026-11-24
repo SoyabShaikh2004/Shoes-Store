@@ -1,6 +1,7 @@
 'use client';
 
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
+import Image from 'next/image';
 import { toast } from 'react-hot-toast';
 import {
   Users,
@@ -13,6 +14,11 @@ import {
   CreditCard,
   Layers,
   TrendingUp,
+  Upload,
+  Image as ImageIcon,
+  Save,
+  Loader2,
+  ExternalLink,
 } from 'lucide-react';
 import { Product } from '@/lib/data';
 import { AdminUser, getAdminAuthHeaders } from '@/lib/adminAuth';
@@ -616,6 +622,34 @@ export function ReportsSection({
   );
 }
 
+interface HeroBannerDraft {
+  id: string;
+  image: string;
+  alt: string;
+  link: string;
+}
+
+const DEFAULT_BANNER_DRAFTS: HeroBannerDraft[] = [
+  {
+    id: 'slide-1',
+    image: '/images/Slide-1.png',
+    alt: 'Kinetic Running Series',
+    link: '/products?category=Running',
+  },
+  {
+    id: 'slide-2',
+    image: '/images/Slide-2.png',
+    alt: 'Urban Casual Collection',
+    link: '/products?category=Casual',
+  },
+  {
+    id: 'slide-3',
+    image: '/images/Slide-3.png',
+    alt: 'High-Traction Sports Range',
+    link: '/products?category=Sports',
+  },
+];
+
 export function SettingsSection({
   admins,
   currentAdmin,
@@ -627,6 +661,184 @@ export function SettingsSection({
   products: Product[];
   onResetComplete: () => void;
 }) {
+  const canEditHeroBanners = ['Super Admin', 'Catalog Manager', 'Inventory Admin'].includes(
+    currentAdmin.role
+  );
+
+  const [slides, setSlides] = useState<HeroBannerDraft[]>(DEFAULT_BANNER_DRAFTS);
+  const [loadingBanners, setLoadingBanners] = useState(true);
+  const [savingBanners, setSavingBanners] = useState(false);
+  const [uploadingSlot, setUploadingSlot] = useState<number | null>(null);
+  const [hasUnsavedBanners, setHasUnsavedBanners] = useState(false);
+  const [brokenPreview, setBrokenPreview] = useState<Record<number, boolean>>({});
+
+  const categoryOptions = Array.from(
+    new Set([
+      'Running',
+      'Casual',
+      'Sports',
+      'Formal',
+      ...products.map((p) => p.category).filter(Boolean),
+    ])
+  );
+
+  const presetLinks = new Set<string>([
+    '/products',
+    ...categoryOptions.map((cat) => `/products?category=${encodeURIComponent(cat)}`),
+    ...products.map((p) => `/products/${p.id}`),
+  ]);
+
+  useEffect(() => {
+    let active = true;
+    const loadHeroBanners = async () => {
+      try {
+        const res = await fetch('/api/admin/hero-banners', {
+          credentials: 'include',
+          headers: getAdminAuthHeaders(),
+        });
+        const data = await res.json();
+        if (active && res.ok && data.success && Array.isArray(data.banners) && data.banners.length === 3) {
+          setSlides(
+            data.banners.map((b: HeroBannerDraft, idx: number) => ({
+              id: b.id || `slide-${idx + 1}`,
+              image: b.image || DEFAULT_BANNER_DRAFTS[idx].image,
+              alt: b.alt || DEFAULT_BANNER_DRAFTS[idx].alt,
+              link: b.link || DEFAULT_BANNER_DRAFTS[idx].link,
+            }))
+          );
+          setBrokenPreview({});
+          setHasUnsavedBanners(false);
+        }
+      } catch (err) {
+        console.error('Failed to load hero banners:', err);
+      } finally {
+        if (active) setLoadingBanners(false);
+      }
+    };
+    loadHeroBanners();
+    return () => {
+      active = false;
+    };
+  }, []);
+
+  const updateSlideField = (index: number, field: keyof HeroBannerDraft, value: string) => {
+    setSlides((prev) =>
+      prev.map((slide, idx) => (idx === index ? { ...slide, [field]: value } : slide))
+    );
+    if (field === 'image') {
+      setBrokenPreview((prev) => ({ ...prev, [index]: false }));
+    }
+    setHasUnsavedBanners(true);
+  };
+
+  const handleBannerUpload = async (index: number, file: File | null) => {
+    if (!file || !canEditHeroBanners) return;
+    if (file.size > 5 * 1024 * 1024) {
+      toast.error('Image must be 5MB or smaller.');
+      return;
+    }
+
+    setUploadingSlot(index);
+    const toastId = toast.loading(`Uploading Slide ${index + 1} image...`);
+    try {
+      const formData = new FormData();
+      formData.append('file', file);
+
+      const res = await fetch('/api/admin/upload', {
+        method: 'POST',
+        credentials: 'include',
+        headers: getAdminAuthHeaders(),
+        body: formData,
+      });
+      const data = await res.json();
+      if (!res.ok || !data.success || !data.url) {
+        throw new Error(data.error || 'Upload failed');
+      }
+
+      updateSlideField(index, 'image', data.url);
+      toast.success(`Slide ${index + 1} photo uploaded. Click Save Hero Banners to publish.`, {
+        id: toastId,
+      });
+    } catch (err: unknown) {
+      toast.error(err instanceof Error ? err.message : 'Upload failed', { id: toastId });
+    } finally {
+      setUploadingSlot(null);
+    }
+  };
+
+  const handleSaveBanners = async () => {
+    if (!canEditHeroBanners) return;
+
+    for (let i = 0; i < slides.length; i++) {
+      const img = slides[i].image.trim();
+      const lnk = slides[i].link.trim();
+      if (!img) {
+        toast.error(`Slide ${i + 1} requires an image path or URL.`);
+        return;
+      }
+      if (!lnk.startsWith('/') || lnk.startsWith('//')) {
+        toast.error(`Slide ${i + 1} link must start with "/" (e.g. /products?category=Running).`);
+        return;
+      }
+    }
+
+    setSavingBanners(true);
+    const toastId = toast.loading('Publishing homepage hero banners...');
+    try {
+      const res = await fetch('/api/admin/hero-banners', {
+        method: 'PUT',
+        credentials: 'include',
+        headers: {
+          'Content-Type': 'application/json',
+          ...getAdminAuthHeaders(),
+        },
+        body: JSON.stringify({ banners: slides }),
+      });
+      const data = await res.json();
+      if (!res.ok || !data.success) {
+        throw new Error(data.error || 'Failed to save hero banners');
+      }
+      if (Array.isArray(data.banners) && data.banners.length === 3) {
+        setSlides(data.banners);
+      }
+      setHasUnsavedBanners(false);
+      toast.success('Homepage hero banners updated!', { id: toastId });
+    } catch (err: unknown) {
+      toast.error(err instanceof Error ? err.message : 'Save failed', { id: toastId });
+    } finally {
+      setSavingBanners(false);
+    }
+  };
+
+  const handleResetBanners = async () => {
+    if (!canEditHeroBanners) return;
+    if (!window.confirm('Restore the 3 default StepStyle shoe hero banners?')) {
+      return;
+    }
+
+    setSavingBanners(true);
+    const toastId = toast.loading('Restoring default hero banners...');
+    try {
+      const res = await fetch('/api/admin/hero-banners', {
+        method: 'POST',
+        credentials: 'include',
+        headers: getAdminAuthHeaders(),
+      });
+      const data = await res.json();
+      if (!res.ok || !data.success || !Array.isArray(data.banners)) {
+        throw new Error(data.error || 'Reset failed');
+      }
+      setSlides(data.banners);
+      setBrokenPreview({});
+      setHasUnsavedBanners(false);
+      toast.success('Default 3 hero banners restored', { id: toastId });
+    } catch (err: unknown) {
+      toast.error(err instanceof Error ? err.message : 'Reset failed', { id: toastId });
+    } finally {
+      setSavingBanners(false);
+    }
+  };
+
   const handleExportCatalog = () => {
     const jsonString = `data:text/json;charset=utf-8,${encodeURIComponent(
       JSON.stringify(products, null, 2)
@@ -665,7 +877,265 @@ export function SettingsSection({
   };
 
   return (
-    <div className="max-w-3xl space-y-6">
+    <div className="max-w-5xl space-y-6">
+      <div className="bg-white p-6 rounded-xl border border-slate-200 space-y-5">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+          <div>
+            <h3 className="text-base font-bold text-slate-900">
+              Homepage Hero Banners (3 Slides)
+            </h3>
+            <p className="text-xs text-slate-500 mt-0.5">
+              Displayed text-free in a tall 4:3 frame on mobile phones. Tapping a slide opens its linked category or shoe.
+            </p>
+          </div>
+          {!canEditHeroBanners && (
+            <span className="text-xs font-medium text-amber-700 bg-amber-50 border border-amber-200 rounded-lg px-2.5 py-1.5">
+              Read-only for {currentAdmin.role}
+            </span>
+          )}
+        </div>
+
+        {loadingBanners ? (
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+            {[0, 1, 2].map((slot) => (
+              <div
+                key={slot}
+                className="rounded-xl border border-slate-200 bg-slate-50 p-4 space-y-3 animate-pulse"
+              >
+                <div className="h-4 w-20 bg-slate-200 rounded" />
+                <div className="aspect-[4/3] w-full bg-slate-200 rounded-lg" />
+                <div className="h-9 w-full bg-slate-200 rounded-lg" />
+                <div className="h-9 w-full bg-slate-200 rounded-lg" />
+              </div>
+            ))}
+          </div>
+        ) : (
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+            {slides.map((slide, idx) => {
+              const isUploading = uploadingSlot === idx;
+              const selectValue = presetLinks.has(slide.link) ? slide.link : 'custom';
+              const linkInvalid =
+                slide.link.trim().length > 0 &&
+                (!slide.link.trim().startsWith('/') || slide.link.trim().startsWith('//'));
+
+              return (
+                <div
+                  key={slide.id || idx}
+                  className="rounded-xl border border-slate-200 bg-slate-50/60 p-4 space-y-3 flex flex-col"
+                >
+                  <div className="flex items-center justify-between gap-2">
+                    <span className="text-xs font-bold uppercase tracking-wider text-slate-900">
+                      Slide 0{idx + 1}
+                    </span>
+                    <a
+                      href={linkInvalid ? '/products' : slide.link || '/products'}
+                      target="_blank"
+                      rel="noreferrer"
+                      className="inline-flex items-center gap-1 text-[11px] font-medium text-indigo-700 hover:text-indigo-900 truncate max-w-[170px]"
+                      title={slide.link}
+                    >
+                      <span className="truncate">{slide.link || '/products'}</span>
+                      <ExternalLink className="w-3 h-3 shrink-0" />
+                    </a>
+                  </div>
+
+                  {/* Mobile 4:3 Live Crop Preview */}
+                  <div className="relative w-full aspect-[4/3] rounded-lg overflow-hidden bg-slate-200 border border-slate-200">
+                    {!brokenPreview[idx] && slide.image.trim() ? (
+                      <Image
+                        src={slide.image.trim()}
+                        alt={slide.alt || `Slide ${idx + 1} preview`}
+                        fill
+                        unoptimized
+                        sizes="(max-width: 768px) 100vw, 320px"
+                        className="object-cover object-center"
+                        onError={() =>
+                          setBrokenPreview((prev) => ({
+                            ...prev,
+                            [idx]: true,
+                          }))
+                        }
+                      />
+                    ) : (
+                      <div className="absolute inset-0 flex flex-col items-center justify-center text-slate-500 p-3 text-center">
+                        <ImageIcon className="w-7 h-7 mb-1.5 text-slate-400" />
+                        <span className="text-[11px] font-medium">
+                          {slide.image.trim() ? 'Preview unavailable — check path' : 'No image selected'}
+                        </span>
+                      </div>
+                    )}
+                  </div>
+
+                  {/* Upload Photo Button */}
+                  <div>
+                    <label
+                      className={`w-full inline-flex items-center justify-center gap-2 px-3 py-2 rounded-lg border text-xs font-semibold transition-colors ${
+                        !canEditHeroBanners || uploadingSlot !== null
+                          ? 'bg-slate-100 border-slate-200 text-slate-400 cursor-not-allowed'
+                          : 'bg-white border-slate-300 text-slate-800 hover:bg-slate-100 cursor-pointer'
+                      }`}
+                    >
+                      {isUploading ? (
+                        <>
+                          <Loader2 className="w-3.5 h-3.5 animate-spin text-indigo-600" />
+                          <span>Uploading...</span>
+                        </>
+                      ) : (
+                        <>
+                          <Upload className="w-3.5 h-3.5 text-slate-600" />
+                          <span>Upload Photo (Max 5MB)</span>
+                        </>
+                      )}
+                      <input
+                        type="file"
+                        accept="image/png,image/jpeg,image/webp,image/jpg,image/gif"
+                        disabled={!canEditHeroBanners || uploadingSlot !== null}
+                        onChange={(e) => {
+                          const file = e.target.files?.[0] || null;
+                          e.target.value = '';
+                          handleBannerUpload(idx, file);
+                        }}
+                        className="sr-only"
+                      />
+                    </label>
+                  </div>
+
+                  {/* Image Path / URL */}
+                  <div className="space-y-1">
+                    <label className="block text-[11px] font-semibold text-slate-700">
+                      Image Path or URL
+                    </label>
+                    <input
+                      type="text"
+                      value={slide.image}
+                      disabled={!canEditHeroBanners}
+                      onChange={(e) => updateSlideField(idx, 'image', e.target.value)}
+                      placeholder="/images/Slide-1.png or https://..."
+                      className="w-full px-2.5 py-1.5 rounded-lg border border-slate-300 bg-white text-xs text-slate-900 font-mono disabled:bg-slate-100 disabled:text-slate-500 focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                    />
+                  </div>
+
+                  {/* Tap Destination Picker */}
+                  <div className="space-y-1">
+                    <label className="block text-[11px] font-semibold text-slate-700">
+                      Tap Destination (Opens on Tap)
+                    </label>
+                    <select
+                      value={selectValue}
+                      disabled={!canEditHeroBanners}
+                      onChange={(e) => {
+                        const val = e.target.value;
+                        if (val !== 'custom') {
+                          updateSlideField(idx, 'link', val);
+                        }
+                      }}
+                      className="w-full px-2.5 py-1.5 rounded-lg border border-slate-300 bg-white text-xs text-slate-900 disabled:bg-slate-100 disabled:text-slate-500 focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                    >
+                      <option value="/products">All Shoes (/products)</option>
+                      <optgroup label="Shoe Categories">
+                        {categoryOptions.map((cat) => (
+                          <option
+                            key={cat}
+                            value={`/products?category=${encodeURIComponent(cat)}`}
+                          >
+                            Category: {cat}
+                          </option>
+                        ))}
+                      </optgroup>
+                      {products.length > 0 && (
+                        <optgroup label="Specific Shoes">
+                          {products.map((prod) => (
+                            <option key={prod.id} value={`/products/${prod.id}`}>
+                              {prod.name} ({prod.brand})
+                            </option>
+                          ))}
+                        </optgroup>
+                      )}
+                      <option value="custom">Custom Store Link</option>
+                    </select>
+                  </div>
+
+                  {/* Editable Destination Path */}
+                  <div className="space-y-1">
+                    <label className="block text-[11px] font-semibold text-slate-700">
+                      Store Link Path
+                    </label>
+                    <input
+                      type="text"
+                      value={slide.link}
+                      disabled={!canEditHeroBanners}
+                      onChange={(e) => updateSlideField(idx, 'link', e.target.value)}
+                      placeholder="/products?category=Running"
+                      className={`w-full px-2.5 py-1.5 rounded-lg border bg-white text-xs text-slate-900 font-mono disabled:bg-slate-100 disabled:text-slate-500 focus:outline-none focus:ring-2 focus:ring-indigo-500 ${
+                        linkInvalid ? 'border-rose-400' : 'border-slate-300'
+                      }`}
+                    />
+                    {linkInvalid && (
+                      <p className="text-[11px] text-rose-600">
+                        Must start with &quot;/&quot; (e.g. /products/5)
+                      </p>
+                    )}
+                  </div>
+
+                  {/* Accessible Alt Description */}
+                  <div className="space-y-1">
+                    <label className="block text-[11px] font-semibold text-slate-700">
+                      Image Description (Alt Text)
+                    </label>
+                    <input
+                      type="text"
+                      value={slide.alt}
+                      disabled={!canEditHeroBanners}
+                      onChange={(e) => updateSlideField(idx, 'alt', e.target.value)}
+                      placeholder="Kinetic Running Series"
+                      className="w-full px-2.5 py-1.5 rounded-lg border border-slate-300 bg-white text-xs text-slate-900 disabled:bg-slate-100 disabled:text-slate-500 focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                    />
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        )}
+
+        {canEditHeroBanners && (
+          <div className="pt-2 border-t border-slate-100 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+            <div className="text-xs text-slate-500">
+              {hasUnsavedBanners ? (
+                <span className="font-semibold text-amber-700">
+                  Unsaved banner changes — click Save Hero Banners to publish live.
+                </span>
+              ) : (
+                <span>All 3 homepage slides are synced with the storefront.</span>
+              )}
+            </div>
+            <div className="flex flex-wrap items-center gap-2.5">
+              <button
+                type="button"
+                disabled={savingBanners || uploadingSlot !== null}
+                onClick={handleResetBanners}
+                className="px-3.5 py-2 rounded-lg border border-slate-300 bg-white hover:bg-slate-50 disabled:opacity-50 text-xs font-semibold text-slate-700 inline-flex items-center gap-1.5 cursor-pointer"
+              >
+                <RotateCcw className="w-3.5 h-3.5" />
+                <span>Restore Default 3 Slides</span>
+              </button>
+              <button
+                type="button"
+                disabled={savingBanners || uploadingSlot !== null}
+                onClick={handleSaveBanners}
+                className="px-4 py-2 rounded-lg bg-slate-900 hover:bg-slate-800 disabled:opacity-50 text-white text-xs font-semibold inline-flex items-center gap-1.5 cursor-pointer"
+              >
+                {savingBanners ? (
+                  <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                ) : (
+                  <Save className="w-3.5 h-3.5" />
+                )}
+                <span>{savingBanners ? 'Saving...' : 'Save Hero Banners'}</span>
+              </button>
+            </div>
+          </div>
+        )}
+      </div>
+
       <div className="bg-white p-6 rounded-xl border border-slate-200 space-y-4">
         <div className="flex items-center justify-between">
           <div>

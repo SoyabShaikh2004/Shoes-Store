@@ -1443,37 +1443,119 @@ function pushAdminNotification(
   return record;
 }
 
+function normalizeCustomerEmail(email?: string): string {
+  return String(email || '').trim().toLowerCase();
+}
+
+function normalizeCustomerPhone10(phone?: string): string {
+  const digits = String(phone || '').replace(/\D/g, '');
+  if (digits.length >= 10) return digits.slice(-10);
+  if (digits.length >= 6) return digits;
+  return '';
+}
+
+function isPlaceholderCustomerName(name?: string, email?: string): boolean {
+  const trimmed = String(name || '').trim();
+  if (!trimmed || trimmed.toLowerCase() === 'customer') return true;
+  const emailPrefix = email ? email.split('@')[0]?.toLowerCase() : '';
+  return Boolean(emailPrefix && trimmed.toLowerCase() === emailPrefix);
+}
+
+function mergeDuplicateUsersInDb(
+  db: DatabaseSchema,
+  cleanEmail: string,
+  cleanPhone10: string
+): UserRecord | undefined {
+  const matches = db.users.filter((u) => {
+    const uEmail = normalizeCustomerEmail(u.email);
+    const uPhone10 = normalizeCustomerPhone10(u.phone);
+    return (
+      (cleanEmail && uEmail && uEmail === cleanEmail) ||
+      (cleanPhone10 && uPhone10 && uPhone10 === cleanPhone10)
+    );
+  });
+
+  if (matches.length === 0) return undefined;
+  const primary = matches[0];
+
+  if (matches.length > 1) {
+    const duplicateIds = new Set(matches.slice(1).map((m) => m.id));
+    for (const dup of matches.slice(1)) {
+      if (isPlaceholderCustomerName(primary.name, primary.email) && !isPlaceholderCustomerName(dup.name, dup.email)) {
+        primary.name = dup.name;
+      }
+      if (!primary.email && dup.email) primary.email = normalizeCustomerEmail(dup.email);
+      if ((!primary.phone || primary.phone === 'N/A') && dup.phone && dup.phone !== 'N/A') {
+        primary.phone = dup.phone;
+      }
+      if ((!primary.defaultAddress || primary.defaultAddress === 'N/A') && dup.defaultAddress && dup.defaultAddress !== 'N/A') {
+        primary.defaultAddress = dup.defaultAddress;
+      }
+      if ((!primary.defaultPincode || primary.defaultPincode === 'N/A') && dup.defaultPincode && dup.defaultPincode !== 'N/A') {
+        primary.defaultPincode = dup.defaultPincode;
+      }
+      if (dup.createdAt && (!primary.createdAt || new Date(dup.createdAt).getTime() < new Date(primary.createdAt).getTime())) {
+        primary.createdAt = dup.createdAt;
+      }
+      if (dup.lastOrderAt && (!primary.lastOrderAt || new Date(dup.lastOrderAt).getTime() > new Date(primary.lastOrderAt).getTime())) {
+        primary.lastOrderAt = dup.lastOrderAt;
+      }
+    }
+    for (const ord of db.orders) {
+      if (duplicateIds.has(ord.userId)) {
+        ord.userId = primary.id;
+      }
+    }
+    db.users = db.users.filter((u) => !duplicateIds.has(u.id));
+  }
+
+  return primary;
+}
+
 export async function upsertCustomerInDb(params: {
   name?: string;
   email?: string;
   phone?: string;
+  address?: string;
+  pincode?: string;
 }): Promise<UserRecord | null> {
-  const cleanEmail = (params.email || '').trim().toLowerCase();
-  const cleanPhone = (params.phone || '').replace(/\D/g, '').slice(-10);
-  if (!cleanEmail && !cleanPhone) return null;
+  const cleanEmail = normalizeCustomerEmail(params.email);
+  const cleanPhoneRaw = String(params.phone || '').trim();
+  const cleanPhone10 = normalizeCustomerPhone10(cleanPhoneRaw);
+  if (!cleanEmail && !cleanPhone10) return null;
 
   return withTransaction((db) => {
     const now = new Date().toISOString();
-    let user = db.users.find(
-      (u) =>
-        (cleanEmail && u.email && u.email.toLowerCase() === cleanEmail) ||
-        (cleanPhone && u.phone && u.phone.replace(/\D/g, '').slice(-10) === cleanPhone)
-    );
+    let user = mergeDuplicateUsersInDb(db, cleanEmail, cleanPhone10);
+    const incomingName = (params.name || '').trim();
+    const incomingAddress = (params.address || '').trim();
+    const incomingPincode = (params.pincode || '').trim();
+
     if (!user) {
       user = {
         id: `usr-${Date.now()}-${crypto.randomBytes(3).toString('hex')}`,
-        name: (params.name || '').trim() || cleanEmail.split('@')[0] || 'Customer',
+        name: incomingName || cleanEmail.split('@')[0] || 'Customer',
         email: cleanEmail,
-        phone: cleanPhone || 'N/A',
+        phone: cleanPhone10 || (cleanPhoneRaw && cleanPhoneRaw !== 'N/A' ? cleanPhoneRaw : 'N/A'),
+        defaultAddress: incomingAddress && incomingAddress !== 'N/A' ? incomingAddress : undefined,
+        defaultPincode: incomingPincode && incomingPincode !== 'N/A' ? incomingPincode : undefined,
         createdAt: now,
       };
       db.users.unshift(user);
     } else {
-      if (params.name && params.name.trim() && (user.name === 'Customer' || !user.name)) {
-        user.name = params.name.trim();
+      if (incomingName && (isPlaceholderCustomerName(user.name, user.email) || !user.name)) {
+        user.name = incomingName;
       }
       if (cleanEmail && !user.email) user.email = cleanEmail;
-      if (cleanPhone && (!user.phone || user.phone === 'N/A')) user.phone = cleanPhone;
+      if (cleanPhone10 && (!user.phone || user.phone === 'N/A')) {
+        user.phone = cleanPhone10;
+      }
+      if (incomingAddress && incomingAddress !== 'N/A') {
+        user.defaultAddress = incomingAddress;
+      }
+      if (incomingPincode && incomingPincode !== 'N/A') {
+        user.defaultPincode = incomingPincode;
+      }
     }
     return user;
   });
@@ -1600,29 +1682,44 @@ export async function placeOrderTransactional(
       : generateUniqueOrderNumber(existingNumbers);
     const orderId = `ord-${Date.now()}-${crypto.randomBytes(3).toString('hex')}`;
 
-    const cleanEmail = (input.customer.email || '').trim().toLowerCase();
-    const cleanPhone = (input.customer.phone || 'N/A').trim();
-    let user = db.users.find(
-      (u) =>
-        (cleanEmail && u.email === cleanEmail) ||
-        (cleanPhone !== 'N/A' && u.phone === cleanPhone)
-    );
+    const cleanEmail = normalizeCustomerEmail(input.customer.email);
+    const cleanPhoneRaw = (input.customer.phone || 'N/A').trim();
+    const cleanPhone10 = normalizeCustomerPhone10(cleanPhoneRaw);
+    const cleanPhone = cleanPhone10 || cleanPhoneRaw || 'N/A';
+    const cleanName = (input.customer.name || '').trim() || 'Customer';
+    const cleanAddress = (input.customer.address || '').trim();
+    const cleanPincode = (input.customer.pincode || '').trim();
+
+    let user = mergeDuplicateUsersInDb(db, cleanEmail, cleanPhone10);
     if (!user) {
       user = {
         id: `usr-${Date.now()}-${crypto.randomBytes(3).toString('hex')}`,
-        name: input.customer.name || 'Customer',
+        name: cleanName,
         email: cleanEmail,
         phone: cleanPhone,
-        defaultAddress: input.customer.address,
-        defaultPincode: input.customer.pincode,
+        defaultAddress: cleanAddress && cleanAddress !== 'N/A' ? cleanAddress : undefined,
+        defaultPincode: cleanPincode && cleanPincode !== 'N/A' ? cleanPincode : undefined,
         createdAt: now,
         lastOrderAt: now,
       };
       db.users.push(user);
     } else {
+      if (cleanName && cleanName !== 'Customer' && (isPlaceholderCustomerName(user.name, user.email) || !user.name)) {
+        user.name = cleanName;
+      }
+      if (cleanEmail && !user.email) {
+        user.email = cleanEmail;
+      }
+      if (cleanPhone !== 'N/A' && (!user.phone || user.phone === 'N/A')) {
+        user.phone = cleanPhone;
+      }
       user.lastOrderAt = now;
-      user.defaultAddress = input.customer.address || user.defaultAddress;
-      user.defaultPincode = input.customer.pincode || user.defaultPincode;
+      if (cleanAddress && cleanAddress !== 'N/A') {
+        user.defaultAddress = cleanAddress;
+      }
+      if (cleanPincode && cleanPincode !== 'N/A') {
+        user.defaultPincode = cleanPincode;
+      }
     }
 
     const payStatus = mapPaymentStatusFromOrder(input.paymentStatus);
@@ -2177,20 +2274,226 @@ export async function addAdminNoteTransactional(params: {
   });
 }
 
-export async function getAdminAnalyticsAndEntities() {
-  const db = await getDatabase();
-  const customers = db.users.map((u) => {
-    const userOrders = db.orders.filter((o) => o.userId === u.id);
-    const totalSpent = userOrders
+export interface AdminCustomerOrderSummary {
+  id: string;
+  orderNumber: string;
+  createdAt: string;
+  totalAmount: number;
+  status: OrderStatus;
+  paymentStatus: OrderRecord['paymentStatus'];
+  paymentMethod: string;
+  itemCount: number;
+  primaryItemName: string;
+  deliveryAddress: string;
+  pincode: string;
+}
+
+export interface AdminCustomerProfile {
+  id: string;
+  name: string;
+  email: string;
+  phone: string;
+  defaultAddress?: string;
+  defaultPincode?: string;
+  createdAt: string;
+  lastOrderAt?: string;
+  ordersCount: number;
+  totalSpent: number;
+  lastOrderNumber?: string;
+  orders: AdminCustomerOrderSummary[];
+}
+
+function buildUnifiedCustomerProfiles(db: DatabaseSchema): AdminCustomerProfile[] {
+  const profileBuckets: Array<{
+    profile: UserRecord;
+    emails: Set<string>;
+    phones: Set<string>;
+    userIds: Set<string>;
+    orders: OrderRecord[];
+  }> = [];
+
+  const findBucket = (userId?: string, email?: string, phone?: string) => {
+    const cleanEmail = normalizeCustomerEmail(email);
+    const cleanPhone10 = normalizeCustomerPhone10(phone);
+    return profileBuckets.find(
+      (b) =>
+        (userId && b.userIds.has(userId)) ||
+        (cleanEmail && b.emails.has(cleanEmail)) ||
+        (cleanPhone10 && b.phones.has(cleanPhone10))
+    );
+  };
+
+  for (const u of db.users) {
+    const cleanEmail = normalizeCustomerEmail(u.email);
+    const cleanPhone10 = normalizeCustomerPhone10(u.phone);
+    const existing = findBucket(u.id, cleanEmail, cleanPhone10);
+
+    if (existing) {
+      existing.userIds.add(u.id);
+      if (cleanEmail) existing.emails.add(cleanEmail);
+      if (cleanPhone10) existing.phones.add(cleanPhone10);
+      if (isPlaceholderCustomerName(existing.profile.name, existing.profile.email) && !isPlaceholderCustomerName(u.name, u.email)) {
+        existing.profile.name = u.name;
+      }
+      if (!existing.profile.email && cleanEmail) existing.profile.email = cleanEmail;
+      if ((!existing.profile.phone || existing.profile.phone === 'N/A') && u.phone && u.phone !== 'N/A') {
+        existing.profile.phone = cleanPhone10 || u.phone;
+      }
+      if ((!existing.profile.defaultAddress || existing.profile.defaultAddress === 'N/A') && u.defaultAddress && u.defaultAddress !== 'N/A') {
+        existing.profile.defaultAddress = u.defaultAddress;
+      }
+      if ((!existing.profile.defaultPincode || existing.profile.defaultPincode === 'N/A') && u.defaultPincode && u.defaultPincode !== 'N/A') {
+        existing.profile.defaultPincode = u.defaultPincode;
+      }
+      if (u.createdAt && new Date(u.createdAt).getTime() < new Date(existing.profile.createdAt).getTime()) {
+        existing.profile.createdAt = u.createdAt;
+      }
+      if (
+        u.lastOrderAt &&
+        (!existing.profile.lastOrderAt ||
+          new Date(u.lastOrderAt).getTime() > new Date(existing.profile.lastOrderAt).getTime())
+      ) {
+        existing.profile.lastOrderAt = u.lastOrderAt;
+      }
+    } else {
+      const emails = new Set<string>();
+      const phones = new Set<string>();
+      if (cleanEmail) emails.add(cleanEmail);
+      if (cleanPhone10) phones.add(cleanPhone10);
+      profileBuckets.push({
+        profile: {
+          ...u,
+          email: cleanEmail || u.email || '',
+          phone: cleanPhone10 || u.phone || 'N/A',
+        },
+        emails,
+        phones,
+        userIds: new Set([u.id]),
+        orders: [],
+      });
+    }
+  }
+
+  for (const ord of db.orders) {
+    const cleanEmail = normalizeCustomerEmail(ord.customerEmail);
+    const cleanPhone10 = normalizeCustomerPhone10(ord.customerPhone);
+    let bucket = findBucket(ord.userId, cleanEmail, cleanPhone10);
+
+    if (!bucket) {
+      const emails = new Set<string>();
+      const phones = new Set<string>();
+      if (cleanEmail) emails.add(cleanEmail);
+      if (cleanPhone10) phones.add(cleanPhone10);
+      bucket = {
+        profile: {
+          id: ord.userId || `usr-${ord.id}`,
+          name: ord.customerName || 'Customer',
+          email: cleanEmail,
+          phone: cleanPhone10 || ord.customerPhone || 'N/A',
+          defaultAddress: ord.deliveryAddress !== 'N/A' ? ord.deliveryAddress : undefined,
+          defaultPincode: ord.pincode !== 'N/A' ? ord.pincode : undefined,
+          createdAt: ord.createdAt,
+          lastOrderAt: ord.createdAt,
+        },
+        emails,
+        phones,
+        userIds: new Set(ord.userId ? [ord.userId] : []),
+        orders: [],
+      };
+      profileBuckets.push(bucket);
+    } else {
+      if (ord.userId) bucket.userIds.add(ord.userId);
+      if (cleanEmail) bucket.emails.add(cleanEmail);
+      if (cleanPhone10) bucket.phones.add(cleanPhone10);
+    }
+
+    bucket.orders.push(ord);
+  }
+
+  const profiles: AdminCustomerProfile[] = profileBuckets.map((bucket) => {
+    const sortedOrders = [...bucket.orders].sort(
+      (a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
+    );
+
+    let name = bucket.profile.name;
+    let email = bucket.profile.email;
+    let phone = bucket.profile.phone;
+    let defaultAddress = bucket.profile.defaultAddress;
+    let defaultPincode = bucket.profile.defaultPincode;
+
+    for (const ord of sortedOrders) {
+      if (isPlaceholderCustomerName(name, email) && ord.customerName && ord.customerName !== 'Customer') {
+        name = ord.customerName;
+      }
+      if (!email && ord.customerEmail) {
+        email = normalizeCustomerEmail(ord.customerEmail);
+      }
+      if ((!phone || phone === 'N/A') && ord.customerPhone && ord.customerPhone !== 'N/A') {
+        phone = normalizeCustomerPhone10(ord.customerPhone) || ord.customerPhone;
+      }
+      if ((!defaultAddress || defaultAddress === 'N/A') && ord.deliveryAddress && ord.deliveryAddress !== 'N/A') {
+        defaultAddress = ord.deliveryAddress;
+      }
+      if ((!defaultPincode || defaultPincode === 'N/A') && ord.pincode && ord.pincode !== 'N/A') {
+        defaultPincode = ord.pincode;
+      }
+    }
+
+    const totalSpent = sortedOrders
       .filter((o) => !['Order Cancelled', 'Payment Failed', 'Refunded'].includes(o.status))
-      .reduce((sum, o) => sum + o.totalAmount, 0);
+      .reduce((sum, o) => sum + (o.totalAmount || 0), 0);
+
+    const lastOrderAt = sortedOrders[0]?.createdAt || bucket.profile.lastOrderAt;
+
+    const orderSummaries: AdminCustomerOrderSummary[] = sortedOrders.map((ord) => {
+      const items = db.orderItems.filter((i) => i.orderId === ord.id);
+      const itemCount = items.reduce((s, i) => s + (i.quantity || 1), 0);
+      return {
+        id: ord.id,
+        orderNumber: ord.orderNumber,
+        createdAt: ord.createdAt,
+        totalAmount: ord.totalAmount,
+        status: ord.status,
+        paymentStatus: ord.paymentStatus,
+        paymentMethod: ord.paymentMethod,
+        itemCount,
+        primaryItemName: items[0]?.name || 'Footwear',
+        deliveryAddress: ord.deliveryAddress,
+        pincode: ord.pincode,
+      };
+    });
+
     return {
-      ...u,
-      ordersCount: userOrders.length,
+      id: bucket.profile.id,
+      name: name || 'Customer',
+      email: email || '',
+      phone: phone || 'N/A',
+      defaultAddress,
+      defaultPincode,
+      createdAt: bucket.profile.createdAt,
+      lastOrderAt,
+      ordersCount: sortedOrders.length,
       totalSpent,
-      lastOrderNumber: userOrders[0]?.orderNumber,
+      lastOrderNumber: sortedOrders[0]?.orderNumber,
+      orders: orderSummaries,
     };
   });
+
+  return profiles.sort((a, b) => {
+    const aTime = new Date(a.lastOrderAt || a.createdAt || 0).getTime();
+    const bTime = new Date(b.lastOrderAt || b.createdAt || 0).getTime();
+    return bTime - aTime;
+  });
+}
+
+export async function getAdminCustomersFromDb(): Promise<AdminCustomerProfile[]> {
+  const db = await getDatabase();
+  return buildUnifiedCustomerProfiles(db);
+}
+
+export async function getAdminAnalyticsAndEntities() {
+  const db = await getDatabase();
+  const customers = buildUnifiedCustomerProfiles(db);
 
   const activeProducts = db.products.filter((p) => !p.isDeleted);
   const categories = db.categories.map((c) => {

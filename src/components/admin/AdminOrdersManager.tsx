@@ -1,6 +1,6 @@
 'use client';
 
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import Image from 'next/image';
 import { toast } from 'react-hot-toast';
 import {
@@ -13,15 +13,15 @@ import {
   FileText,
   Printer,
   MessageSquarePlus,
-  CheckCircle2,
   Clock,
-  XCircle,
   RotateCcw,
   Bell,
   BellRing,
   CheckCheck,
   ChevronLeft,
   ChevronRight,
+  AlertTriangle,
+  MapPin,
 } from 'lucide-react';
 import { getAdminAuthHeaders } from '@/lib/adminAuth';
 import { generateTaxInvoicePDF } from '@/lib/invoiceGenerator';
@@ -45,6 +45,7 @@ interface AdminOrdersManagerProps {
   notifications?: AdminNotificationRecord[];
   unreadCount?: number;
   pendingOrderNumber?: string | null;
+  externalSearch?: { query: string; nonce: number } | null;
   onClearPendingOrder?: () => void;
   onNotificationsSync?: (notifications: AdminNotificationRecord[], unreadCount: number) => void;
   onOrdersUpdated?: () => void;
@@ -73,6 +74,7 @@ export default function AdminOrdersManager({
   notifications,
   unreadCount,
   pendingOrderNumber,
+  externalSearch,
   onClearPendingOrder,
   onNotificationsSync,
   onOrdersUpdated,
@@ -83,6 +85,7 @@ export default function AdminOrdersManager({
   const [localUnreadCount, setLocalUnreadCount] = useState(0);
   const [showReadNotifications, setShowReadNotifications] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
+  const [loadError, setLoadError] = useState<string | null>(null);
 
   // Filters
   const [search, setSearch] = useState('');
@@ -111,6 +114,32 @@ export default function AdminOrdersManager({
   const activeUnreadCount = unreadCount ?? localUnreadCount;
   const unreadNotifs = activeNotifications.filter((n) => !n.isRead);
 
+  // Stabilize callback & mutable refs so parent state syncs never trigger fetchOrders loops
+  const onNotificationsSyncRef = useRef(onNotificationsSync);
+  onNotificationsSyncRef.current = onNotificationsSync;
+  const onClearPendingOrderRef = useRef(onClearPendingOrder);
+  onClearPendingOrderRef.current = onClearPendingOrder;
+  const onOrdersUpdatedRef = useRef(onOrdersUpdated);
+  onOrdersUpdatedRef.current = onOrdersUpdated;
+  const selectedOrderNumberRef = useRef<string | null>(null);
+  selectedOrderNumberRef.current = selectedOrder?.order.orderNumber || null;
+  const activeNotificationsRef = useRef<AdminNotificationRecord[]>(activeNotifications);
+  activeNotificationsRef.current = activeNotifications;
+  const ordersRef = useRef<FullOrderView[]>(orders);
+  ordersRef.current = orders;
+  const prevUnreadCountRef = useRef<number>(activeUnreadCount);
+
+  useEffect(() => {
+    if (externalSearch && externalSearch.query) {
+      setSearch(externalSearch.query);
+      setStatusFilter('All');
+      setPaymentFilter('All');
+      setDateFrom('');
+      setDateTo('');
+      setPage(1);
+    }
+  }, [externalSearch]);
+
   const markNotificationsRead = useCallback(
     async (params: { id?: string; orderNumber?: string; all?: boolean }) => {
       try {
@@ -129,18 +158,21 @@ export default function AdminOrdersManager({
           const nextUnread = Number(data.unreadCount) || 0;
           setLocalNotifications(nextList);
           setLocalUnreadCount(nextUnread);
-          onNotificationsSync?.(nextList, nextUnread);
+          onNotificationsSyncRef.current?.(nextList, nextUnread);
         }
       } catch {
         // ignore mark read failure
       }
     },
-    [onNotificationsSync]
+    []
   );
 
   const fetchOrders = useCallback(
     async (silent = false) => {
-      if (!silent) setIsLoading(true);
+      if (!silent) {
+        setIsLoading(true);
+        setLoadError(null);
+      }
       try {
         const params = new URLSearchParams();
         if (search.trim()) params.set('search', search.trim());
@@ -160,54 +192,49 @@ export default function AdminOrdersManager({
           throw new Error(data.error || 'Failed to fetch orders');
         }
 
-        setOrders(data.orders || []);
+        const fetchedOrders: FullOrderView[] = data.orders || [];
+        setOrders(fetchedOrders);
         setOverview(data.overview || null);
+        setLoadError(null);
         if (!silent) setPage(1);
 
         if (Array.isArray(data.adminNotifications)) {
+          const nextCount = Number(data.unreadNotificationsCount) || 0;
           setLocalNotifications(data.adminNotifications);
-          setLocalUnreadCount(Number(data.unreadNotificationsCount) || 0);
-          onNotificationsSync?.(
-            data.adminNotifications,
-            Number(data.unreadNotificationsCount) || 0
-          );
+          setLocalUnreadCount(nextCount);
+          onNotificationsSyncRef.current?.(data.adminNotifications, nextCount);
         }
 
-        if (selectedOrder) {
-          const refreshed = (data.orders || []).find(
-            (o: FullOrderView) => o.order.orderNumber === selectedOrder.order.orderNumber
+        const currentSelectedNum = selectedOrderNumberRef.current;
+        if (currentSelectedNum) {
+          const refreshed = fetchedOrders.find(
+            (o) => o.order.orderNumber === currentSelectedNum
           );
           if (refreshed) setSelectedOrder(refreshed);
         }
       } catch (err: unknown) {
+        const errMsg = err instanceof Error ? err.message : 'Failed to load orders';
         if (!silent) {
-          toast.error(err instanceof Error ? err.message : 'Failed to load orders');
+          setLoadError(errMsg);
+          toast.error(errMsg);
         }
       } finally {
         if (!silent) setIsLoading(false);
       }
     },
-    [
-      search,
-      statusFilter,
-      paymentFilter,
-      dateFrom,
-      dateTo,
-      sortBy,
-      selectedOrder?.order.orderNumber,
-      onNotificationsSync,
-    ]
+    [search, statusFilter, paymentFilter, dateFrom, dateTo, sortBy]
   );
 
   useEffect(() => {
     void fetchOrders(false);
   }, [fetchOrders]);
 
-  // Silent background refresh when new unread order alerts arrive or every 8s
+  // Silent background refresh only when unread count increases
   useEffect(() => {
-    if (activeUnreadCount > 0) {
+    if (activeUnreadCount > prevUnreadCountRef.current) {
       void fetchOrders(true);
     }
+    prevUnreadCountRef.current = activeUnreadCount;
   }, [activeUnreadCount, fetchOrders]);
 
   useEffect(() => {
@@ -230,19 +257,19 @@ export default function AdminOrdersManager({
       setCancelReasonInput(view.order.cancelReason || '');
       setNewAdminNote('');
 
-      const hasUnreadForOrder = activeNotifications.some(
+      const hasUnreadForOrder = activeNotificationsRef.current.some(
         (n) => !n.isRead && n.orderNumber === view.order.orderNumber
       );
       if (hasUnreadForOrder) {
         void markNotificationsRead({ orderNumber: view.order.orderNumber });
       }
     },
-    [activeNotifications, markNotificationsRead]
+    [markNotificationsRead]
   );
 
   const handleOpenOrderByNumber = useCallback(
     async (orderNumber: string) => {
-      const existing = orders.find(
+      const existing = ordersRef.current.find(
         (v) => v.order.orderNumber.toUpperCase() === orderNumber.toUpperCase()
       );
       if (existing) {
@@ -267,14 +294,14 @@ export default function AdminOrdersManager({
         toast.error(`Could not load order ${orderNumber}`);
       }
     },
-    [orders, openOrderModal]
+    [openOrderModal]
   );
 
   useEffect(() => {
     if (!pendingOrderNumber) return;
     void handleOpenOrderByNumber(pendingOrderNumber);
-    onClearPendingOrder?.();
-  }, [pendingOrderNumber, handleOpenOrderByNumber, onClearPendingOrder]);
+    onClearPendingOrderRef.current?.();
+  }, [pendingOrderNumber, handleOpenOrderByNumber]);
 
   const handleUpdateOrderStatus = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -310,8 +337,8 @@ export default function AdminOrdersManager({
       toast.success(data.message || 'Order status updated!', { id: toastId });
       if (data.order) setSelectedOrder(data.order);
       setStatusNoteInput('');
-      await fetchOrders();
-      onOrdersUpdated?.();
+      await fetchOrders(true);
+      onOrdersUpdatedRef.current?.();
     } catch (err: unknown) {
       toast.error(err instanceof Error ? err.message : 'Update failed', { id: toastId });
     } finally {
@@ -700,19 +727,50 @@ export default function AdminOrdersManager({
 
       {/* Orders Table */}
       <div className="bg-white rounded-xl border border-slate-200 overflow-hidden">
-        {isLoading ? (
-          <div className="p-8 space-y-3">
+        {loadError && !isLoading ? (
+          <div className="p-8 sm:p-10 text-center space-y-3">
+            <AlertTriangle className="w-9 h-9 text-rose-500 mx-auto" />
+            <div>
+              <h3 className="text-sm font-bold text-slate-900">Unable to load orders</h3>
+              <p className="text-xs text-slate-500 mt-1">{loadError}</p>
+            </div>
+            <button
+              type="button"
+              onClick={() => void fetchOrders(false)}
+              className="min-h-[44px] px-4 py-2 rounded-lg bg-slate-900 hover:bg-slate-800 text-white text-xs font-semibold inline-flex items-center gap-1.5 cursor-pointer"
+            >
+              <RefreshCw className="w-3.5 h-3.5" />
+              <span>Retry Loading Orders</span>
+            </button>
+          </div>
+        ) : isLoading ? (
+          <div className="p-6 sm:p-8 space-y-3">
             {[1, 2, 3, 4].map((n) => (
-              <div key={n} className="h-12 bg-slate-100 rounded-lg animate-pulse" />
+              <div key={n} className="h-14 bg-slate-100 rounded-lg animate-pulse" />
             ))}
           </div>
         ) : paginatedOrders.length === 0 ? (
-          <div className="p-12 text-center">
-            <Truck className="w-10 h-10 text-slate-300 mx-auto mb-3" />
+          <div className="p-12 text-center space-y-2">
+            <Truck className="w-10 h-10 text-slate-300 mx-auto mb-2" />
             <h3 className="text-base font-bold text-slate-900">No matching orders found</h3>
-            <p className="text-xs text-slate-500 mt-1">
+            <p className="text-xs text-slate-500">
               Customer orders placed through checkout will appear here immediately.
             </p>
+            {(search || statusFilter !== 'All' || paymentFilter !== 'All' || dateFrom || dateTo) && (
+              <button
+                type="button"
+                onClick={() => {
+                  setSearch('');
+                  setStatusFilter('All');
+                  setPaymentFilter('All');
+                  setDateFrom('');
+                  setDateTo('');
+                }}
+                className="mt-2 min-h-[40px] px-3.5 py-1.5 rounded-lg border border-slate-200 hover:bg-slate-50 text-xs font-semibold text-slate-700 cursor-pointer"
+              >
+                Clear All Filters
+              </button>
+            )}
           </div>
         ) : (
           <>
@@ -743,11 +801,18 @@ export default function AdminOrdersManager({
 
                     <div className="text-xs space-y-1">
                       <div className="font-semibold text-slate-900">{order.customerName}</div>
-                      <div className="text-slate-500 break-all">
+                      <div className="text-slate-600 break-all font-mono tabular-nums">
                         {order.customerPhone}
                         {order.customerEmail ? ` · ${order.customerEmail}` : ''}
                       </div>
-                      <div className="text-slate-600 tabular-nums">
+                      <div className="text-slate-500 flex items-start gap-1">
+                        <MapPin className="w-3.5 h-3.5 text-slate-400 shrink-0 mt-0.5" />
+                        <span className="break-words">
+                          {order.deliveryAddress}
+                          {order.pincode && order.pincode !== 'N/A' ? ` · PIN ${order.pincode}` : ''}
+                        </span>
+                      </div>
+                      <div className="text-slate-700 tabular-nums pt-0.5">
                         {qtySum} pair{qtySum === 1 ? '' : 's'}
                         {items[0]?.name ? ` · ${items[0].name}` : ''}
                       </div>
@@ -810,12 +875,17 @@ export default function AdminOrdersManager({
                             {formatDateTimeIN(order.createdAt)}
                           </div>
                         </td>
-                        <td className="py-3 px-4">
-                          <div className="font-semibold text-slate-900">
+                        <td className="py-3 px-4 max-w-[260px]">
+                          <div className="font-semibold text-slate-900 truncate">
                             {order.customerName}
                           </div>
-                          <div className="text-[11px] text-slate-500">
-                            {order.customerPhone} {order.customerEmail ? `· ${order.customerEmail}` : ''}
+                          <div className="text-[11px] text-slate-600 font-mono tabular-nums truncate">
+                            {order.customerPhone}
+                            {order.customerEmail ? ` · ${order.customerEmail}` : ''}
+                          </div>
+                          <div className="text-[11px] text-slate-500 truncate mt-0.5" title={`${order.deliveryAddress} (${order.pincode})`}>
+                            {order.deliveryAddress}
+                            {order.pincode && order.pincode !== 'N/A' ? ` · ${order.pincode}` : ''}
                           </div>
                         </td>
                         <td className="py-3 px-4 whitespace-nowrap tabular-nums">
@@ -1094,17 +1164,38 @@ export default function AdminOrdersManager({
 
               {/* Customer & Payment Details */}
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 text-xs">
-                <div className="p-4 rounded-xl border border-slate-200 space-y-1.5 min-w-0">
-                  <div className="font-bold text-slate-900 mb-1">Customer & Shipping Address</div>
-                  <p className="font-semibold text-slate-800">{selectedOrder.order.customerName}</p>
+                <div className="p-4 rounded-xl border border-slate-200 space-y-2 min-w-0">
+                  <div className="flex items-center justify-between gap-2">
+                    <span className="font-bold text-slate-900">Customer & Shipping Address</span>
+                    {(selectedOrder.order.customerPhone !== 'N/A' || selectedOrder.order.customerEmail) && (
+                      <button
+                        type="button"
+                        onClick={() => {
+                          const query =
+                            selectedOrder.order.customerPhone !== 'N/A'
+                              ? selectedOrder.order.customerPhone
+                              : selectedOrder.order.customerEmail;
+                          setSearch(query);
+                          setSelectedOrder(null);
+                        }}
+                        className="text-[11px] font-semibold text-indigo-600 hover:underline cursor-pointer shrink-0"
+                      >
+                        All orders by customer →
+                      </button>
+                    )}
+                  </div>
+                  <p className="font-semibold text-slate-800 text-sm">{selectedOrder.order.customerName}</p>
                   <p className="text-slate-600">
-                    Phone: <span className="font-mono">{selectedOrder.order.customerPhone}</span>
+                    Phone: <span className="font-mono tabular-nums">{selectedOrder.order.customerPhone}</span>
                   </p>
                   {selectedOrder.order.customerEmail && (
                     <p className="text-slate-600 break-all">Email: {selectedOrder.order.customerEmail}</p>
                   )}
                   <p className="text-slate-600 break-words">
-                    {selectedOrder.order.deliveryAddress} (Pincode: {selectedOrder.order.pincode})
+                    Address: {selectedOrder.order.deliveryAddress}
+                  </p>
+                  <p className="text-slate-600">
+                    Pincode: <span className="font-mono tabular-nums font-semibold text-slate-800">{selectedOrder.order.pincode}</span>
                   </p>
                 </div>
 

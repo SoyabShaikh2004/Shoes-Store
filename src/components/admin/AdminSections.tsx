@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 import Image from 'next/image';
 import { toast } from 'react-hot-toast';
 import {
@@ -19,11 +19,19 @@ import {
   Save,
   Loader2,
   ExternalLink,
+  Search,
+  RefreshCw,
+  Eye,
+  X,
+  MapPin,
+  ArrowRight,
+  Phone,
+  Mail,
 } from 'lucide-react';
 import { Product } from '@/lib/data';
 import { AdminUser, getAdminAuthHeaders } from '@/lib/adminAuth';
 import { formatDateTimeIN, OrderStatus } from '@/lib/orderTypes';
-import type { FullOrderView } from '@/lib/db/store';
+import type { AdminCustomerProfile, FullOrderView } from '@/lib/db/store';
 
 export interface OverviewPayload {
   overview: {
@@ -42,16 +50,7 @@ export interface OverviewPayload {
   lowStockProducts: Product[];
   categories: Array<{ id: string; name: string; productCount: number; totalStock: number }>;
   brands: Array<{ id: string; name: string; productCount: number }>;
-  customers: Array<{
-    id: string;
-    name: string;
-    email: string;
-    phone: string;
-    ordersCount: number;
-    totalSpent: number;
-    lastOrderNumber?: string;
-    lastOrderAt?: string;
-  }>;
+  customers: AdminCustomerProfile[];
   payments: Array<{
     id: string;
     orderNumber?: string;
@@ -285,74 +284,534 @@ export function CategoriesSection({ data }: { data: OverviewPayload | null }) {
   );
 }
 
-export function CustomersSection({ data }: { data: OverviewPayload | null }) {
-  const customers = data?.customers || [];
+function customerOrderBadgeClass(status: OrderStatus): string {
+  if (status === 'Delivered' || status === 'Refunded') {
+    return 'bg-emerald-50 text-emerald-700 border-emerald-200';
+  }
+  if (status === 'Order Cancelled' || status === 'Payment Failed') {
+    return 'bg-rose-50 text-rose-700 border-rose-200';
+  }
+  if (
+    status === 'Return Requested' ||
+    status === 'Returned' ||
+    status === 'Refund Initiated'
+  ) {
+    return 'bg-amber-50 text-amber-800 border-amber-200';
+  }
+  return 'bg-indigo-50 text-indigo-700 border-indigo-200';
+}
+
+export function CustomersSection({
+  data,
+  isLoading: parentLoading = false,
+  error: parentError = null,
+  onRefresh,
+  onInspectOrder,
+  onFilterOrdersByCustomer,
+}: {
+  data: OverviewPayload | null;
+  isLoading?: boolean;
+  error?: string | null;
+  onRefresh?: () => void;
+  onInspectOrder?: (orderNumber: string) => void;
+  onFilterOrdersByCustomer?: (query: string) => void;
+}) {
+  const [customers, setCustomers] = useState<AdminCustomerProfile[]>(data?.customers || []);
+  const [localLoading, setLocalLoading] = useState(false);
+  const [localError, setLocalError] = useState<string | null>(null);
+  const [searchQuery, setSearchQuery] = useState('');
+  const [selectedCustomerId, setSelectedCustomerId] = useState<string | null>(null);
+
+  useEffect(() => {
+    if (data?.customers) {
+      setCustomers(data.customers);
+      setLocalError(null);
+    }
+  }, [data?.customers]);
+
+  const fetchCustomersDirect = useCallback(async (showSuccessToast = false) => {
+    setLocalLoading(true);
+    setLocalError(null);
+    try {
+      const res = await fetch('/api/admin/customers', {
+        credentials: 'include',
+        headers: getAdminAuthHeaders(),
+        cache: 'no-store',
+      });
+      const json = await res.json();
+      if (!res.ok || !json.success) {
+        throw new Error(json.error || 'Failed to load customer records');
+      }
+      setCustomers(json.customers || []);
+      if (showSuccessToast) {
+        toast.success('Customer directory refreshed');
+      }
+    } catch (err: unknown) {
+      const msg = err instanceof Error ? err.message : 'Failed to load customers';
+      setLocalError(msg);
+      toast.error(msg);
+    } finally {
+      setLocalLoading(false);
+    }
+  }, []);
+
+  useEffect(() => {
+    if (!data && !parentLoading) {
+      void fetchCustomersDirect(false);
+    }
+  }, [data, parentLoading, fetchCustomersDirect]);
+
+  const effectiveLoading = (parentLoading && customers.length === 0) || localLoading;
+  const effectiveError = localError || (customers.length === 0 ? parentError : null);
+
+  const q = searchQuery.trim().toLowerCase();
+  const filteredCustomers = q
+    ? customers.filter((c) => {
+        const haystacks = [
+          c.name,
+          c.phone,
+          c.email,
+          c.defaultAddress || '',
+          c.defaultPincode || '',
+          c.lastOrderNumber || '',
+          ...(c.orders || []).map((o) => o.orderNumber),
+        ];
+        return haystacks.some((val) => val.toLowerCase().includes(q));
+      })
+    : customers;
+
+  const selectedCustomer =
+    customers.find((c) => c.id === selectedCustomerId) || null;
+
+  const totalCustomers = customers.length;
+  const repeatCustomers = customers.filter((c) => c.ordersCount > 1).length;
+  const totalCustomerOrders = customers.reduce((sum, c) => sum + c.ordersCount, 0);
+  const totalCustomerSpend = customers.reduce((sum, c) => sum + c.totalSpent, 0);
+
   return (
-    <div className="bg-white rounded-xl border border-slate-200 overflow-hidden">
-      <div className="px-5 py-4 border-b border-slate-200 flex items-center justify-between">
-        <h3 className="text-base font-bold text-slate-900">
-          Registered & Ordering Customers ({customers.length})
-        </h3>
-      </div>
-      {customers.length === 0 ? (
-        <div className="p-10 text-center text-xs text-slate-500">
-          No customer orders have been placed yet.
+    <div className="space-y-6">
+      {/* Customer Directory Summary Strip */}
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
+        <div className="bg-white p-4 sm:p-5 rounded-xl border border-slate-200 min-w-0">
+          <div className="text-xs font-semibold text-slate-500">Total Customers</div>
+          <div className="text-xl sm:text-2xl font-bold text-slate-900 mt-1 tabular-nums">
+            {totalCustomers}
+          </div>
+          <p className="text-xs text-slate-500 mt-1">Merged by phone & email</p>
         </div>
-      ) : (
-        <>
-          <div className="lg:hidden divide-y divide-slate-100">
-            {customers.map((c) => (
-              <div key={c.id} className="p-4 space-y-2 text-xs">
-                <div className="flex items-start justify-between gap-2">
-                  <div className="min-w-0">
-                    <div className="font-bold text-sm text-slate-900">{c.name}</div>
-                    <div className="text-slate-600">{c.phone}</div>
-                    {c.email && <div className="text-slate-500 break-all">{c.email}</div>}
-                  </div>
-                  <div className="text-right shrink-0 tabular-nums">
-                    <div className="font-bold text-sm text-emerald-700">
-                      ₹{c.totalSpent.toLocaleString('en-IN')}
-                    </div>
-                    <div className="text-slate-500">{c.ordersCount} orders</div>
-                  </div>
-                </div>
-                {c.lastOrderNumber && (
-                  <div className="text-slate-500 font-mono">Latest: {c.lastOrderNumber}</div>
-                )}
-              </div>
-            ))}
+
+        <div className="bg-white p-4 sm:p-5 rounded-xl border border-slate-200 min-w-0">
+          <div className="text-xs font-semibold text-slate-500">Repeat Buyers</div>
+          <div className="text-xl sm:text-2xl font-bold text-indigo-700 mt-1 tabular-nums">
+            {repeatCustomers}
+          </div>
+          <p className="text-xs text-slate-500 mt-1">2+ placed orders</p>
+        </div>
+
+        <div className="bg-white p-4 sm:p-5 rounded-xl border border-slate-200 min-w-0">
+          <div className="text-xs font-semibold text-slate-500">Customer Orders</div>
+          <div className="text-xl sm:text-2xl font-bold text-slate-900 mt-1 tabular-nums">
+            {totalCustomerOrders}
+          </div>
+          <p className="text-xs text-slate-500 mt-1">Linked across checkouts</p>
+        </div>
+
+        <div className="bg-white p-4 sm:p-5 rounded-xl border border-slate-200 min-w-0">
+          <div className="text-xs font-semibold text-slate-500">Customer Spend</div>
+          <div className="text-xl sm:text-2xl font-bold text-emerald-700 mt-1 tabular-nums">
+            ₹{totalCustomerSpend.toLocaleString('en-IN')}
+          </div>
+          <p className="text-xs text-slate-500 mt-1">Excludes cancelled & refunded</p>
+        </div>
+      </div>
+
+      {/* Directory Search & Controls */}
+      <div className="bg-white rounded-xl border border-slate-200 overflow-hidden">
+        <div className="p-4 sm:px-5 sm:py-4 border-b border-slate-200 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+          <div>
+            <h3 className="text-base font-bold text-slate-900">
+              Customer Directory ({filteredCustomers.length})
+            </h3>
+            <p className="text-xs text-slate-500 mt-0.5">
+              Click any customer to inspect contact details, shipping address, and full order history.
+            </p>
           </div>
 
-          <div className="hidden lg:block overflow-x-auto">
-            <table className="w-full text-left text-xs sm:text-sm text-slate-600">
-              <thead className="bg-slate-50 border-b border-slate-200 text-xs font-semibold uppercase text-slate-500">
-                <tr>
-                  <th className="py-3 px-4">Customer</th>
-                  <th className="py-3 px-4">Contact</th>
-                  <th className="py-3 px-4">Orders</th>
-                  <th className="py-3 px-4">Total Spent</th>
-                  <th className="py-3 px-4">Latest Order</th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-slate-100">
-                {customers.map((c) => (
-                  <tr key={c.id} className="hover:bg-slate-50/70">
-                    <td className="py-3 px-4 font-semibold text-slate-900">{c.name}</td>
-                    <td className="py-3 px-4 text-xs">
-                      <div>{c.phone}</div>
-                      <div className="text-slate-500">{c.email || '—'}</div>
-                    </td>
-                    <td className="py-3 px-4 tabular-nums font-semibold">{c.ordersCount}</td>
-                    <td className="py-3 px-4 tabular-nums font-bold text-emerald-700">
-                      ₹{c.totalSpent.toLocaleString('en-IN')}
-                    </td>
-                    <td className="py-3 px-4 font-mono text-xs">{c.lastOrderNumber || '—'}</td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
+          <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2 sm:w-auto w-full">
+            <div className="relative sm:w-72">
+              <Search className="w-4 h-4 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2" />
+              <input
+                type="text"
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                placeholder="Search name, phone, email, pincode..."
+                className="w-full min-h-[44px] text-base sm:text-xs bg-slate-50 border border-slate-200 rounded-lg pl-9 pr-3 py-2 focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-600 focus:bg-white"
+              />
+            </div>
+
+            <button
+              type="button"
+              onClick={() => {
+                onRefresh?.();
+                void fetchCustomersDirect(true);
+              }}
+              className="min-h-[44px] px-3.5 py-2 rounded-lg border border-slate-200 hover:bg-slate-50 text-xs font-semibold text-slate-700 inline-flex items-center justify-center gap-1.5 cursor-pointer whitespace-nowrap shrink-0"
+            >
+              <RefreshCw className={`w-3.5 h-3.5 ${effectiveLoading ? 'animate-spin' : ''}`} />
+              <span>Refresh</span>
+            </button>
           </div>
-        </>
+        </div>
+
+        {effectiveError && !effectiveLoading ? (
+          <div className="p-8 sm:p-10 text-center space-y-3">
+            <AlertTriangle className="w-9 h-9 text-rose-500 mx-auto" />
+            <div>
+              <h4 className="text-sm font-bold text-slate-900">Unable to load customer records</h4>
+              <p className="text-xs text-slate-500 mt-1">{effectiveError}</p>
+            </div>
+            <button
+              type="button"
+              onClick={() => void fetchCustomersDirect(false)}
+              className="min-h-[44px] px-4 py-2 rounded-lg bg-slate-900 hover:bg-slate-800 text-white text-xs font-semibold inline-flex items-center gap-1.5 cursor-pointer"
+            >
+              <RefreshCw className="w-3.5 h-3.5" />
+              <span>Retry</span>
+            </button>
+          </div>
+        ) : effectiveLoading ? (
+          <div className="p-6 space-y-3">
+            {[1, 2, 3, 4].map((n) => (
+              <div key={n} className="h-14 bg-slate-100 rounded-lg animate-pulse" />
+            ))}
+          </div>
+        ) : filteredCustomers.length === 0 ? (
+          <div className="p-10 text-center space-y-2">
+            <Users className="w-9 h-9 text-slate-300 mx-auto" />
+            <div className="text-sm font-bold text-slate-900">
+              {searchQuery ? 'No matching customers found' : 'No customer records yet'}
+            </div>
+            <p className="text-xs text-slate-500">
+              {searchQuery
+                ? 'Try clearing your search or checking a different phone number or order ID.'
+                : 'Customers appear here automatically after Google login or placing an order at checkout.'}
+            </p>
+            {searchQuery && (
+              <button
+                type="button"
+                onClick={() => setSearchQuery('')}
+                className="mt-2 min-h-[40px] px-3.5 py-1.5 rounded-lg border border-slate-200 hover:bg-slate-50 text-xs font-semibold text-slate-700 cursor-pointer"
+              >
+                Clear Search
+              </button>
+            )}
+          </div>
+        ) : (
+          <>
+            {/* Mobile & Tablet Cards */}
+            <div className="lg:hidden divide-y divide-slate-100">
+              {filteredCustomers.map((c) => (
+                <div
+                  key={c.id}
+                  onClick={() => setSelectedCustomerId(c.id)}
+                  className="p-4 space-y-2.5 text-xs hover:bg-slate-50/70 transition-colors cursor-pointer"
+                >
+                  <div className="flex items-start justify-between gap-3">
+                    <div className="min-w-0">
+                      <div className="font-bold text-sm text-slate-900 truncate">{c.name}</div>
+                      <div className="text-slate-700 font-mono tabular-nums mt-0.5">{c.phone}</div>
+                      {c.email && (
+                        <div className="text-slate-500 break-all mt-0.5">{c.email}</div>
+                      )}
+                    </div>
+                    <div className="text-right shrink-0 tabular-nums">
+                      <div className="font-bold text-sm text-emerald-700">
+                        ₹{c.totalSpent.toLocaleString('en-IN')}
+                      </div>
+                      <div className="text-slate-500">
+                        {c.ordersCount} {c.ordersCount === 1 ? 'order' : 'orders'}
+                      </div>
+                    </div>
+                  </div>
+
+                  {(c.defaultAddress || c.defaultPincode) && (
+                    <div className="text-slate-600 flex items-start gap-1.5">
+                      <MapPin className="w-3.5 h-3.5 text-slate-400 shrink-0 mt-0.5" />
+                      <span className="break-words">
+                        {c.defaultAddress || 'Address pending'}
+                        {c.defaultPincode ? ` · PIN ${c.defaultPincode}` : ''}
+                      </span>
+                    </div>
+                  )}
+
+                  <div className="flex items-center justify-between gap-2 pt-1">
+                    <div className="text-[11px] text-slate-500 font-mono tabular-nums">
+                      {c.lastOrderNumber ? `Latest: ${c.lastOrderNumber}` : 'Account registered'}
+                    </div>
+                    <button
+                      type="button"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        setSelectedCustomerId(c.id);
+                      }}
+                      className="min-h-[40px] px-3 py-1.5 rounded-lg bg-indigo-50 hover:bg-indigo-100 text-indigo-700 border border-indigo-200 text-xs font-semibold inline-flex items-center gap-1 cursor-pointer whitespace-nowrap shrink-0"
+                    >
+                      <Eye className="w-3.5 h-3.5" />
+                      <span>View Orders</span>
+                    </button>
+                  </div>
+                </div>
+              ))}
+            </div>
+
+            {/* Desktop Table */}
+            <div className="hidden lg:block overflow-x-auto">
+              <table className="w-full text-left text-xs sm:text-sm text-slate-600">
+                <thead className="bg-slate-50 border-b border-slate-200 text-xs font-semibold uppercase tracking-wider text-slate-500">
+                  <tr>
+                    <th className="py-3 px-4">Customer</th>
+                    <th className="py-3 px-4">Contact</th>
+                    <th className="py-3 px-4">Delivery Address & Pincode</th>
+                    <th className="py-3 px-4">Orders</th>
+                    <th className="py-3 px-4">Total Spent</th>
+                    <th className="py-3 px-4">Latest Order</th>
+                    <th className="py-3 px-4 text-right">Details</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-slate-100">
+                  {filteredCustomers.map((c) => (
+                    <tr
+                      key={c.id}
+                      onClick={() => setSelectedCustomerId(c.id)}
+                      className="hover:bg-slate-50/80 transition-colors cursor-pointer"
+                    >
+                      <td className="py-3 px-4">
+                        <div className="font-semibold text-slate-900">{c.name}</div>
+                        <div className="text-[11px] text-slate-500 tabular-nums mt-0.5">
+                          {c.lastOrderAt
+                            ? `Active ${formatDateTimeIN(c.lastOrderAt)}`
+                            : `Joined ${formatDateTimeIN(c.createdAt)}`}
+                        </div>
+                      </td>
+                      <td className="py-3 px-4 text-xs">
+                        <div className="font-mono tabular-nums text-slate-800">{c.phone}</div>
+                        <div className="text-slate-500 truncate max-w-[200px]">{c.email || '—'}</div>
+                      </td>
+                      <td className="py-3 px-4 text-xs max-w-[260px]">
+                        <div
+                          className="text-slate-700 truncate"
+                          title={c.defaultAddress || ''}
+                        >
+                          {c.defaultAddress || '—'}
+                        </div>
+                        {c.defaultPincode && (
+                          <div className="text-[11px] font-mono tabular-nums text-slate-500 mt-0.5">
+                            PIN: {c.defaultPincode}
+                          </div>
+                        )}
+                      </td>
+                      <td className="py-3 px-4 tabular-nums font-semibold text-slate-900">
+                        {c.ordersCount}
+                      </td>
+                      <td className="py-3 px-4 tabular-nums font-bold text-emerald-700 whitespace-nowrap">
+                        ₹{c.totalSpent.toLocaleString('en-IN')}
+                      </td>
+                      <td className="py-3 px-4 font-mono text-xs whitespace-nowrap">
+                        {c.lastOrderNumber ? (
+                          <div>
+                            <div className="font-semibold text-slate-900">{c.lastOrderNumber}</div>
+                            {c.orders[0]?.status && (
+                              <div className="text-[11px] font-sans text-slate-500">
+                                {c.orders[0].status}
+                              </div>
+                            )}
+                          </div>
+                        ) : (
+                          '—'
+                        )}
+                      </td>
+                      <td className="py-3 px-4 text-right whitespace-nowrap">
+                        <button
+                          type="button"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            setSelectedCustomerId(c.id);
+                          }}
+                          className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-indigo-50 hover:bg-indigo-100 text-indigo-700 border border-indigo-200 text-xs font-semibold cursor-pointer whitespace-nowrap shrink-0"
+                        >
+                          <Eye className="w-3.5 h-3.5" />
+                          <span>View Orders</span>
+                        </button>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          </>
+        )}
+      </div>
+
+      {/* Customer Profile & Order History Drawer */}
+      {selectedCustomer && (
+        <div
+          className="fixed inset-0 z-50 bg-slate-950/60 flex justify-end"
+          onClick={() => setSelectedCustomerId(null)}
+        >
+          <div
+            onClick={(e) => e.stopPropagation()}
+            className="bg-white w-full max-w-2xl h-full overflow-y-auto border-l border-slate-200 flex flex-col"
+          >
+            <div className="sticky top-0 z-10 bg-white border-b border-slate-200 px-4 sm:px-6 py-4 flex items-center justify-between gap-3">
+              <div className="min-w-0">
+                <h3 className="text-base sm:text-lg font-bold text-slate-900 truncate">
+                  {selectedCustomer.name}
+                </h3>
+                <p className="text-xs text-slate-500 mt-0.5 tabular-nums">
+                  {selectedCustomer.ordersCount}{' '}
+                  {selectedCustomer.ordersCount === 1 ? 'order' : 'orders'} · Total spend ₹
+                  {selectedCustomer.totalSpent.toLocaleString('en-IN')}
+                </p>
+              </div>
+              <div className="flex items-center gap-2 shrink-0">
+                {onFilterOrdersByCustomer &&
+                  (selectedCustomer.phone !== 'N/A' || selectedCustomer.email) && (
+                    <button
+                      type="button"
+                      onClick={() => {
+                        const query =
+                          selectedCustomer.phone !== 'N/A'
+                            ? selectedCustomer.phone
+                            : selectedCustomer.email;
+                        setSelectedCustomerId(null);
+                        onFilterOrdersByCustomer(query);
+                      }}
+                      className="min-h-[40px] px-3 py-1.5 rounded-lg bg-slate-900 hover:bg-indigo-600 text-white text-xs font-semibold inline-flex items-center gap-1.5 cursor-pointer whitespace-nowrap shrink-0"
+                    >
+                      <span>Open in Orders Tab</span>
+                      <ArrowRight className="w-3.5 h-3.5" />
+                    </button>
+                  )}
+                <button
+                  type="button"
+                  onClick={() => setSelectedCustomerId(null)}
+                  aria-label="Close customer profile"
+                  className="min-w-[44px] min-h-[44px] inline-flex items-center justify-center rounded-lg text-slate-400 hover:text-slate-700 hover:bg-slate-100 cursor-pointer"
+                >
+                  <X className="w-5 h-5" />
+                </button>
+              </div>
+            </div>
+
+            <div className="p-4 sm:p-6 space-y-6">
+              {/* Contact & Shipping Info */}
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 text-xs">
+                <div className="p-4 rounded-xl border border-slate-200 space-y-2 min-w-0">
+                  <div className="font-bold text-slate-900">Contact Details</div>
+                  <div className="flex items-center gap-2 text-slate-700">
+                    <Phone className="w-3.5 h-3.5 text-slate-400 shrink-0" />
+                    <span className="font-mono tabular-nums">{selectedCustomer.phone}</span>
+                  </div>
+                  <div className="flex items-center gap-2 text-slate-700 min-w-0">
+                    <Mail className="w-3.5 h-3.5 text-slate-400 shrink-0" />
+                    <span className="break-all">
+                      {selectedCustomer.email || 'No email provided'}
+                    </span>
+                  </div>
+                  <div className="text-[11px] text-slate-500 pt-1 tabular-nums">
+                    Joined {formatDateTimeIN(selectedCustomer.createdAt)}
+                  </div>
+                </div>
+
+                <div className="p-4 rounded-xl border border-slate-200 space-y-2 min-w-0">
+                  <div className="font-bold text-slate-900">Primary Delivery Address</div>
+                  <div className="flex items-start gap-2 text-slate-700">
+                    <MapPin className="w-3.5 h-3.5 text-slate-400 shrink-0 mt-0.5" />
+                    <span className="break-words">
+                      {selectedCustomer.defaultAddress || 'No saved address yet'}
+                    </span>
+                  </div>
+                  <div className="text-slate-600">
+                    Pincode:{' '}
+                    <span className="font-mono tabular-nums font-semibold text-slate-900">
+                      {selectedCustomer.defaultPincode || '—'}
+                    </span>
+                  </div>
+                </div>
+              </div>
+
+              {/* Order History List */}
+              <div className="rounded-xl border border-slate-200 overflow-hidden">
+                <div className="px-4 py-3 bg-slate-50 border-b border-slate-200 flex items-center justify-between text-xs font-bold text-slate-700">
+                  <span>Order History ({selectedCustomer.orders.length})</span>
+                  <span className="tabular-nums text-emerald-700">
+                    Total: ₹{selectedCustomer.totalSpent.toLocaleString('en-IN')}
+                  </span>
+                </div>
+
+                {selectedCustomer.orders.length === 0 ? (
+                  <div className="p-8 text-center text-xs text-slate-500">
+                    This customer registered an account but has not placed an order yet.
+                  </div>
+                ) : (
+                  <div className="divide-y divide-slate-100">
+                    {selectedCustomer.orders.map((ord) => (
+                      <div
+                        key={ord.id}
+                        className="p-4 flex flex-col sm:flex-row sm:items-center justify-between gap-3 text-xs"
+                      >
+                        <div className="min-w-0 space-y-1">
+                          <div className="flex flex-wrap items-center gap-2">
+                            <span className="font-mono font-bold text-sm text-slate-900">
+                              {ord.orderNumber}
+                            </span>
+                            <span
+                              className={`px-2 py-0.5 rounded-md border text-[11px] font-semibold ${customerOrderBadgeClass(
+                                ord.status
+                              )}`}
+                            >
+                              {ord.status}
+                            </span>
+                          </div>
+                          <div className="text-slate-600">
+                            {ord.itemCount} {ord.itemCount === 1 ? 'pair' : 'pairs'} ·{' '}
+                            {ord.primaryItemName}
+                          </div>
+                          <div className="text-slate-500 break-words">
+                            {ord.deliveryAddress}
+                            {ord.pincode && ord.pincode !== 'N/A' ? ` · PIN ${ord.pincode}` : ''}
+                          </div>
+                          <div className="text-[11px] text-slate-500 tabular-nums">
+                            {formatDateTimeIN(ord.createdAt)} · {ord.paymentMethod} ({ord.paymentStatus})
+                          </div>
+                        </div>
+
+                        <div className="flex sm:flex-col items-center sm:items-end justify-between gap-2 shrink-0">
+                          <div className="text-sm font-bold text-slate-900 tabular-nums">
+                            ₹{ord.totalAmount.toLocaleString('en-IN')}
+                          </div>
+                          {onInspectOrder && (
+                            <button
+                              type="button"
+                              onClick={() => {
+                                setSelectedCustomerId(null);
+                                onInspectOrder(ord.orderNumber);
+                              }}
+                              className="min-h-[40px] px-3 py-1.5 rounded-lg bg-indigo-50 hover:bg-indigo-100 text-indigo-700 border border-indigo-200 text-xs font-semibold inline-flex items-center gap-1 cursor-pointer whitespace-nowrap"
+                            >
+                              <Eye className="w-3.5 h-3.5" />
+                              <span>Inspect Order</span>
+                            </button>
+                          )}
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
+            </div>
+          </div>
+        </div>
       )}
     </div>
   );

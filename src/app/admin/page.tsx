@@ -96,10 +96,16 @@ function AdminContent() {
   const [products, setProducts] = useState<Product[]>([]);
   const [categories, setCategories] = useState<string[]>([]);
   const [overviewData, setOverviewData] = useState<OverviewPayload | null>(null);
+  const [isLoadingOverview, setIsLoadingOverview] = useState(false);
+  const [overviewError, setOverviewError] = useState<string | null>(null);
   const [adminNotifications, setAdminNotifications] = useState<AdminNotificationRecord[]>([]);
   const [unreadNotificationsCount, setUnreadNotificationsCount] = useState(0);
   const [notifDropdownOpen, setNotifDropdownOpen] = useState(false);
   const [pendingInspectOrderNumber, setPendingInspectOrderNumber] = useState<string | null>(null);
+  const [pendingOrdersSearch, setPendingOrdersSearch] = useState<{
+    query: string;
+    nonce: number;
+  } | null>(null);
   const [activeTab, setActiveTab] = useState<AdminNavTab>('overview');
   const [editingProduct, setEditingProduct] = useState<Product | null>(null);
   const [mobileSidebarOpen, setMobileSidebarOpen] = useState(false);
@@ -108,6 +114,7 @@ function AdminContent() {
   const notifDropdownRef = useRef<HTMLDivElement | null>(null);
 
   const loadDashboardData = useCallback(async (showToast = false) => {
+    setIsLoadingOverview(true);
     try {
       const [prodRes, ovRes] = await Promise.all([
         fetch('/api/admin/products', {
@@ -129,26 +136,30 @@ function AdminContent() {
         setCategories(Array.from(new Set(list.map((p) => p.category).filter(Boolean))));
       }
 
-      if (ovRes.ok) {
-        const ovJson = await ovRes.json();
-        if (ovJson.success) {
-          setOverviewData(ovJson);
-          if (Array.isArray(ovJson.adminNotifications)) {
-            const list = ovJson.adminNotifications as AdminNotificationRecord[];
-            setAdminNotifications(list);
-            setUnreadNotificationsCount(Number(ovJson.unreadNotificationsCount) || 0);
-            if (seenNotifIdsRef.current === null) {
-              seenNotifIdsRef.current = new Set(list.map((n) => n.id));
-            }
+      const ovJson = await ovRes.json();
+      if (ovRes.ok && ovJson.success) {
+        setOverviewData(ovJson);
+        setOverviewError(null);
+        if (Array.isArray(ovJson.adminNotifications)) {
+          const list = ovJson.adminNotifications as AdminNotificationRecord[];
+          setAdminNotifications(list);
+          setUnreadNotificationsCount(Number(ovJson.unreadNotificationsCount) || 0);
+          if (seenNotifIdsRef.current === null) {
+            seenNotifIdsRef.current = new Set(list.map((n) => n.id));
           }
         }
+      } else {
+        setOverviewError(ovJson?.error || 'Could not load customer & order overview');
       }
 
       if (showToast) {
         toast.success('Admin dashboard refreshed');
       }
     } catch {
+      setOverviewError('Network error loading dashboard data');
       toast.error('Could not load dashboard data');
+    } finally {
+      setIsLoadingOverview(false);
     }
   }, []);
 
@@ -227,6 +238,35 @@ function AdminContent() {
     }
   };
 
+  const handleClearPendingOrder = useCallback(() => {
+    setPendingInspectOrderNumber(null);
+  }, []);
+
+  const handleNotificationsSync = useCallback(
+    (list: AdminNotificationRecord[], count: number) => {
+      setAdminNotifications(list);
+      setUnreadNotificationsCount(count);
+    },
+    []
+  );
+
+  const handleOrdersUpdated = useCallback(() => {
+    void loadDashboardData();
+    void fetchAdminNotifications();
+  }, [loadDashboardData, fetchAdminNotifications]);
+
+  const handleInspectOrderFromCustomer = useCallback((orderNumber: string) => {
+    setEditingProduct(null);
+    setPendingInspectOrderNumber(orderNumber);
+    setActiveTab('orders');
+  }, []);
+
+  const handleFilterOrdersByCustomer = useCallback((query: string) => {
+    setEditingProduct(null);
+    setPendingOrdersSearch({ query, nonce: Date.now() });
+    setActiveTab('orders');
+  }, []);
+
   useEffect(() => {
     const verify = async () => {
       const session = await checkAdminSession();
@@ -243,6 +283,12 @@ function AdminContent() {
       void loadDashboardData();
     }
   }, [currentAdmin, loadDashboardData]);
+
+  useEffect(() => {
+    if (currentAdmin && (activeTab === 'customers' || activeTab === 'overview')) {
+      void loadDashboardData();
+    }
+  }, [currentAdmin, activeTab, loadDashboardData]);
 
   useEffect(() => {
     if (!currentAdmin) return;
@@ -396,6 +442,11 @@ function AdminContent() {
                     {products.length}
                   </span>
                 )}
+                {item.id === 'customers' && overviewData && (
+                  <span className="tabular-nums text-[11px] opacity-80">
+                    {overviewData.customers.length}
+                  </span>
+                )}
               </button>
             );
           })}
@@ -491,6 +542,11 @@ function AdminContent() {
                     {item.id === 'products' && (
                       <span className="tabular-nums text-[11px] opacity-80">
                         {products.length}
+                      </span>
+                    )}
+                    {item.id === 'customers' && overviewData && (
+                      <span className="tabular-nums text-[11px] opacity-80">
+                        {overviewData.customers.length}
                       </span>
                     )}
                   </button>
@@ -706,15 +762,10 @@ function AdminContent() {
               notifications={adminNotifications}
               unreadCount={unreadNotificationsCount}
               pendingOrderNumber={pendingInspectOrderNumber}
-              onClearPendingOrder={() => setPendingInspectOrderNumber(null)}
-              onNotificationsSync={(list, count) => {
-                setAdminNotifications(list);
-                setUnreadNotificationsCount(count);
-              }}
-              onOrdersUpdated={() => {
-                void loadDashboardData();
-                void fetchAdminNotifications();
-              }}
+              externalSearch={pendingOrdersSearch}
+              onClearPendingOrder={handleClearPendingOrder}
+              onNotificationsSync={handleNotificationsSync}
+              onOrdersUpdated={handleOrdersUpdated}
             />
           )}
 
@@ -750,7 +801,16 @@ function AdminContent() {
 
           {activeTab === 'categories' && <CategoriesSection data={overviewData} />}
 
-          {activeTab === 'customers' && <CustomersSection data={overviewData} />}
+          {activeTab === 'customers' && (
+            <CustomersSection
+              data={overviewData}
+              isLoading={isLoadingOverview}
+              error={overviewError}
+              onRefresh={() => void loadDashboardData(true)}
+              onInspectOrder={handleInspectOrderFromCustomer}
+              onFilterOrdersByCustomer={handleFilterOrdersByCustomer}
+            />
+          )}
 
           {activeTab === 'inventory' && (
             <InventorySection

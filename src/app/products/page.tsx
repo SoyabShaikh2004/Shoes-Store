@@ -3,6 +3,7 @@ import React, { Suspense } from 'react';
 import Link from 'next/link';
 import { getProducts, getCategories } from '@/lib/data';
 import ProductCard from '@/components/ProductCard';
+import StorefrontLiveBridge from '@/components/StorefrontLiveBridge';
 
 export const dynamic = 'force-dynamic';
 
@@ -83,6 +84,7 @@ export default async function ProductsPage({ searchParams }: ProductsPageProps) 
 
   return (
     <div className="container mx-auto px-3.5 sm:px-4 py-4 sm:py-6 md:py-8 max-w-7xl">
+      <StorefrontLiveBridge />
       <h1 className="mb-4 sm:mb-6 text-xl sm:text-3xl md:text-4xl font-extrabold text-center text-gray-900 tracking-tight">
         {search ? `Results for "${search}"` : category ? `${category} Shoes` : 'All Products'}
       </h1>

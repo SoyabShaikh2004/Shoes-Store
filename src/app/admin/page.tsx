@@ -28,7 +28,9 @@ import {
   checkAdminSession,
   adminSignOut,
   getAdminAuthHeaders,
+  handleAdminUnauthorized,
 } from '@/lib/adminAuth';
+import { ADMIN_SESSION_EXPIRED_EVENT } from '@/lib/storefrontSync';
 import { toast } from 'react-hot-toast';
 import {
   ShieldCheck,
@@ -129,6 +131,10 @@ function AdminContent() {
         }),
       ]);
 
+      if (handleAdminUnauthorized(prodRes.status) || handleAdminUnauthorized(ovRes.status)) {
+        return;
+      }
+
       const prodData = await prodRes.json();
       if (prodRes.ok && prodData.success) {
         const list: Product[] = prodData.products || [];
@@ -170,6 +176,7 @@ function AdminContent() {
         headers: getAdminAuthHeaders(),
         cache: 'no-store',
       });
+      if (handleAdminUnauthorized(res.status)) return;
       if (!res.ok) return;
       const data = await res.json();
       if (!data?.success || !Array.isArray(data.notifications)) return;
@@ -276,6 +283,15 @@ function AdminContent() {
       setIsCheckingAuth(false);
     };
     verify();
+
+    const handleExpired = () => {
+      setCurrentAdmin(null);
+      toast.error('Admin session expired. Please sign in again.');
+    };
+    window.addEventListener(ADMIN_SESSION_EXPIRED_EVENT, handleExpired);
+    return () => {
+      window.removeEventListener(ADMIN_SESSION_EXPIRED_EVENT, handleExpired);
+    };
   }, []);
 
   useEffect(() => {
@@ -388,19 +404,24 @@ function AdminContent() {
 
   return (
     <div className="min-h-screen bg-slate-50 flex overflow-x-clip">
-      {/* Desktop Sidebar */}
-      <aside className="hidden lg:flex lg:w-64 lg:flex-col lg:fixed lg:inset-y-0 bg-slate-950 text-slate-300 border-r border-slate-800 z-30">
-        <div className="h-16 px-5 flex items-center gap-2.5 border-b border-slate-800 shrink-0">
-          <div className="w-8 h-8 rounded-lg bg-indigo-600 text-white flex items-center justify-center">
-            <ShieldCheck className="w-4 h-4" />
+      {/* Desktop Sidebar: Icon-only rail before hover, expands on hover as a floating overlay without shifting content */}
+      <aside
+        aria-label="Admin navigation"
+        className="group hidden lg:flex lg:w-[72px] lg:hover:w-64 lg:focus-within:w-64 lg:flex-col lg:fixed lg:inset-y-0 lg:left-0 bg-slate-950 text-slate-300 border-r border-slate-800 z-40 transition-[width] duration-200 ease-out overflow-hidden lg:hover:shadow-2xl lg:focus-within:shadow-2xl"
+      >
+        <div className="h-16 px-3 flex items-center border-b border-slate-800 shrink-0">
+          <div className="w-12 h-10 flex items-center justify-center shrink-0">
+            <div className="w-8 h-8 rounded-lg bg-indigo-600 text-white flex items-center justify-center">
+              <ShieldCheck className="w-4 h-4" />
+            </div>
           </div>
-          <div>
+          <div className="overflow-hidden whitespace-nowrap opacity-0 lg:group-hover:opacity-100 lg:group-focus-within:opacity-100 transition-opacity duration-150">
             <div className="text-sm font-bold text-white leading-none">StepStyle</div>
             <div className="text-[11px] text-slate-400 mt-0.5">Admin Operations</div>
           </div>
         </div>
 
-        <nav className="flex-1 overflow-y-auto px-3 py-4 space-y-1">
+        <nav className="flex-1 overflow-y-auto overflow-x-hidden px-3 py-4 space-y-1 no-scrollbar">
           {NAV_ITEMS.map((item) => {
             const Icon = item.icon;
             const isActive =
@@ -409,22 +430,34 @@ function AdminContent() {
               <button
                 key={item.id}
                 type="button"
+                title={item.label}
+                aria-label={item.label}
                 onClick={() => {
                   setEditingProduct(null);
                   setActiveTab(item.id);
                 }}
-                className={`w-full min-h-[44px] flex items-center justify-between px-3 py-2 rounded-lg text-xs font-medium transition-colors cursor-pointer whitespace-nowrap ${
+                className={`relative w-full min-h-[44px] flex items-center justify-between pr-0 lg:group-hover:pr-3 lg:group-focus-within:pr-3 py-2 rounded-lg text-xs font-medium transition-colors cursor-pointer whitespace-nowrap ${
                   isActive
                     ? 'bg-indigo-600 text-white font-semibold'
                     : 'text-slate-400 hover:text-white hover:bg-slate-900'
                 }`}
               >
-                <span className="flex items-center gap-2.5">
-                  <Icon className="w-4 h-4 shrink-0" />
-                  <span>{item.label}</span>
+                <span className="flex items-center min-w-0">
+                  <span className="relative w-12 h-6 flex items-center justify-center shrink-0">
+                    <Icon className="w-4 h-4 shrink-0" />
+                    {item.id === 'orders' && unreadNotificationsCount > 0 && (
+                      <span
+                        aria-hidden="true"
+                        className="absolute -top-0.5 right-2.5 w-2.5 h-2.5 rounded-full bg-rose-500 ring-2 ring-slate-950 lg:group-hover:hidden lg:group-focus-within:hidden"
+                      />
+                    )}
+                  </span>
+                  <span className="opacity-0 lg:group-hover:opacity-100 lg:group-focus-within:opacity-100 transition-opacity duration-150 truncate">
+                    {item.label}
+                  </span>
                 </span>
                 {item.id === 'orders' && (
-                  <span className="flex items-center gap-1.5">
+                  <span className="hidden lg:group-hover:flex lg:group-focus-within:flex items-center gap-1.5 shrink-0">
                     {unreadNotificationsCount > 0 && (
                       <span className="px-1.5 py-0.5 rounded-md bg-rose-500 text-white text-[10px] font-bold tabular-nums leading-none">
                         {unreadNotificationsCount > 99 ? '99+' : unreadNotificationsCount} new
@@ -438,12 +471,12 @@ function AdminContent() {
                   </span>
                 )}
                 {item.id === 'products' && (
-                  <span className="tabular-nums text-[11px] opacity-80">
+                  <span className="hidden lg:group-hover:inline lg:group-focus-within:inline tabular-nums text-[11px] opacity-80 shrink-0">
                     {products.length}
                   </span>
                 )}
                 {item.id === 'customers' && overviewData && (
-                  <span className="tabular-nums text-[11px] opacity-80">
+                  <span className="hidden lg:group-hover:inline lg:group-focus-within:inline tabular-nums text-[11px] opacity-80 shrink-0">
                     {overviewData.customers.length}
                   </span>
                 )}
@@ -452,28 +485,34 @@ function AdminContent() {
           })}
         </nav>
 
-        <div className="p-4 border-t border-slate-800 space-y-3 shrink-0">
-          <div className="text-xs">
+        <div className="p-3 border-t border-slate-800 space-y-3 shrink-0">
+          <div className="hidden lg:group-hover:block lg:group-focus-within:block px-1 text-xs whitespace-nowrap overflow-hidden">
             <div className="font-semibold text-white truncate">{currentAdmin.name}</div>
             <div className="text-[11px] text-slate-400 truncate">
               {currentAdmin.role} · {currentAdmin.email}
             </div>
           </div>
-          <div className="flex items-center gap-2">
+          <div className="flex flex-col lg:group-hover:flex-row lg:group-focus-within:flex-row items-center gap-2">
             <Link
               href="/"
-              className="flex-1 min-h-[44px] py-2 px-2.5 rounded-lg bg-slate-900 hover:bg-slate-800 text-slate-200 text-xs font-medium flex items-center justify-center gap-1.5"
+              onClick={() => router.refresh()}
+              title="Open Storefront"
+              aria-label="Open Storefront"
+              className="w-12 lg:group-hover:w-auto lg:group-hover:flex-1 lg:group-focus-within:w-auto lg:group-focus-within:flex-1 min-h-[44px] py-2 px-0 lg:group-hover:px-2.5 lg:group-focus-within:px-2.5 rounded-lg bg-slate-900 hover:bg-slate-800 text-slate-200 text-xs font-medium flex items-center justify-center gap-1.5 whitespace-nowrap"
             >
-              <Store className="w-3.5 h-3.5" />
-              <span>Storefront</span>
+              <Store className="w-4 h-4 shrink-0" />
+              <span className="hidden lg:group-hover:inline lg:group-focus-within:inline">
+                Storefront
+              </span>
             </Link>
             <button
               type="button"
               onClick={handleSignOut}
-              className="min-h-[44px] min-w-[44px] py-2 px-2.5 rounded-lg bg-rose-950/60 hover:bg-rose-900 text-rose-200 text-xs font-medium flex items-center justify-center gap-1 cursor-pointer"
+              className="w-12 lg:group-hover:w-11 lg:group-focus-within:w-11 min-h-[44px] py-2 px-2 rounded-lg bg-rose-950/60 hover:bg-rose-900 text-rose-200 text-xs font-medium flex items-center justify-center cursor-pointer shrink-0"
               title="Sign Out"
+              aria-label="Sign Out"
             >
-              <LogOut className="w-3.5 h-3.5" />
+              <LogOut className="w-4 h-4" />
             </button>
           </div>
         </div>
@@ -563,7 +602,10 @@ function AdminContent() {
               <div className="flex items-center justify-between gap-2">
                 <Link
                   href="/"
-                  onClick={() => setMobileSidebarOpen(false)}
+                  onClick={() => {
+                    setMobileSidebarOpen(false);
+                    router.refresh();
+                  }}
                   className="flex-1 min-h-[44px] inline-flex items-center justify-center gap-1.5 rounded-lg bg-slate-900 text-xs text-slate-200 hover:text-white px-3"
                 >
                   <Store className="w-3.5 h-3.5" />
@@ -583,7 +625,7 @@ function AdminContent() {
       )}
 
       {/* Main Content Shell */}
-      <div className="flex-1 lg:pl-64 flex flex-col min-w-0">
+      <div className="flex-1 lg:pl-[72px] flex flex-col min-w-0">
         {/* Top Bar */}
         <header className="sticky top-0 z-20 h-16 bg-white border-b border-slate-200 px-3.5 sm:px-6 flex items-center justify-between gap-2 sm:gap-3">
           <div className="flex items-center gap-2.5 sm:gap-3 min-w-0">

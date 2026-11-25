@@ -8,6 +8,8 @@ import { CartItem } from '@/app/cart/page';
 import OnlineUPIPayment from '@/components/OnlineUPIPayment';
 import GoogleSignInButton from '@/components/GoogleSignInButton';
 import { generateTaxInvoicePDF, InvoiceOrderData } from '@/lib/invoiceGenerator';
+import { resolveProductImage } from '@/lib/productImages';
+import { notifyStorefrontChanged } from '@/lib/storefrontSync';
 import {
   CreditCard,
   Banknote,
@@ -40,6 +42,9 @@ const FREE_SHIPPING_THRESHOLD = 2999;
 const STANDARD_SHIPPING_FEE = 199;
 const MERCHANT_UPI_ID = 'soyxbshxikh-1@okaxis';
 const MERCHANT_PHONE = '8830422747';
+
+const generateFreshOrderId = () =>
+  `STEP-${Math.floor(1000 + Math.random() * 9000)}-${Math.floor(1000 + Math.random() * 9000)}`;
 
 const notifyCartUpdated = () => {
   window.dispatchEvent(new Event('cartUpdated'));
@@ -232,13 +237,12 @@ export default function CartItems() {
     notifyCheckoutUi(orderComplete);
   }, [orderComplete]);
 
-  // Generate Order ID once
+  // Generate fresh Order ID whenever starting a new order
   useEffect(() => {
-    if (!orderId) {
-      const newOrderId = `STEP-${Math.floor(1000 + Math.random() * 9000)}-${Math.floor(1000 + Math.random() * 9000)}`;
-      setOrderId(newOrderId);
+    if (!orderId && !orderComplete) {
+      setOrderId(generateFreshOrderId());
     }
-  }, [orderId]);
+  }, [orderId, orderComplete]);
 
   // Detect card network
   useEffect(() => {
@@ -251,44 +255,7 @@ export default function CartItems() {
     else setCardNetwork('');
   }, [cardDetails.cardNumber]);
 
-  const getImagePath = (item: CartItem) => {
-    if (
-      item.imagePath &&
-      (item.imagePath.startsWith('/uploads/') ||
-        item.imagePath.startsWith('/api/uploads/') ||
-        item.imagePath.startsWith('http') ||
-        item.imagePath.startsWith('data:') ||
-        /\.(jpg|jpeg|png|webp|svg)$/i.test(item.imagePath))
-    ) {
-      return item.imagePath;
-    }
-
-    const productFormats: Record<number, string> = {
-      1: '.jpeg',
-      2: '.webp',
-      3: '.webp',
-      4: '.webp',
-      5: '.webp',
-      6: '.webp',
-      7: '.webp',
-      8: '.webp',
-      9: '.webp',
-      10: '.jpg',
-      11: '.jpg',
-      12: '.jpg',
-      13: '.jpg',
-      14: '.jpg',
-      15: '.jpg',
-      16: '.jpeg',
-      17: '.png',
-      18: '.jpg',
-      19: '.jpeg',
-      20: '.png',
-    };
-
-    const format = productFormats[item.id] || '.jpg';
-    return `${item.imagePath}/HomeProduct${format}`;
-  };
+  const getImagePath = resolveProductImage;
 
   const handleRemoveItem = (itemToRemove: CartItem) => {
     const updatedItems = items.filter(
@@ -384,11 +351,16 @@ export default function CartItems() {
     try {
       const storedUser = localStorage.getItem('authUser');
       if (storedUser) {
-        customerEmail = JSON.parse(storedUser)?.email;
+        const parsedEmail = JSON.parse(storedUser)?.email;
+        if (typeof parsedEmail === 'string' && parsedEmail.includes('@')) {
+          customerEmail = parsedEmail.trim();
+        }
       }
     } catch {
       // ignore
     }
+
+    const activeOrderId = orderId || generateFreshOrderId();
 
     const normalizedPayStatus =
       params.paymentStatus === 'PAID'
@@ -403,7 +375,7 @@ export default function CartItems() {
     }));
 
     const invoiceSnapshot: InvoiceOrderData = {
-      orderId,
+      orderId: activeOrderId,
       date: params.date,
       items: itemsSnapshot,
       shippingFee: billing.shippingFee,
@@ -425,7 +397,7 @@ export default function CartItems() {
     };
 
     const orderPayload = {
-      orderId,
+      orderId: activeOrderId,
       date: params.date,
       items: itemsSnapshot,
       shippingFee: billing.shippingFee,
@@ -440,7 +412,7 @@ export default function CartItems() {
       status: normalizedPayStatus === 'Paid' ? 'Order Confirmed' : 'Order Placed',
       stage: params.stage,
       carrier: 'BlueDart Express',
-      trackingNumber: `BD-IN-${orderId.replace(/\D/g, '').slice(-8) || '84920194'}`,
+      trackingNumber: `BD-IN-${activeOrderId.replace(/\D/g, '').slice(-8) || '84920194'}`,
     };
 
     try {
@@ -459,13 +431,14 @@ export default function CartItems() {
 
       const persistedRecord: Record<string, unknown> = data.order || orderPayload;
       setCompletedSnapshot(invoiceSnapshot);
+      setOrderId('');
 
       try {
         const hintsRaw = localStorage.getItem('orderVerifyHints');
         const hints = hintsRaw ? JSON.parse(hintsRaw) : {};
         const hintVal = customerEmail || customerPhone;
-        if (hintVal && orderId) {
-          hints[orderId.toUpperCase()] = hintVal;
+        if (hintVal && activeOrderId) {
+          hints[activeOrderId.toUpperCase()] = hintVal;
           localStorage.setItem('orderVerifyHints', JSON.stringify(hints));
         }
       } catch {
@@ -477,7 +450,7 @@ export default function CartItems() {
         const filtered = Array.isArray(existingOrders)
           ? existingOrders.filter(
               (o: { orderId?: string; orderNumber?: string }) =>
-                o.orderId !== orderId && o.orderNumber !== orderId
+                o.orderId !== activeOrderId && o.orderNumber !== activeOrderId
             )
           : [];
         filtered.unshift(persistedRecord);
@@ -485,6 +458,9 @@ export default function CartItems() {
       } catch {
         // ignore
       }
+
+      window.dispatchEvent(new Event('ordersUpdated'));
+      notifyStorefrontChanged('orders');
 
       return { ok: true, order: persistedRecord };
     } catch {
@@ -1106,6 +1082,8 @@ export default function CartItems() {
                           src={failedImages[imagePath] ? '/images/Empty-cart.jpg' : imagePath}
                           alt={item.name}
                           fill
+                          referrerPolicy="no-referrer"
+                          unoptimized={imagePath.startsWith('data:')}
                           className="object-contain p-2"
                           onError={() => setFailedImages((prev) => ({ ...prev, [imagePath]: true }))}
                         />

@@ -5,6 +5,7 @@ import Link from 'next/link';
 import { useState } from 'react';
 import { ShoppingBag } from 'lucide-react';
 import { Product } from '@/lib/data';
+import { resolveProductImage } from '@/lib/productImages';
 import { useQuickOrder } from '@/components/QuickOrderContext';
 
 interface ProductCardProps {
@@ -15,48 +16,7 @@ export default function ProductCard({ product }: ProductCardProps) {
   const [imageError, setImageError] = useState(false);
   const { openQuickOrder } = useQuickOrder();
 
-  const getImagePath = () => {
-    if (product.images && product.images.length > 0 && product.images[0]) {
-      return product.images[0];
-    }
-
-    if (
-      product.imagePath &&
-      (product.imagePath.startsWith('/uploads/') ||
-        product.imagePath.startsWith('/api/uploads/') ||
-        product.imagePath.startsWith('http') ||
-        product.imagePath.startsWith('data:') ||
-        /\.(jpg|jpeg|png|webp|svg)$/i.test(product.imagePath))
-    ) {
-      return product.imagePath;
-    }
-
-    const productFormats: Record<number, string> = {
-      1: '.jpeg',
-      2: '.webp',
-      3: '.webp',
-      4: '.webp',
-      5: '.webp',
-      6: '.webp',
-      7: '.webp',
-      8: '.webp',
-      9: '.webp',
-      10: '.jpg',
-      11: '.jpg',
-      12: '.jpg',
-      13: '.jpg',
-      14: '.jpg',
-      15: '.jpg',
-      16: '.jpeg',
-      17: '.png',
-      18: '.jpg',
-      19: '.jpeg',
-      20: '.png',
-    };
-
-    const format = productFormats[product.id] || '.jpg';
-    return `${product.imagePath}/HomeProduct${format}`;
-  };
+  const resolvedImageSrc = resolveProductImage(product);
 
   const hasDiscount = product.mrp && product.mrp > product.price;
   const discountPercent = hasDiscount
@@ -69,11 +29,13 @@ export default function ProductCard({ product }: ProductCardProps) {
       <Link href={`/products/${product.id}`} className="block flex-1">
         <div className="relative h-36 sm:h-52 md:h-56 w-full overflow-hidden bg-slate-50 flex items-center justify-center">
           <Image
-            src={imageError ? '/images/Empty-cart.jpg' : getImagePath()}
+            src={imageError ? '/images/Empty-cart.jpg' : resolvedImageSrc}
             alt={product.name}
             className="h-full w-full object-contain p-2.5 sm:p-4 transition-transform duration-300 group-hover:scale-105"
             width={400}
             height={400}
+            referrerPolicy="no-referrer"
+            unoptimized={resolvedImageSrc.startsWith('data:')}
             onError={() => setImageError(true)}
           />
 

@@ -1,5 +1,40 @@
 [
   {
+    "orderId": "STEP-9991-8882",
+    "date": "2026-11-24T21:11:12.491Z",
+    "items": [
+      {
+        "id": 1,
+        "name": "Air Max Comfort",
+        "price": 12999,
+        "quantity": 1,
+        "selectedColor": "Black/White",
+        "selectedSize": 7,
+        "imagePath": "/images/Product1",
+        "brand": "StepStyle",
+        "category": "Running"
+      }
+    ],
+    "totalAmount": 12999,
+    "paymentStatus": "Paid",
+    "paymentMethod": "Google Pay UPI",
+    "transactionId": "UPI999888777",
+    "utrNumber": "UTR999888777",
+    "customer": {
+      "name": "Test Shopper",
+      "phone": "9876501234",
+      "address": "101 MG Road, Indiranagar, Bengaluru",
+      "pincode": "560038",
+      "email": "shopper.verify@example.com"
+    },
+    "estimatedDelivery": "Fri, Nov 28, 2026",
+    "stage": "payment_confirmed",
+    "status": "Order Confirmed",
+    "carrier": "BlueDart Express",
+    "trackingNumber": "BD-IN-99918882",
+    "updatedAt": "2026-11-24T21:11:12.491Z"
+  },
+  {
     "orderId": "STEP-3764-8032",
     "date": "2026-11-23T18:18:23.739Z",
     "items": [

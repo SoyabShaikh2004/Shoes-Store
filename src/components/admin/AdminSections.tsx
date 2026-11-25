@@ -29,7 +29,8 @@ import {
   Mail,
 } from 'lucide-react';
 import { Product } from '@/lib/data';
-import { AdminUser, getAdminAuthHeaders } from '@/lib/adminAuth';
+import { AdminUser, getAdminAuthHeaders, handleAdminUnauthorized } from '@/lib/adminAuth';
+import { notifyStorefrontChanged } from '@/lib/storefrontSync';
 import { formatDateTimeIN, OrderStatus } from '@/lib/orderTypes';
 import type { AdminCustomerProfile, FullOrderView } from '@/lib/db/store';
 
@@ -836,8 +837,12 @@ export function InventorySection({
         body: JSON.stringify({ stockQuantity: nextQty, inStock: nextQty > 0 }),
       });
       const json = await res.json();
-      if (!res.ok || !json.success) throw new Error(json.error || 'Failed');
+      if (!res.ok || !json.success) {
+        handleAdminUnauthorized(res.status);
+        throw new Error(json.error || 'Failed');
+      }
       toast.success(`Updated ${product.sku || product.name} stock to ${nextQty}`);
+      notifyStorefrontChanged('products');
       onRefresh();
     } catch (err: unknown) {
       toast.error(err instanceof Error ? err.message : 'Stock update failed');
@@ -1259,6 +1264,10 @@ export function SettingsSection({
   const [uploadingSlot, setUploadingSlot] = useState<number | null>(null);
   const [hasUnsavedBanners, setHasUnsavedBanners] = useState(false);
   const [brokenPreview, setBrokenPreview] = useState<Record<number, boolean>>({});
+  const [confirmResetAction, setConfirmResetAction] = useState<
+    'reset_banners' | 'reset_catalog' | null
+  >(null);
+  const [isResettingCatalog, setIsResettingCatalog] = useState(false);
 
   const categoryOptions = Array.from(
     new Set([
@@ -1384,12 +1393,14 @@ export function SettingsSection({
       });
       const data = await res.json();
       if (!res.ok || !data.success) {
+        handleAdminUnauthorized(res.status);
         throw new Error(data.error || 'Failed to save hero banners');
       }
       if (Array.isArray(data.banners) && data.banners.length === 3) {
         setSlides(data.banners);
       }
       setHasUnsavedBanners(false);
+      notifyStorefrontChanged('banners');
       toast.success('Homepage hero banners updated!', { id: toastId });
     } catch (err: unknown) {
       toast.error(err instanceof Error ? err.message : 'Save failed', { id: toastId });
@@ -1398,12 +1409,13 @@ export function SettingsSection({
     }
   };
 
-  const handleResetBanners = async () => {
+  const handleResetBanners = () => {
     if (!canEditHeroBanners) return;
-    if (!window.confirm('Restore the 3 default StepStyle shoe hero banners?')) {
-      return;
-    }
+    setConfirmResetAction('reset_banners');
+  };
 
+  const executeResetBanners = async () => {
+    if (!canEditHeroBanners) return;
     setSavingBanners(true);
     const toastId = toast.loading('Restoring default hero banners...');
     try {
@@ -1414,11 +1426,14 @@ export function SettingsSection({
       });
       const data = await res.json();
       if (!res.ok || !data.success || !Array.isArray(data.banners)) {
+        handleAdminUnauthorized(res.status);
         throw new Error(data.error || 'Reset failed');
       }
       setSlides(data.banners);
       setBrokenPreview({});
       setHasUnsavedBanners(false);
+      setConfirmResetAction(null);
+      notifyStorefrontChanged('banners');
       toast.success('Default 3 hero banners restored', { id: toastId });
     } catch (err: unknown) {
       toast.error(err instanceof Error ? err.message : 'Reset failed', { id: toastId });
@@ -1440,14 +1455,12 @@ export function SettingsSection({
     toast.success('Catalog JSON exported successfully');
   };
 
-  const handleResetCatalog = async () => {
-    if (
-      !window.confirm(
-        'Reset catalog back to the 20 default shoes? Custom products will be overwritten.'
-      )
-    ) {
-      return;
-    }
+  const handleResetCatalog = () => {
+    setConfirmResetAction('reset_catalog');
+  };
+
+  const executeResetCatalog = async () => {
+    setIsResettingCatalog(true);
     const toastId = toast.loading('Restoring default catalog...');
     try {
       const res = await fetch('/api/admin/reset', {
@@ -1456,11 +1469,18 @@ export function SettingsSection({
         headers: getAdminAuthHeaders(),
       });
       const data = await res.json();
-      if (!res.ok || !data.success) throw new Error(data.error || 'Reset failed');
+      if (!res.ok || !data.success) {
+        handleAdminUnauthorized(res.status);
+        throw new Error(data.error || 'Reset failed');
+      }
+      setConfirmResetAction(null);
+      notifyStorefrontChanged('products');
       toast.success('Default catalog restored', { id: toastId });
       onResetComplete();
     } catch (err: unknown) {
       toast.error(err instanceof Error ? err.message : 'Reset failed', { id: toastId });
+    } finally {
+      setIsResettingCatalog(false);
     }
   };
 
@@ -1809,6 +1829,53 @@ export function SettingsSection({
           </div>
         )}
       </div>
+
+      {confirmResetAction && (
+        <div className="fixed inset-0 z-50 bg-slate-950/60 flex items-center justify-center p-4">
+          <div className="bg-white rounded-xl border border-slate-200 max-w-md w-full p-5 sm:p-6 space-y-4">
+            <h3 className="text-base font-bold text-slate-900">
+              {confirmResetAction === 'reset_banners'
+                ? 'Restore Default Hero Banners?'
+                : 'Restore Factory Default Catalog?'}
+            </h3>
+            <p className="text-sm text-slate-600">
+              {confirmResetAction === 'reset_banners'
+                ? 'This will replace all 3 homepage hero slides with the default StepStyle promotional banners.'
+                : 'This will reset the catalog back to the 20 baseline StepStyle shoes. Custom products will be overwritten.'}
+            </p>
+            <div className="flex justify-end gap-2 pt-2">
+              <button
+                type="button"
+                disabled={savingBanners || isResettingCatalog}
+                onClick={() => setConfirmResetAction(null)}
+                className="min-h-[44px] px-4 py-2 text-xs font-semibold bg-slate-100 hover:bg-slate-200 text-slate-800 rounded-lg cursor-pointer"
+              >
+                Cancel
+              </button>
+              <button
+                type="button"
+                disabled={savingBanners || isResettingCatalog}
+                onClick={() =>
+                  confirmResetAction === 'reset_banners'
+                    ? void executeResetBanners()
+                    : void executeResetCatalog()
+                }
+                className={`min-h-[44px] px-4 py-2 text-xs font-semibold text-white rounded-lg cursor-pointer disabled:opacity-50 ${
+                  confirmResetAction === 'reset_banners'
+                    ? 'bg-slate-900 hover:bg-slate-800'
+                    : 'bg-rose-600 hover:bg-rose-700'
+                }`}
+              >
+                {savingBanners || isResettingCatalog
+                  ? 'Restoring...'
+                  : confirmResetAction === 'reset_banners'
+                  ? 'Restore Slides'
+                  : 'Restore Catalog'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

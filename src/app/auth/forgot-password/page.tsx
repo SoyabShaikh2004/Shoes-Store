@@ -4,6 +4,7 @@ import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import Image from 'next/image';
+import { Loader2 } from 'lucide-react';
 
 export default function ForgotPasswordPage() {
   const router = useRouter();
@@ -13,6 +14,7 @@ export default function ForgotPasswordPage() {
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState('');
   const [otp, setOtp] = useState('');
+  const [generatedOtp, setGeneratedOtp] = useState('');
   const [countdown, setCountdown] = useState(0);
   const [newPassword, setNewPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
@@ -53,29 +55,26 @@ export default function ForgotPasswordPage() {
     setIsLoading(true);
     setError('');
 
-    // Simulate API call to send OTP
     setTimeout(() => {
-      // In a real app, call actual API to send OTP
+      const code = Math.floor(100000 + Math.random() * 900000).toString();
+      setGeneratedOtp(code);
+      setOtp('');
       setIsLoading(false);
       setStep('verification');
-      setCountdown(30); // 30 second countdown for resend
-      // Generate a random 6-digit OTP
-      const generatedOtp = Math.floor(100000 + Math.random() * 900000).toString();
-    }, 1500);
+      setCountdown(30);
+    }, 600);
   };
 
   const handleResendOtp = () => {
     setIsLoading(true);
     setError('');
 
-    // Simulate API call to resend OTP
     setTimeout(() => {
-      // In a real app, call actual API to send OTP
+      const code = Math.floor(100000 + Math.random() * 900000).toString();
+      setGeneratedOtp(code);
       setIsLoading(false);
-      setCountdown(30); // Reset countdown
-      // Generate a new random 6-digit OTP
-      const generatedOtp = Math.floor(100000 + Math.random() * 900000).toString();
-    }, 1500);
+      setCountdown(30);
+    }, 600);
   };
 
   const handleVerifyOtp = () => {
@@ -83,22 +82,23 @@ export default function ForgotPasswordPage() {
       setError('Please enter a valid 6-digit OTP');
       return;
     }
+    if (!generatedOtp || otp !== generatedOtp) {
+      setError('Invalid verification code. Please check the code and try again.');
+      return;
+    }
 
     setIsLoading(true);
     setError('');
 
-    // Simulate API call to verify OTP
     setTimeout(() => {
-      // In a real app, call actual API to verify OTP
       setIsLoading(false);
-      // Here, we're pretending any 6-digit OTP is valid for demo purposes
       setStep('reset');
-    }, 1500);
+    }, 400);
   };
 
   const handleResetPassword = (e: React.FormEvent) => {
     e.preventDefault();
-    
+
     if (newPassword.length < 6) {
       setError('Password must be at least 6 characters');
       return;
@@ -112,13 +112,29 @@ export default function ForgotPasswordPage() {
     setIsLoading(true);
     setError('');
 
-    // Simulate API call to reset password
+    try {
+      const cleanId = identifier.trim();
+      const rawUsers = localStorage.getItem('users');
+      const users = rawUsers
+        ? (JSON.parse(rawUsers) as Array<{ email?: string; phone?: string; password?: string }>)
+        : [];
+      const updated = users.map((u) => {
+        const matchesEmail = u.email && u.email.toLowerCase() === cleanId.toLowerCase();
+        const matchesPhone = u.phone && u.phone === cleanId;
+        if (matchesEmail || matchesPhone) {
+          return { ...u, password: newPassword };
+        }
+        return u;
+      });
+      localStorage.setItem('users', JSON.stringify(updated));
+    } catch {
+      // ignore storage parse failure
+    }
+
     setTimeout(() => {
-      // In a real app, call actual API to reset password
       setIsLoading(false);
-      // Redirect to login page
       router.push('/auth/login');
-    }, 1500);
+    }, 500);
   };
 
   return (
@@ -184,10 +200,7 @@ export default function ForgotPasswordPage() {
               >
                 {isLoading ? (
                   <span className="flex items-center justify-center">
-                    <svg className="animate-spin -ml-1 mr-2 h-4 w-4 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-                      <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
-                      <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-                    </svg>
+                    <Loader2 className="animate-spin -ml-1 mr-2 h-4 w-4 text-white" />
                     Sending code...
                   </span>
                 ) : (
@@ -201,7 +214,7 @@ export default function ForgotPasswordPage() {
           {step === 'verification' && (
             <div className="space-y-4">
               <div>
-                <div className="p-3 sm:p-4 bg-indigo-50 border border-indigo-100 rounded-md mb-4">
+                <div className="p-3 sm:p-4 bg-indigo-50 border border-indigo-100 rounded-md mb-4 space-y-1.5">
                   <p className="text-xs sm:text-sm text-indigo-800">
                     We&apos;ve sent a 6-digit verification code to your {identifierType}:
                     <span className="block mt-1 font-medium break-all">{
@@ -210,6 +223,11 @@ export default function ForgotPasswordPage() {
                         : `+91 ${identifier.slice(0, 5)}****${identifier.slice(-2)}`
                     }</span>
                   </p>
+                  {generatedOtp && (
+                    <p className="text-xs font-medium text-indigo-900">
+                      Verification code: <span className="font-mono font-bold tracking-wider">{generatedOtp}</span>
+                    </p>
+                  )}
                 </div>
                 <label htmlFor="otp" className="block text-sm font-medium text-gray-700 mb-1">
                   Enter Verification Code
@@ -260,10 +278,7 @@ export default function ForgotPasswordPage() {
                 >
                   {isLoading ? (
                     <span className="flex items-center justify-center">
-                      <svg className="animate-spin -ml-1 mr-2 h-4 w-4 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-                        <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
-                        <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-                      </svg>
+                      <Loader2 className="animate-spin -ml-1 mr-2 h-4 w-4 text-white" />
                       Verifying...
                     </span>
                   ) : (
@@ -327,10 +342,7 @@ export default function ForgotPasswordPage() {
               >
                 {isLoading ? (
                   <span className="flex items-center justify-center">
-                    <svg className="animate-spin -ml-1 mr-2 h-4 w-4 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-                      <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
-                      <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-                    </svg>
+                    <Loader2 className="animate-spin -ml-1 mr-2 h-4 w-4 text-white" />
                     Updating password...
                   </span>
                 ) : (

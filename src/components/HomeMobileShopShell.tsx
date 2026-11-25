@@ -1,11 +1,12 @@
 'use client';
 
-import { useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import Link from 'next/link';
 import { Search, X, ArrowRight, RotateCcw } from 'lucide-react';
 import { Product } from '@/lib/data';
 import ImageCarousel, { HeroSlideItem } from '@/components/ImageCarousel';
 import ProductCard from '@/components/ProductCard';
+import { subscribeStorefrontChanges } from '@/lib/storefrontSync';
 
 interface HomeMobileShopShellProps {
   products: Product[];
@@ -13,23 +14,104 @@ interface HomeMobileShopShellProps {
 }
 
 export default function HomeMobileShopShell({ products, heroBanners }: HomeMobileShopShellProps) {
+  const [liveProducts, setLiveProducts] = useState<Product[]>(products);
+  const [liveBanners, setLiveBanners] = useState<HeroSlideItem[] | undefined>(heroBanners);
   const [searchQuery, setSearchQuery] = useState('');
   const [activeTab, setActiveTab] = useState<string>('all');
+  const lastSyncRef = useRef<number>(0);
 
-  const tabs = [
-    { id: 'all', label: 'All Shoes' },
-    { id: 'bestsellers', label: 'Best Sellers' },
-    { id: 'Running', label: 'Running' },
-    { id: 'Casual', label: 'Casual' },
-    { id: 'Sports', label: 'Sports' },
-    { id: 'Formal', label: 'Formal' },
-  ];
+  useEffect(() => {
+    setLiveProducts(products);
+  }, [products]);
+
+  useEffect(() => {
+    setLiveBanners(heroBanners);
+  }, [heroBanners]);
+
+  const refreshStorefront = useCallback(async (force = false) => {
+    const now = Date.now();
+    if (!force && now - lastSyncRef.current < 1200) return;
+    lastSyncRef.current = now;
+    try {
+      const res = await fetch('/api/storefront', { cache: 'no-store' });
+      const data = await res.json();
+      if (res.ok && data?.success) {
+        if (Array.isArray(data.products)) {
+          setLiveProducts(data.products);
+        }
+        if (Array.isArray(data.heroBanners)) {
+          setLiveBanners(data.heroBanners);
+        }
+      }
+    } catch {
+      // ignore transient network errors
+    }
+  }, []);
+
+  useEffect(() => {
+    void refreshStorefront(true);
+    const unsubscribe = subscribeStorefrontChanges(() => {
+      void refreshStorefront(true);
+    });
+
+    const handleFocus = () => {
+      void refreshStorefront(false);
+    };
+    const handleVisibility = () => {
+      if (document.visibilityState === 'visible') {
+        void refreshStorefront(false);
+      }
+    };
+
+    const pollTimer = setInterval(() => {
+      if (document.visibilityState === 'visible') {
+        void refreshStorefront(false);
+      }
+    }, 15000);
+
+    window.addEventListener('focus', handleFocus);
+    document.addEventListener('visibilitychange', handleVisibility);
+
+    return () => {
+      unsubscribe();
+      clearInterval(pollTimer);
+      window.removeEventListener('focus', handleFocus);
+      document.removeEventListener('visibilitychange', handleVisibility);
+    };
+  }, [refreshStorefront]);
 
   // Only list active & purchasable products first
   const activeCatalog = useMemo(
-    () => products.filter((p) => p.status !== 'inactive' && p.inStock && (p.stockQuantity ?? 1) > 0),
-    [products]
+    () =>
+      liveProducts.filter(
+        (p) => p.status !== 'inactive' && p.inStock && (p.stockQuantity ?? 1) > 0
+      ),
+    [liveProducts]
   );
+
+  const tabs = useMemo(() => {
+    const core = [
+      { id: 'all', label: 'All Shoes' },
+      { id: 'bestsellers', label: 'Best Sellers' },
+      { id: 'Running', label: 'Running' },
+      { id: 'Casual', label: 'Casual' },
+      { id: 'Sports', label: 'Sports' },
+      { id: 'Formal', label: 'Formal' },
+    ];
+    const known = new Set(core.map((t) => t.id.toLowerCase()));
+    known.add('walking');
+
+    const extraTabs: Array<{ id: string; label: string }> = [];
+    for (const p of activeCatalog) {
+      const cat = (p.category || '').trim();
+      if (!cat) continue;
+      if (!known.has(cat.toLowerCase())) {
+        known.add(cat.toLowerCase());
+        extraTabs.push({ id: cat, label: cat });
+      }
+    }
+    return [...core, ...extraTabs];
+  }, [activeCatalog]);
 
   const filteredProducts = useMemo(() => {
     const query = searchQuery.trim().toLowerCase();
@@ -104,7 +186,7 @@ export default function HomeMobileShopShell({ products, heroBanners }: HomeMobil
       {/* 2. Contained Rounded Hero Banner (Collapses while actively searching so shoes snap to top) */}
       {!isSearching && (
         <section className="container mx-auto max-w-7xl px-3.5 sm:px-4 pt-3 sm:pt-4 pb-1">
-          <ImageCarousel slides={heroBanners} />
+          <ImageCarousel slides={liveBanners} />
         </section>
       )}
 

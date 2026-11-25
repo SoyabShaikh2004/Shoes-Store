@@ -18,6 +18,7 @@ import {
 } from 'lucide-react';
 import toast from 'react-hot-toast';
 import { Product } from '@/lib/data';
+import { resolveProductImage } from '@/lib/productImages';
 import GoogleSignInButton from '@/components/GoogleSignInButton';
 
 interface QuickOrderDrawerProps {
@@ -31,45 +32,6 @@ interface CartStorageItem extends Product {
   quantity: number;
 }
 
-function resolveProductImage(product: Product): string {
-  if (product.images && product.images.length > 0 && product.images[0]) {
-    return product.images[0];
-  }
-  if (
-    product.imagePath &&
-    (product.imagePath.startsWith('/uploads/') ||
-      product.imagePath.startsWith('/api/uploads/') ||
-      product.imagePath.startsWith('http') ||
-      product.imagePath.startsWith('data:') ||
-      /\.(jpg|jpeg|png|webp|svg)$/i.test(product.imagePath))
-  ) {
-    return product.imagePath;
-  }
-  const productFormats: Record<number, string> = {
-    1: '.jpeg',
-    2: '.webp',
-    3: '.webp',
-    4: '.webp',
-    5: '.webp',
-    6: '.webp',
-    7: '.webp',
-    8: '.webp',
-    9: '.webp',
-    10: '.jpg',
-    11: '.jpg',
-    12: '.jpg',
-    13: '.jpg',
-    14: '.jpg',
-    15: '.jpg',
-    16: '.jpeg',
-    17: '.png',
-    18: '.jpg',
-    19: '.jpeg',
-    20: '.png',
-  };
-  const ext = productFormats[product.id] || '.jpg';
-  return `${product.imagePath}/HomeProduct${ext}`;
-}
 
 export default function QuickOrderDrawer({ product, onClose }: QuickOrderDrawerProps) {
   const router = useRouter();
@@ -190,7 +152,7 @@ export default function QuickOrderDrawer({ product, onClose }: QuickOrderDrawerP
     router.push('/cart?checkout=quick');
   };
 
-  const handleInlineSignIn = (e: React.FormEvent) => {
+  const handleInlineSignIn = async (e: React.FormEvent) => {
     e.preventDefault();
     setAuthError('');
     const cleanId = identifier.trim();
@@ -207,35 +169,36 @@ export default function QuickOrderDrawer({ product, onClose }: QuickOrderDrawerP
     }
 
     setIsSigningIn(true);
-    void fetch('/api/auth/customer/sync', {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'X-Requested-With': 'XMLHttpRequest',
-      },
-      body: JSON.stringify({
-        email: emailValid ? cleanId : undefined,
-        phone: phoneValid ? cleanId : undefined,
-      }),
-    }).catch(() => undefined);
+    try {
+      await fetch('/api/auth/customer/sync', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'X-Requested-With': 'XMLHttpRequest',
+        },
+        body: JSON.stringify({
+          email: emailValid ? cleanId : undefined,
+          phone: phoneValid ? cleanId : undefined,
+        }),
+      }).catch(() => undefined);
 
-    setTimeout(() => {
       localStorage.setItem('isAuthenticated', 'true');
       localStorage.setItem(
         'authUser',
         JSON.stringify({
-          email: cleanId,
+          email: emailValid ? cleanId : undefined,
           phone: phoneValid ? cleanId : undefined,
           loginMethod: 'password',
           loginTime: new Date().toISOString(),
         })
       );
       window.dispatchEvent(new Event('authUpdated'));
-      setIsSigningIn(false);
       toast.success('Signed in! Proceeding to checkout...');
       onClose();
       router.push('/cart?checkout=quick');
-    }, 350);
+    } finally {
+      setIsSigningIn(false);
+    }
   };
 
   const imageSrc = product
@@ -289,6 +252,8 @@ export default function QuickOrderDrawer({ product, onClose }: QuickOrderDrawerP
                   src={imageSrc}
                   alt={product.name}
                   fill
+                  referrerPolicy="no-referrer"
+                  unoptimized={imageSrc.startsWith('data:')}
                   className="object-contain p-1.5"
                   onError={() => setImgError(true)}
                 />

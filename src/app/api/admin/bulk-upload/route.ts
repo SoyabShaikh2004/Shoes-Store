@@ -153,6 +153,7 @@ function resolveImageReference(
   if (
     trimmed.startsWith('/images/') ||
     trimmed.startsWith('/uploads/') ||
+    trimmed.startsWith('/api/uploads/') ||
     /^https?:\/\//i.test(trimmed)
   ) {
     return { resolved: trimmed, missing: false };

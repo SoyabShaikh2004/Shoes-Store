@@ -254,6 +254,7 @@ export default function Navbar() {
                     <div className="h-8 w-8 rounded-full bg-indigo-600 text-white flex items-center justify-center text-sm font-semibold shadow-xs">
                       {authUser?.name?.charAt(0).toUpperCase() ||
                         authUser?.email?.charAt(0).toUpperCase() ||
+                        authUser?.phone?.slice(-2) ||
                         'U'}
                     </div>
                   )}
@@ -286,7 +287,9 @@ export default function Navbar() {
                 <div className="absolute right-0 mt-2 w-52 origin-top-right rounded-xl bg-white py-1 shadow-lg ring-1 ring-black/5 focus:outline-none z-20">
                   <div className="border-b border-gray-100 px-4 py-2.5">
                     <p className="text-sm font-bold text-gray-900">{authUser?.name || 'User'}</p>
-                    <p className="truncate text-xs text-gray-500">{authUser?.email}</p>
+                    <p className="truncate text-xs text-gray-500">
+                      {authUser?.email || authUser?.phone || ''}
+                    </p>
                   </div>
                   <Link
                     href="/account"
@@ -428,11 +431,16 @@ export default function Navbar() {
               <div className="px-4 py-4">
                 <div className="mb-3 flex items-center">
                   <div className="h-10 w-10 rounded-full bg-indigo-600 text-white flex items-center justify-center text-lg font-medium mr-3">
-                    {authUser?.email?.charAt(0).toUpperCase() || 'U'}
+                    {authUser?.name?.charAt(0).toUpperCase() ||
+                      authUser?.email?.charAt(0).toUpperCase() ||
+                      authUser?.phone?.slice(-2) ||
+                      'U'}
                   </div>
                   <div className="min-w-0">
                     <p className="font-medium text-gray-900 truncate">{authUser?.name || 'User'}</p>
-                    <p className="text-sm text-gray-500 truncate">{authUser?.email}</p>
+                    <p className="text-sm text-gray-500 truncate">
+                      {authUser?.email || authUser?.phone || ''}
+                    </p>
                   </div>
                 </div>
                 <div className="space-y-1">

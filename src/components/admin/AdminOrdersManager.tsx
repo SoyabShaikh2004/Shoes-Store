@@ -23,7 +23,8 @@ import {
   AlertTriangle,
   MapPin,
 } from 'lucide-react';
-import { getAdminAuthHeaders } from '@/lib/adminAuth';
+import { getAdminAuthHeaders, handleAdminUnauthorized } from '@/lib/adminAuth';
+import { notifyStorefrontChanged } from '@/lib/storefrontSync';
 import { generateTaxInvoicePDF } from '@/lib/invoiceGenerator';
 import { ALL_ORDER_STATUSES, OrderStatus, formatDateTimeIN } from '@/lib/orderTypes';
 import type { AdminNotificationRecord } from '@/lib/db/schema';
@@ -153,7 +154,11 @@ export default function AdminOrdersManager({
           }),
         });
         const data = await res.json();
-        if (res.ok && data?.success) {
+        if (!res.ok) {
+          handleAdminUnauthorized(res.status);
+          return;
+        }
+        if (data?.success) {
           const nextList: AdminNotificationRecord[] = data.notifications || [];
           const nextUnread = Number(data.unreadCount) || 0;
           setLocalNotifications(nextList);
@@ -189,6 +194,7 @@ export default function AdminOrdersManager({
         });
         const data = await res.json();
         if (!res.ok || !data.success) {
+          handleAdminUnauthorized(res.status);
           throw new Error(data.error || 'Failed to fetch orders');
         }
 
@@ -331,12 +337,14 @@ export default function AdminOrdersManager({
       });
       const data = await res.json();
       if (!res.ok || !data.success) {
+        handleAdminUnauthorized(res.status);
         throw new Error(data.error || 'Failed to update order');
       }
 
       toast.success(data.message || 'Order status updated!', { id: toastId });
       if (data.order) setSelectedOrder(data.order);
       setStatusNoteInput('');
+      notifyStorefrontChanged('orders');
       await fetchOrders(true);
       onOrdersUpdatedRef.current?.();
     } catch (err: unknown) {
@@ -363,6 +371,7 @@ export default function AdminOrdersManager({
       });
       const data = await res.json();
       if (!res.ok || !data.success) {
+        handleAdminUnauthorized(res.status);
         throw new Error(data.error || 'Could not add note');
       }
       toast.success('Admin note added');

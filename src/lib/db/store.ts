@@ -25,6 +25,11 @@ import {
   ShippingRecord,
   UserRecord,
 } from './schema';
+import {
+  isMongoConfigured,
+  loadDatabaseFromMongo,
+  syncDatabaseToMongo,
+} from './mongo';
 
 export const DEFAULT_HERO_BANNERS: HeroBannerRecord[] = [
   {
@@ -83,6 +88,7 @@ const TMP_DB_FILE_PATH = path.join(TMP_DATA_DIR, 'database.json');
 const globalForDb = globalThis as typeof globalThis & {
   __stepstyleDbMutex?: Promise<unknown>;
   __stepstyleDbCache?: DatabaseSchema;
+  __stepstyleMongoCacheAt?: number;
   __stepstyleStorageTarget?: { dbPath: string; bundledWritable: boolean };
 };
 
@@ -321,8 +327,23 @@ async function syncLegacyFiles(db: DatabaseSchema): Promise<void> {
 
 async function persistDatabase(
   db: DatabaseSchema,
-  storage: { dbPath: string; bundledWritable: boolean }
+  storage: { dbPath: string; bundledWritable: boolean },
+  prevDb: DatabaseSchema | null = null
 ): Promise<void> {
+  if (isMongoConfigured()) {
+    await syncDatabaseToMongo(prevDb, db);
+    globalForDb.__stepstyleDbCache = db;
+    globalForDb.__stepstyleMongoCacheAt = Date.now();
+    if (storage.bundledWritable) {
+      try {
+        await syncLegacyFiles(db);
+      } catch {
+        // Non-fatal if legacy sync fails
+      }
+    }
+    return;
+  }
+
   globalForDb.__stepstyleDbCache = db;
   try {
     await writeAtomicJson(storage.dbPath, db);
@@ -350,7 +371,48 @@ async function persistDatabase(
   }
 }
 
-async function bootstrapDatabase(): Promise<DatabaseSchema> {
+function normalizeLoadedDatabaseDefaults(db: DatabaseSchema): DatabaseSchema {
+  if (!Array.isArray(db.heroBanners) || db.heroBanners.length === 0) {
+    db.heroBanners = DEFAULT_HERO_BANNERS.map((b) => ({ ...b }));
+  }
+  if (!Array.isArray(db.adminNotifications)) {
+    db.adminNotifications = [];
+  }
+  return db;
+}
+
+async function buildSeedSchemaFromFiles(): Promise<DatabaseSchema> {
+  const storage = await resolveStorageTarget();
+  const primaryDb = await readJsonSafe<DatabaseSchema | null>(storage.dbPath, null);
+  if (primaryDb && primaryDb.version === 1 && Array.isArray(primaryDb.products)) {
+    return normalizeLoadedDatabaseDefaults(primaryDb);
+  }
+
+  if (storage.dbPath !== BUNDLED_DB_FILE_PATH) {
+    const bundledDb = await readJsonSafe<DatabaseSchema | null>(BUNDLED_DB_FILE_PATH, null);
+    if (bundledDb && bundledDb.version === 1 && Array.isArray(bundledDb.products)) {
+      return normalizeLoadedDatabaseDefaults(bundledDb);
+    }
+  }
+
+  return buildStarterDatabaseFromLegacyFiles();
+}
+
+async function bootstrapDatabase(forceFresh = false): Promise<DatabaseSchema> {
+  if (isMongoConfigured()) {
+    const cacheAge = Date.now() - (globalForDb.__stepstyleMongoCacheAt || 0);
+    if (!forceFresh && globalForDb.__stepstyleDbCache && cacheAge < 1500) {
+      return globalForDb.__stepstyleDbCache;
+    }
+
+    const mongoDb = normalizeLoadedDatabaseDefaults(
+      await loadDatabaseFromMongo(() => buildSeedSchemaFromFiles())
+    );
+    globalForDb.__stepstyleDbCache = mongoDb;
+    globalForDb.__stepstyleMongoCacheAt = Date.now();
+    return mongoDb;
+  }
+
   const storage = await resolveStorageTarget();
   let existingDb = await readJsonSafe<DatabaseSchema | null>(storage.dbPath, null);
 
@@ -361,24 +423,14 @@ async function bootstrapDatabase(): Promise<DatabaseSchema> {
     }
     existingDb = await readJsonSafe<DatabaseSchema | null>(BUNDLED_DB_FILE_PATH, null);
     if (existingDb && existingDb.version === 1 && Array.isArray(existingDb.products)) {
-      if (!Array.isArray(existingDb.heroBanners) || existingDb.heroBanners.length === 0) {
-        existingDb.heroBanners = DEFAULT_HERO_BANNERS.map((b) => ({ ...b }));
-      }
-      if (!Array.isArray(existingDb.adminNotifications)) {
-        existingDb.adminNotifications = [];
-      }
+      normalizeLoadedDatabaseDefaults(existingDb);
       await persistDatabase(existingDb, storage);
       return existingDb;
     }
   }
 
   if (existingDb && existingDb.version === 1 && Array.isArray(existingDb.products)) {
-    if (!Array.isArray(existingDb.heroBanners) || existingDb.heroBanners.length === 0) {
-      existingDb.heroBanners = DEFAULT_HERO_BANNERS.map((b) => ({ ...b }));
-    }
-    if (!Array.isArray(existingDb.adminNotifications)) {
-      existingDb.adminNotifications = [];
-    }
+    normalizeLoadedDatabaseDefaults(existingDb);
     globalForDb.__stepstyleDbCache = existingDb;
     return existingDb;
   }
@@ -386,6 +438,13 @@ async function bootstrapDatabase(): Promise<DatabaseSchema> {
   if (globalForDb.__stepstyleDbCache) {
     return globalForDb.__stepstyleDbCache;
   }
+
+  const db = await buildStarterDatabaseFromLegacyFiles();
+  await persistDatabase(db, storage);
+  return db;
+}
+
+async function buildStarterDatabaseFromLegacyFiles(): Promise<DatabaseSchema> {
 
   const now = new Date().toISOString();
   const initialSuperPassword = process.env.SUPER_ADMIN_PASSWORD || 'Soyab@8830';
@@ -683,24 +742,23 @@ async function bootstrapDatabase(): Promise<DatabaseSchema> {
     heroBanners: DEFAULT_HERO_BANNERS.map((b) => ({ ...b })),
   };
 
-  await persistDatabase(db, storage);
   return db;
 }
 
 export async function getDatabase(): Promise<DatabaseSchema> {
-  return runLocked(() => bootstrapDatabase());
+  return runLocked(() => bootstrapDatabase(false));
 }
 
 export async function withTransaction<T>(
   mutator: (db: DatabaseSchema) => Promise<T> | T
 ): Promise<T> {
   return runLocked(async () => {
-    const db = await bootstrapDatabase();
+    const db = await bootstrapDatabase(true);
     const storage = await resolveStorageTarget();
     // Clone to preserve rollback safety on thrown errors
     const workingCopy = JSON.parse(JSON.stringify(db)) as DatabaseSchema;
     const result = await mutator(workingCopy);
-    await persistDatabase(workingCopy, storage);
+    await persistDatabase(workingCopy, storage, db);
     return result;
   });
 }

@@ -4,7 +4,9 @@ import { useState, useEffect } from 'react';
 import { Product } from '@/lib/data';
 import ImageUploader from './ImageUploader';
 import { toast } from 'react-hot-toast';
-import { getAdminAuthHeaders } from '@/lib/adminAuth';
+import { getAdminAuthHeaders, handleAdminUnauthorized } from '@/lib/adminAuth';
+import { resolveProductGallery } from '@/lib/productImages';
+import { notifyStorefrontChanged } from '@/lib/storefrontSync';
 import {
   Tag,
   DollarSign,
@@ -94,22 +96,10 @@ export default function ProductForm({
         setIsCustomCategory(true);
       }
 
-      if (initialProduct.images && initialProduct.images.length > 0) {
-        setImages(initialProduct.images);
-      } else if (initialProduct.imagePath) {
-        if (
-          initialProduct.imagePath.startsWith('/uploads/') ||
-          initialProduct.imagePath.startsWith('/api/uploads/') ||
-          initialProduct.imagePath.startsWith('http') ||
-          initialProduct.imagePath.startsWith('data:')
-        ) {
-          setImages([initialProduct.imagePath]);
-        } else {
-          setImages([`${initialProduct.imagePath}/HomeProduct.jpg`]);
-        }
-      } else {
-        setImages([]);
-      }
+      const resolvedGallery = resolveProductGallery(initialProduct).filter(
+        (src) => src !== '/images/Empty-cart.jpg'
+      );
+      setImages(resolvedGallery);
     } else {
       setName('');
       setSku('');
@@ -261,6 +251,7 @@ export default function ProductForm({
       const data = await res.json();
 
       if (!res.ok || !data.success) {
+        handleAdminUnauthorized(res.status);
         throw new Error(data.error || 'Failed to save product');
       }
 
@@ -268,7 +259,7 @@ export default function ProductForm({
         isEditing ? 'Shoe updated successfully!' : 'New shoe added to storefront!',
         { id: toastId }
       );
-
+      notifyStorefrontChanged('products');
       onSuccess(data.product);
     } catch (err: any) {
       console.error('Error saving product:', err);

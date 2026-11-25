@@ -4,6 +4,7 @@ import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import Image from 'next/image';
+import { Loader2 } from 'lucide-react';
 import GoogleSignInButton from '@/components/GoogleSignInButton';
 
 export default function LoginPage() {
@@ -15,6 +16,7 @@ export default function LoginPage() {
   const [error, setError] = useState('');
   const [otpSent, setOtpSent] = useState(false);
   const [otp, setOtp] = useState('');
+  const [generatedOtp, setGeneratedOtp] = useState('');
   const [countdown, setCountdown] = useState(0);
   const [isValidIdentifier, setIsValidIdentifier] = useState(false);
   const [redirectPath, setRedirectPath] = useState<string>('/');
@@ -53,65 +55,72 @@ export default function LoginPage() {
     setIsLoading(true);
     setError('');
 
-    // Simulate API call to send OTP
     setTimeout(() => {
-      // In a real app, call actual API to send OTP
+      const code = Math.floor(100000 + Math.random() * 900000).toString();
+      setGeneratedOtp(code);
+      setOtp('');
       setIsLoading(false);
       setOtpSent(true);
-      setCountdown(30); // 30 second countdown for resend
-      // Generate a random 6-digit OTP for testing
-      const generatedOtp = Math.floor(100000 + Math.random() * 900000).toString();
-      // Remove console log for production
-      // console.log('Generated OTP:', generatedOtp); // For testing
-      setOtp(generatedOtp);
-    }, 1500);
+      setCountdown(30);
+    }, 600);
   };
 
-  const handleVerifyOtp = () => {
-    if (otp.length !== 6) {
-      setError('Please enter a valid 6-digit OTP');
-      return;
-    }
+  const completeCustomerLogin = async (method: 'otp' | 'password', matchedName?: string) => {
+    const cleanId = identifier.trim();
+    const isPhone = /^[0-9]{10}$/.test(cleanId);
 
-    setIsLoading(true);
-    setError('');
+    localStorage.setItem('isAuthenticated', 'true');
+    localStorage.setItem(
+      'authUser',
+      JSON.stringify({
+        name: matchedName || undefined,
+        email: isPhone ? undefined : cleanId,
+        phone: isPhone ? cleanId : undefined,
+        loginMethod: method,
+        loginTime: new Date().toISOString(),
+      })
+    );
+    window.dispatchEvent(new Event('authUpdated'));
 
-    // Simulate API call to verify OTP
-    setTimeout(() => {
-      // In a real app, call actual API to verify OTP
-      setIsLoading(false);
-      
-      // Save user authentication status
-      localStorage.setItem('isAuthenticated', 'true');
-      localStorage.setItem('authUser', JSON.stringify({
-        email: identifier,
-        loginMethod: 'otp',
-        loginTime: new Date().toISOString()
-      }));
-      window.dispatchEvent(new Event('authUpdated'));
-
-      const cleanId = identifier.trim();
-      const isPhone = /^[0-9]{10}$/.test(cleanId);
-      void fetch('/api/auth/customer/sync', {
+    try {
+      await fetch('/api/auth/customer/sync', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
           'X-Requested-With': 'XMLHttpRequest',
         },
         body: JSON.stringify({
+          name: matchedName || undefined,
           email: isPhone ? undefined : cleanId,
           phone: isPhone ? cleanId : undefined,
         }),
-      }).catch(() => undefined);
-      
-      // Navigate to requested redirect or home page after successful login
-      router.push(redirectPath);
-    }, 1500);
+      });
+    } catch {
+      // keep local login active if offline
+    }
+
+    setIsLoading(false);
+    router.push(redirectPath);
   };
 
-  const handlePasswordLogin = (e: React.FormEvent) => {
+  const handleVerifyOtp = async () => {
+    if (otp.length !== 6) {
+      setError('Please enter a valid 6-digit OTP');
+      return;
+    }
+    if (!generatedOtp || otp !== generatedOtp) {
+      setError('Invalid verification code. Please check the code and try again.');
+      return;
+    }
+
+    setIsLoading(true);
+    setError('');
+    await completeCustomerLogin('otp');
+  };
+
+  const handlePasswordLogin = async (e: React.FormEvent) => {
     e.preventDefault();
-    
+
     if (!isValidIdentifier) {
       setError('Please enter a valid email or phone number');
       return;
@@ -122,40 +131,37 @@ export default function LoginPage() {
       return;
     }
 
+    const cleanId = identifier.trim();
+    let matchedName: string | undefined;
+    try {
+      const storedUsersRaw = localStorage.getItem('users');
+      if (storedUsersRaw) {
+        const storedUsers = JSON.parse(storedUsersRaw) as Array<{
+          email?: string;
+          phone?: string;
+          password?: string;
+          name?: string;
+        }>;
+        const found = storedUsers.find(
+          (u) =>
+            (u.email && u.email.toLowerCase() === cleanId.toLowerCase()) ||
+            (u.phone && u.phone === cleanId)
+        );
+        if (found) {
+          if (found.password && found.password !== password) {
+            setError('Incorrect password. Please try again or reset your password.');
+            return;
+          }
+          matchedName = found.name;
+        }
+      }
+    } catch {
+      // ignore invalid stored JSON
+    }
+
     setIsLoading(true);
     setError('');
-
-    // Simulate API call for password login
-    setTimeout(() => {
-      // In a real app, call actual API for authentication
-      setIsLoading(false);
-      
-      // Save user authentication status
-      localStorage.setItem('isAuthenticated', 'true');
-      localStorage.setItem('authUser', JSON.stringify({
-        email: identifier,
-        loginMethod: 'password',
-        loginTime: new Date().toISOString()
-      }));
-      window.dispatchEvent(new Event('authUpdated'));
-
-      const cleanId = identifier.trim();
-      const isPhone = /^[0-9]{10}$/.test(cleanId);
-      void fetch('/api/auth/customer/sync', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'X-Requested-With': 'XMLHttpRequest',
-        },
-        body: JSON.stringify({
-          email: isPhone ? undefined : cleanId,
-          phone: isPhone ? cleanId : undefined,
-        }),
-      }).catch(() => undefined);
-      
-      // Navigate to requested redirect or home page
-      router.push(redirectPath);
-    }, 1500);
+    await completeCustomerLogin('password', matchedName);
   };
 
   return (
@@ -282,10 +288,7 @@ export default function LoginPage() {
               >
                 {isLoading ? (
                   <span className="flex items-center justify-center">
-                    <svg className="animate-spin -ml-1 mr-2 h-4 w-4 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-                      <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
-                      <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-                    </svg>
+                    <Loader2 className="animate-spin -ml-1 mr-2 h-4 w-4 text-white" />
                     Signing in...
                   </span>
                 ) : (
@@ -327,10 +330,7 @@ export default function LoginPage() {
               >
                 {isLoading ? (
                   <span className="flex items-center justify-center">
-                    <svg className="animate-spin -ml-1 mr-2 h-4 w-4 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-                      <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
-                      <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-                    </svg>
+                    <Loader2 className="animate-spin -ml-1 mr-2 h-4 w-4 text-white" />
                     Sending OTP...
                   </span>
                 ) : (
@@ -347,10 +347,15 @@ export default function LoginPage() {
                 <label htmlFor="otp" className="block text-sm font-medium text-gray-700 mb-1">
                   Enter OTP
                 </label>
-                <div className="mb-2">
+                <div className="mb-2 space-y-1.5">
                   <p className="text-xs sm:text-sm text-gray-600 break-words">
                     We&apos;ve sent a 6-digit code to {identifier}
                   </p>
+                  {generatedOtp && (
+                    <p className="text-xs font-medium text-indigo-700 bg-indigo-50 border border-indigo-100 rounded-md px-2.5 py-1.5">
+                      Verification code: <span className="font-mono font-bold tracking-wider">{generatedOtp}</span>
+                    </p>
+                  )}
                 </div>
                 <input
                   type="text"
@@ -397,10 +402,7 @@ export default function LoginPage() {
               >
                 {isLoading ? (
                   <span className="flex items-center justify-center">
-                    <svg className="animate-spin -ml-1 mr-2 h-4 w-4 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-                      <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
-                      <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-                    </svg>
+                    <Loader2 className="animate-spin -ml-1 mr-2 h-4 w-4 text-white" />
                     Verifying...
                   </span>
                 ) : (

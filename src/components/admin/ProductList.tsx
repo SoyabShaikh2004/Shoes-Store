@@ -4,7 +4,9 @@ import { useState, useMemo } from 'react';
 import Image from 'next/image';
 import Link from 'next/link';
 import { Product } from '@/lib/data';
-import { getAdminAuthHeaders } from '@/lib/adminAuth';
+import { getAdminAuthHeaders, handleAdminUnauthorized } from '@/lib/adminAuth';
+import { resolveProductImage } from '@/lib/productImages';
+import { notifyStorefrontChanged } from '@/lib/storefrontSync';
 import { toast } from 'react-hot-toast';
 import {
   Search,
@@ -59,6 +61,10 @@ export default function ProductList({
   const [isBulkRunning, setIsBulkRunning] = useState(false);
   const [bulkModal, setBulkModal] = useState<BulkActionType | null>(null);
   const [confirmDeleteOpen, setConfirmDeleteOpen] = useState(false);
+  const [pendingDeleteProduct, setPendingDeleteProduct] = useState<{
+    id: number;
+    name: string;
+  } | null>(null);
 
   // Bulk modal form values
   const [priceMode, setPriceMode] = useState<'fixed' | 'percent_increase' | 'percent_decrease'>('percent_decrease');
@@ -118,50 +124,7 @@ export default function ProductList({
     );
   };
 
-  const getProductImage = (product: Product) => {
-    if (product.images && product.images.length > 0 && product.images[0]) {
-      return product.images[0];
-    }
-    if (
-      product.imagePath &&
-      (product.imagePath.startsWith('/uploads/') ||
-        product.imagePath.startsWith('/api/uploads/') ||
-        product.imagePath.startsWith('/images/') ||
-        product.imagePath.startsWith('http') ||
-        product.imagePath.startsWith('data:') ||
-        /\.(jpg|jpeg|png|webp|svg|gif)$/i.test(product.imagePath))
-    ) {
-      if (product.imagePath.startsWith('/images/Product') && !/\.\w+$/.test(product.imagePath)) {
-        // Handle folder path below
-      } else {
-        return product.imagePath;
-      }
-    }
-    const productFormats: Record<number, string> = {
-      1: '.jpeg',
-      2: '.webp',
-      3: '.webp',
-      4: '.webp',
-      5: '.webp',
-      6: '.webp',
-      7: '.webp',
-      8: '.webp',
-      9: '.webp',
-      10: '.jpg',
-      11: '.jpg',
-      12: '.jpg',
-      13: '.jpg',
-      14: '.jpg',
-      15: '.jpg',
-      16: '.jpeg',
-      17: '.png',
-      18: '.jpg',
-      19: '.jpeg',
-      20: '.png',
-    };
-    const format = productFormats[product.id] || '.jpg';
-    return `${product.imagePath}/HomeProduct${format}`;
-  };
+  const getProductImage = resolveProductImage;
 
   const runBulkAction = async (payload: Record<string, unknown>) => {
     if (selectedIds.length === 0) return;
@@ -177,12 +140,14 @@ export default function ProductList({
       });
       const data = await res.json();
       if (!res.ok || !data.success) {
+        handleAdminUnauthorized(res.status);
         throw new Error(data.error || 'Bulk action failed');
       }
       toast.success(data.message || 'Bulk update completed', { id: toastId });
       setBulkModal(null);
       setConfirmDeleteOpen(false);
       setSelectedIds([]);
+      notifyStorefrontChanged('products');
       onRefresh();
     } catch (err: unknown) {
       toast.error(err instanceof Error ? err.message : 'Bulk update failed', {
@@ -207,11 +172,15 @@ export default function ProductList({
         }),
       });
       const data = await res.json();
-      if (!res.ok || !data.success) throw new Error(data.error || 'Failed to update stock');
+      if (!res.ok || !data.success) {
+        handleAdminUnauthorized(res.status);
+        throw new Error(data.error || 'Failed to update stock');
+      }
 
       toast.success(
         `${product.sku || `#${product.id}`} is now ${newStock ? 'In Stock' : 'Out of Stock'}`
       );
+      notifyStorefrontChanged('products');
       onRefresh();
     } catch (err: unknown) {
       toast.error(err instanceof Error ? err.message : 'Failed to update stock status');
@@ -220,15 +189,13 @@ export default function ProductList({
     }
   };
 
-  const handleDelete = async (id: number, name: string) => {
-    if (
-      !window.confirm(
-        `Are you sure you want to permanently delete "${name}" (ID #${id}) from the catalog?`
-      )
-    ) {
-      return;
-    }
+  const handleDelete = (id: number, name: string) => {
+    setPendingDeleteProduct({ id, name });
+  };
 
+  const executeSingleDelete = async () => {
+    if (!pendingDeleteProduct) return;
+    const { id } = pendingDeleteProduct;
     setDeletingId(id);
     const toastId = toast.loading(`Deleting shoe #${id}...`);
 
@@ -239,10 +206,15 @@ export default function ProductList({
         headers: getAdminAuthHeaders(),
       });
       const data = await res.json();
-      if (!res.ok || !data.success) throw new Error(data.error || 'Failed to delete');
+      if (!res.ok || !data.success) {
+        handleAdminUnauthorized(res.status);
+        throw new Error(data.error || 'Failed to delete');
+      }
 
       toast.success(`Shoe #${id} deleted successfully`, { id: toastId });
+      setPendingDeleteProduct(null);
       setSelectedIds((prev) => prev.filter((item) => item !== id));
+      notifyStorefrontChanged('products');
       onRefresh();
     } catch (err: unknown) {
       toast.error(err instanceof Error ? err.message : 'Failed to delete shoe', {
@@ -271,9 +243,13 @@ export default function ProductList({
       });
 
       const data = await res.json();
-      if (!res.ok || !data.success) throw new Error(data.error || 'Failed to clone');
+      if (!res.ok || !data.success) {
+        handleAdminUnauthorized(res.status);
+        throw new Error(data.error || 'Failed to clone');
+      }
 
       toast.success(`Duplicated as "${data.product.name}"!`, { id: toastId });
+      notifyStorefrontChanged('products');
       onRefresh();
     } catch (err: unknown) {
       toast.error(err instanceof Error ? err.message : 'Failed to duplicate product', {
@@ -1280,6 +1256,38 @@ export default function ProductList({
                 className="min-h-[44px] px-4 py-2 text-xs font-semibold bg-rose-600 hover:bg-rose-700 text-white rounded-lg cursor-pointer"
               >
                 {isBulkRunning ? 'Deleting...' : 'Confirm Bulk Delete'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Single Shoe Delete Confirmation Dialog */}
+      {pendingDeleteProduct && (
+        <div className="fixed inset-0 z-50 bg-slate-950/60 flex items-center justify-center p-4">
+          <div className="bg-white rounded-xl border border-slate-200 max-w-md w-full p-5 sm:p-6 space-y-4">
+            <h3 className="text-base font-bold text-slate-900">
+              Delete &ldquo;{pendingDeleteProduct.name}&rdquo;?
+            </h3>
+            <p className="text-sm text-slate-600">
+              This will permanently remove shoe ID #{pendingDeleteProduct.id} from the live storefront catalog. This action cannot be undone.
+            </p>
+            <div className="flex justify-end gap-2 pt-2">
+              <button
+                type="button"
+                disabled={deletingId === pendingDeleteProduct.id}
+                onClick={() => setPendingDeleteProduct(null)}
+                className="min-h-[44px] px-4 py-2 text-xs font-semibold bg-slate-100 hover:bg-slate-200 text-slate-800 rounded-lg cursor-pointer"
+              >
+                Cancel
+              </button>
+              <button
+                type="button"
+                disabled={deletingId === pendingDeleteProduct.id}
+                onClick={executeSingleDelete}
+                className="min-h-[44px] px-4 py-2 text-xs font-semibold bg-rose-600 hover:bg-rose-700 disabled:opacity-50 text-white rounded-lg cursor-pointer"
+              >
+                {deletingId === pendingDeleteProduct.id ? 'Deleting...' : 'Delete Shoe'}
               </button>
             </div>
           </div>

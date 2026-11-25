@@ -60,9 +60,10 @@ export default function AddToCartButton({
     
     // Check if product with same options is already in cart
     const existingProductIndex = cartItems.findIndex(
-      (item: CartItem) => 
-        item.id === product.id && 
-        item.selectedSize === cartItem.selectedSize
+      (item: CartItem) =>
+        item.id === product.id &&
+        item.selectedSize === cartItem.selectedSize &&
+        (item.selectedColor || '') === cartItem.selectedColor
     );
     
     if (existingProductIndex !== -1) {

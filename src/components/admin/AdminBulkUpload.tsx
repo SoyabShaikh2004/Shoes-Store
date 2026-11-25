@@ -13,7 +13,8 @@ import {
   Play,
   RefreshCw,
 } from 'lucide-react';
-import { getAdminAuthHeaders } from '@/lib/adminAuth';
+import { getAdminAuthHeaders, handleAdminUnauthorized } from '@/lib/adminAuth';
+import { notifyStorefrontChanged } from '@/lib/storefrontSync';
 
 interface ValidatedPreviewRow {
   rowNumber: number;
@@ -115,6 +116,7 @@ export default function AdminBulkUpload({ onImportComplete }: AdminBulkUploadPro
       });
       const data = await res.json();
       if (!res.ok || !data.success) {
+        handleAdminUnauthorized(res.status);
         throw new Error(data.error || 'Image upload failed');
       }
 
@@ -157,6 +159,7 @@ export default function AdminBulkUpload({ onImportComplete }: AdminBulkUploadPro
       });
       const data = await res.json();
       if (!res.ok || !data.success) {
+        handleAdminUnauthorized(res.status);
         throw new Error(data.error || 'Spreadsheet validation failed');
       }
 
@@ -254,6 +257,7 @@ export default function AdminBulkUpload({ onImportComplete }: AdminBulkUploadPro
       });
       const data = await res.json();
       if (!res.ok || !data.success) {
+        handleAdminUnauthorized(res.status);
         throw new Error(data.error || 'Import failed');
       }
 
@@ -264,6 +268,7 @@ export default function AdminBulkUpload({ onImportComplete }: AdminBulkUploadPro
         `Imported ${data.report.successfullyImported} shoes (${data.report.failedRows} failed)`,
         { id: toastId }
       );
+      notifyStorefrontChanged('products');
       onImportComplete();
     } catch (err: unknown) {
       clearInterval(progressTimer);

@@ -3,6 +3,8 @@ import { notFound } from 'next/navigation';
 import { getProductById } from '@/lib/data';
 import ProductImages from '@/components/ProductImages';
 import ProductDetailActions from '@/components/ProductDetailActions';
+import StorefrontLiveBridge from '@/components/StorefrontLiveBridge';
+import { resolveProductGallery } from '@/lib/productImages';
 import Link from 'next/link';
 
 export const dynamic = 'force-dynamic';
@@ -36,73 +38,7 @@ export default async function ProductDetailPage({ params }: ProductDetailPagePro
     notFound();
   }
   
-  // Function to get appropriate image slides based on product data
-  const getProductImageSlides = (productId: number, imagePath: string, customImages?: string[]) => {
-    // 1. If product has dedicated images array, use them
-    if (customImages && customImages.length > 0) {
-      return customImages;
-    }
-
-    // 2. If imagePath is a direct uploaded file or URL
-    if (
-      imagePath &&
-      (imagePath.startsWith('/uploads/') ||
-        imagePath.startsWith('/api/uploads/') ||
-        imagePath.startsWith('http') ||
-        imagePath.startsWith('data:') ||
-        /\.(jpg|jpeg|png|webp|svg)$/i.test(imagePath))
-    ) {
-      return [imagePath];
-    }
-
-    // 3. Fallback to default catalog mapping
-    const productFormats: Record<
-      number,
-      { home: string; slide1: string; slide2: string; slide3: string; slide3NoHyphen?: boolean }
-    > = {
-      1: { home: '.jpeg', slide1: '.webp', slide2: '.webp', slide3: '.webp' },
-      2: { home: '.webp', slide1: '.webp', slide2: '.webp', slide3: '.jpg' },
-      3: { home: '.webp', slide1: '.webp', slide2: '.jpg', slide3: '.jpg' },
-      4: { home: '.webp', slide1: '.webp', slide2: '.webp', slide3: '.webp' },
-      5: { home: '.webp', slide1: '.webp', slide2: '.webp', slide3: '.webp' },
-      6: { home: '.webp', slide1: '.webp', slide2: '.webp', slide3: '.webp' },
-      7: { home: '.webp', slide1: '.webp', slide2: '.webp', slide3: '.webp' },
-      8: { home: '.webp', slide1: '.webp', slide2: '.webp', slide3: '.webp' },
-      9: { home: '.webp', slide1: '.webp', slide2: '.webp', slide3: '.webp' },
-      10: { home: '.jpg', slide1: '.jpg', slide2: '.jpg', slide3: '.jpg' },
-      11: { home: '.jpg', slide1: '.jpg', slide2: '.jpg', slide3: '.jpg' },
-      12: { home: '.jpg', slide1: '.jpg', slide2: '.jpg', slide3: '.jpg' },
-      13: { home: '.jpg', slide1: '.jpg', slide2: '.jpg', slide3: '.jpg' },
-      14: { home: '.jpg', slide1: '.jpg', slide2: '.jpg', slide3: '.jpg' },
-      15: { home: '.jpg', slide1: '.jpg', slide2: '.jpg', slide3: '.jpg' },
-      16: { home: '.jpeg', slide1: '.png', slide2: '.jpeg', slide3: '.jpeg' },
-      17: { home: '.png', slide1: '.png', slide2: '.png', slide3: '.png' },
-      18: { home: '.jpg', slide1: '.jpg', slide2: '.jpg', slide3: '.jpg' },
-      19: { home: '.jpeg', slide1: '.png', slide2: '.jpeg', slide3: '.jpeg', slide3NoHyphen: true },
-      20: { home: '.png', slide1: '.png', slide2: '.png', slide3: '.png' },
-    };
-    
-    const productFormat = productFormats[productId] || {
-      home: '.webp',
-      slide1: '.webp',
-      slide2: '.webp',
-      slide3: '.webp',
-    };
-    
-    const homeProductPath = `${imagePath}/HomeProduct${productFormat.home}`;
-    const slide3Path = productFormat.slide3NoHyphen
-      ? `${imagePath}/Slide3${productFormat.slide3}`
-      : `${imagePath}/Slide-3${productFormat.slide3}`;
-    
-    return [
-      homeProductPath,
-      `${imagePath}/Slide-1${productFormat.slide1}`,
-      `${imagePath}/Slide-2${productFormat.slide2}`,
-      slide3Path,
-    ];
-  };
-  
-  const productImages = getProductImageSlides(product.id, product.imagePath, product.images);
+  const productImages = resolveProductGallery(product);
 
   const stockQty = product.stockQuantity ?? 1;
   const isAvailable = Boolean(product.inStock && product.status !== 'inactive' && stockQty > 0);
@@ -114,6 +50,7 @@ export default async function ProductDetailPage({ params }: ProductDetailPagePro
   
   return (
     <div className="container mx-auto max-w-7xl px-3.5 sm:px-4 py-4 sm:py-6 md:py-8">
+      <StorefrontLiveBridge />
       {/* Breadcrumb Navigation */}
       <div className="mb-4">
         <nav aria-label="Breadcrumb" className="flex text-xs sm:text-sm">

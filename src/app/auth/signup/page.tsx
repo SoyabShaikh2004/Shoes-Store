@@ -4,6 +4,7 @@ import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import Image from 'next/image';
+import { Loader2 } from 'lucide-react';
 import GoogleSignInButton from '@/components/GoogleSignInButton';
 
 export default function SignupPage() {
@@ -17,6 +18,7 @@ export default function SignupPage() {
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState('');
   const [otp, setOtp] = useState('');
+  const [generatedOtp, setGeneratedOtp] = useState('');
   const [countdown, setCountdown] = useState(0);
   const [redirectPath, setRedirectPath] = useState<string>('/');
 
@@ -78,34 +80,35 @@ export default function SignupPage() {
     setIsLoading(true);
     setError('');
 
-    // Simulate API call to send OTP
     setTimeout(() => {
-      // In a real app, call actual API to send OTP
+      const code = Math.floor(100000 + Math.random() * 900000).toString();
+      setGeneratedOtp(code);
+      setOtp('');
       setIsLoading(false);
       setStep('verification');
-      setCountdown(30); // 30 second countdown for resend
-      // Generate a random 6-digit OTP
-      const generatedOtp = Math.floor(100000 + Math.random() * 900000).toString();
-    }, 1500);
+      setCountdown(30);
+    }, 600);
   };
 
   const handleResendOtp = () => {
     setIsLoading(true);
     setError('');
 
-    // Simulate API call to resend OTP
     setTimeout(() => {
-      // In a real app, call actual API to send OTP
+      const code = Math.floor(100000 + Math.random() * 900000).toString();
+      setGeneratedOtp(code);
       setIsLoading(false);
-      setCountdown(30); // Reset countdown
-      // Generate a new random 6-digit OTP
-      const generatedOtp = Math.floor(100000 + Math.random() * 900000).toString();
-    }, 1500);
+      setCountdown(30);
+    }, 600);
   };
 
-  const handleVerifyOtp = () => {
+  const handleVerifyOtp = async () => {
     if (otp.length !== 6) {
       setError('Please enter a valid 6-digit OTP');
+      return;
+    }
+    if (!generatedOtp || otp !== generatedOtp) {
+      setError('Invalid verification code. Please check the code and try again.');
       return;
     }
 
@@ -113,40 +116,45 @@ export default function SignupPage() {
     setError('');
 
     try {
-      // For this demo, we'll simulate storing user data in localStorage
+      const cleanId = identifier.trim();
+      const isPhone = /^[0-9]{10}$/.test(cleanId);
       const existingUsersData = localStorage.getItem('users');
       const existingUsers = existingUsersData ? JSON.parse(existingUsersData) : [];
-      
-      // Add new user to the array
-      const userData = { email: identifier, name, password, loginMethod: 'password', loginTime: new Date().toISOString() };
+
+      const userData = {
+        name: name.trim(),
+        email: isPhone ? undefined : cleanId,
+        phone: isPhone ? cleanId : undefined,
+        password,
+        loginMethod: 'password',
+        loginTime: new Date().toISOString(),
+      };
       const updatedUsers = [...existingUsers, userData];
-      
-      // Store updated user list
       localStorage.setItem('users', JSON.stringify(updatedUsers));
-      
-      // Set auth status and store current user data
+
       localStorage.setItem('isAuthenticated', 'true');
       localStorage.setItem('authUser', JSON.stringify(userData));
       window.dispatchEvent(new Event('authUpdated'));
 
-      const cleanId = identifier.trim();
-      const isPhone = /^[0-9]{10}$/.test(cleanId);
-      void fetch('/api/auth/customer/sync', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'X-Requested-With': 'XMLHttpRequest',
-        },
-        body: JSON.stringify({
-          name: name.trim(),
-          email: isPhone ? undefined : cleanId,
-          phone: isPhone ? cleanId : undefined,
-        }),
-      }).catch(() => undefined);
-      
-      // Navigate to requested redirect or home page after successful signup
+      try {
+        await fetch('/api/auth/customer/sync', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'X-Requested-With': 'XMLHttpRequest',
+          },
+          body: JSON.stringify({
+            name: name.trim(),
+            email: isPhone ? undefined : cleanId,
+            phone: isPhone ? cleanId : undefined,
+          }),
+        });
+      } catch {
+        // continue locally if network unavailable
+      }
+
       router.push(redirectPath);
-    } catch (error) {
+    } catch {
       setIsLoading(false);
       setError('An error occurred during signup. Please try again.');
     }
@@ -284,10 +292,7 @@ export default function SignupPage() {
               >
                 {isLoading ? (
                   <span className="flex items-center justify-center">
-                    <svg className="animate-spin -ml-1 mr-2 h-4 w-4 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-                      <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
-                      <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-                    </svg>
+                    <Loader2 className="animate-spin -ml-1 mr-2 h-4 w-4 text-white" />
                     Creating account...
                   </span>
                 ) : (
@@ -301,7 +306,7 @@ export default function SignupPage() {
           {step === 'verification' && (
             <div className="space-y-4">
               <div>
-                <div className="p-3 sm:p-4 bg-indigo-50 border border-indigo-100 rounded-md mb-4">
+                <div className="p-3 sm:p-4 bg-indigo-50 border border-indigo-100 rounded-md mb-4 space-y-1.5">
                   <p className="text-xs sm:text-sm text-indigo-800">
                     We&apos;ve sent a 6-digit verification code to your {identifierType}:
                     <span className="block mt-1 font-medium break-all">{
@@ -310,6 +315,11 @@ export default function SignupPage() {
                         : `+91 ${identifier.slice(0, 5)}****${identifier.slice(-2)}`
                     }</span>
                   </p>
+                  {generatedOtp && (
+                    <p className="text-xs font-medium text-indigo-900">
+                      Verification code: <span className="font-mono font-bold tracking-wider">{generatedOtp}</span>
+                    </p>
+                  )}
                 </div>
                 <label htmlFor="otp" className="block text-sm font-medium text-gray-700 mb-1">
                   Enter Verification Code
@@ -360,10 +370,7 @@ export default function SignupPage() {
                 >
                   {isLoading ? (
                     <span className="flex items-center justify-center">
-                      <svg className="animate-spin -ml-1 mr-2 h-4 w-4 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-                        <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
-                        <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-                      </svg>
+                      <Loader2 className="animate-spin -ml-1 mr-2 h-4 w-4 text-white" />
                       Verifying...
                     </span>
                   ) : (

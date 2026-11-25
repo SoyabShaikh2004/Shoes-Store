@@ -1,5 +1,7 @@
 'use client';
 
+import { notifyAdminSessionExpired } from './storefrontSync';
+
 export interface AdminUser {
   id: string;
   name: string;
@@ -10,11 +12,45 @@ export interface AdminUser {
   lastLogin?: string;
 }
 
-// Keep Bearer token strictly in JS memory (HttpOnly cookie handles browser reloads)
+const ADMIN_TOKEN_STORAGE_KEY = 'stepstyle_admin_bearer';
 let inMemoryAdminToken: string | null = null;
+
+function getStoredBearerToken(): string | null {
+  if (inMemoryAdminToken) return inMemoryAdminToken;
+  if (typeof window === 'undefined') return null;
+  try {
+    const stored = sessionStorage.getItem(ADMIN_TOKEN_STORAGE_KEY);
+    if (stored) {
+      inMemoryAdminToken = stored;
+      return stored;
+    }
+  } catch {
+    // ignore storage errors in restricted contexts
+  }
+  return null;
+}
 
 export function setAdminMemoryToken(token: string | null): void {
   inMemoryAdminToken = token;
+  if (typeof window === 'undefined') return;
+  try {
+    if (token) {
+      sessionStorage.setItem(ADMIN_TOKEN_STORAGE_KEY, token);
+    } else {
+      sessionStorage.removeItem(ADMIN_TOKEN_STORAGE_KEY);
+    }
+  } catch {
+    // ignore
+  }
+}
+
+export function handleAdminUnauthorized(status?: number): boolean {
+  if (status === 401) {
+    setAdminMemoryToken(null);
+    notifyAdminSessionExpired();
+    return true;
+  }
+  return false;
 }
 
 export function getAdminAuthHeaders(extra?: Record<string, string>): Record<string, string> {
@@ -22,8 +58,9 @@ export function getAdminAuthHeaders(extra?: Record<string, string>): Record<stri
     'X-Requested-With': 'XMLHttpRequest',
     ...(extra || {}),
   };
-  if (inMemoryAdminToken) {
-    headers['Authorization'] = `Bearer ${inMemoryAdminToken}`;
+  const token = getStoredBearerToken();
+  if (token) {
+    headers['Authorization'] = `Bearer ${token}`;
   }
   return headers;
 }
@@ -40,8 +77,16 @@ export async function checkAdminSession(): Promise<{
       headers: getAdminAuthHeaders(),
       cache: 'no-store',
     });
-    if (!res.ok) return { authenticated: false };
+    if (!res.ok) {
+      if (res.status === 401) {
+        setAdminMemoryToken(null);
+      }
+      return { authenticated: false };
+    }
     const data = await res.json();
+    if (!data.authenticated) {
+      setAdminMemoryToken(null);
+    }
     return {
       authenticated: Boolean(data.authenticated),
       user: data.user,

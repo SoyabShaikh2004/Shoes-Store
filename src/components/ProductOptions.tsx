@@ -1,5 +1,7 @@
 'use client';
 
+import { Check } from 'lucide-react';
+
 interface ProductOptionsProps {
   sizes?: number[];
   onSizeChange: (size: number) => void;
@@ -34,9 +36,7 @@ export default function ProductOptions({
               >
                 {size}
                 {selectedSize === size && (
-                  <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 ml-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M5 13l4 4L19 7" />
-                  </svg>
+                  <Check className="h-4 w-4 ml-1" strokeWidth={2.5} />
                 )}
               </button>
             ))}

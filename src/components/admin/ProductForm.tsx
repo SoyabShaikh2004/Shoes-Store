@@ -526,7 +526,7 @@ export default function ProductForm({
                 value={price}
                 onChange={(e) => setPrice(e.target.value)}
                 placeholder="6999"
-                className="w-full text-base font-semibold bg-white border border-gray-300 rounded-lg pl-8 pr-3.5 py-2.5 focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                className="w-full min-h-[44px] text-base font-semibold bg-white border border-gray-300 rounded-lg pl-8 pr-3.5 py-2.5 focus:outline-none focus:ring-2 focus:ring-indigo-500"
               />
             </div>
             <p className="text-[11px] text-gray-500 mt-1">
@@ -550,7 +550,7 @@ export default function ProductForm({
                 value={mrp}
                 onChange={(e) => setMrp(e.target.value)}
                 placeholder="8999"
-                className="w-full text-base font-semibold bg-white border border-gray-300 rounded-lg pl-8 pr-3.5 py-2.5 focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                className="w-full min-h-[44px] text-base font-semibold bg-white border border-gray-300 rounded-lg pl-8 pr-3.5 py-2.5 focus:outline-none focus:ring-2 focus:ring-indigo-500"
               />
             </div>
             <p className="text-[11px] text-gray-500 mt-1">
@@ -621,7 +621,7 @@ export default function ProductForm({
                   key={preset}
                   type="button"
                   onClick={() => handleToggleColorPreset(preset)}
-                  className={`min-h-[36px] text-xs px-3 py-1.5 rounded-lg border transition-all cursor-pointer ${
+                  className={`min-h-[44px] text-xs px-3 py-1.5 rounded-lg border transition-all cursor-pointer ${
                     isSelected
                       ? 'bg-indigo-600 text-white border-indigo-600 shadow-sm'
                       : 'bg-gray-50 text-gray-700 border-gray-200 hover:border-gray-400'
@@ -638,14 +638,14 @@ export default function ProductForm({
             {colors.map((c) => (
               <span
                 key={c}
-                className="inline-flex items-center gap-1.5 bg-gray-100 text-gray-800 text-xs font-medium pl-2.5 pr-1 py-1 rounded-lg border border-gray-200"
+                className="inline-flex items-center gap-1.5 bg-gray-100 text-gray-800 text-xs font-medium pl-3 pr-1 py-0.5 rounded-lg border border-gray-200"
               >
                 {c}
                 <button
                   type="button"
                   onClick={() => handleRemoveColor(c)}
                   aria-label={`Remove ${c}`}
-                  className="min-w-[28px] min-h-[28px] inline-flex items-center justify-center rounded hover:bg-gray-200 hover:text-red-600 cursor-pointer"
+                  className="min-w-[36px] min-h-[36px] inline-flex items-center justify-center rounded hover:bg-gray-200 hover:text-red-600 cursor-pointer"
                 >
                   <X className="w-3.5 h-3.5" />
                 </button>
@@ -688,7 +688,7 @@ export default function ProductForm({
               <button
                 type="button"
                 onClick={handleSelectStandardSizes}
-                className="min-h-[36px] px-2 text-xs text-indigo-600 hover:text-indigo-800 font-medium cursor-pointer"
+                className="min-h-[44px] px-2.5 text-xs text-indigo-600 hover:text-indigo-800 font-medium cursor-pointer"
               >
                 Standard (7-11)
               </button>
@@ -696,7 +696,7 @@ export default function ProductForm({
               <button
                 type="button"
                 onClick={handleSelectAllSizes}
-                className="min-h-[36px] px-2 text-xs text-indigo-600 hover:text-indigo-800 font-medium cursor-pointer"
+                className="min-h-[44px] px-2.5 text-xs text-indigo-600 hover:text-indigo-800 font-medium cursor-pointer"
               >
                 Select All
               </button>
@@ -761,12 +761,12 @@ export default function ProductForm({
       </div>
 
       {/* Footer Actions */}
-      <div className="pt-6 border-t border-gray-100 flex flex-wrap items-center justify-end gap-3">
+      <div className="pt-6 border-t border-gray-100 flex flex-col-reverse sm:flex-row sm:items-center sm:justify-end gap-3">
         {onCancel && (
           <button
             type="button"
             onClick={onCancel}
-            className="min-h-[44px] px-5 py-2.5 text-sm font-medium text-gray-700 bg-gray-100 hover:bg-gray-200 rounded-lg transition-colors cursor-pointer"
+            className="w-full sm:w-auto min-h-[44px] px-5 py-2.5 text-sm font-medium text-gray-700 bg-gray-100 hover:bg-gray-200 rounded-lg transition-colors cursor-pointer"
           >
             Cancel
           </button>
@@ -774,7 +774,7 @@ export default function ProductForm({
         <button
           type="submit"
           disabled={isSubmitting}
-          className="min-h-[48px] flex-1 sm:flex-none flex items-center justify-center gap-2 px-6 py-2.5 bg-indigo-600 hover:bg-indigo-700 active:scale-[0.98] text-white text-sm font-semibold rounded-lg shadow transition-all disabled:opacity-50 cursor-pointer"
+          className="w-full sm:w-auto min-h-[48px] flex items-center justify-center gap-2 px-6 py-2.5 bg-indigo-600 hover:bg-indigo-700 active:scale-[0.98] text-white text-sm font-semibold rounded-lg shadow transition-all disabled:opacity-50 cursor-pointer"
         >
           <Save className="w-4 h-4" />
           {isSubmitting ? 'Saving...' : isEditing ? 'Update Shoe' : 'Publish Shoe to Store'}

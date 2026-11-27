@@ -91,18 +91,20 @@ export default function Navbar() {
   // Load cart and wishlist counts
   useEffect(() => {
     const updateCounts = () => {
-      // Get cart items
-      const cartItems = localStorage.getItem('cartItems');
-      if (cartItems) {
-        const parsedCartItems = JSON.parse(cartItems);
-        setCartItemsCount(parsedCartItems.length);
+      try {
+        const cartItems = localStorage.getItem('cartItems');
+        const parsedCartItems = cartItems ? JSON.parse(cartItems) : [];
+        setCartItemsCount(Array.isArray(parsedCartItems) ? parsedCartItems.length : 0);
+      } catch {
+        setCartItemsCount(0);
       }
 
-      // Get wishlist items
-      const wishlistItems = localStorage.getItem('wishlistItems');
-      if (wishlistItems) {
-        const parsedWishlistItems = JSON.parse(wishlistItems);
-        setWishlistItemsCount(parsedWishlistItems.length);
+      try {
+        const wishlistItems = localStorage.getItem('wishlistItems');
+        const parsedWishlistItems = wishlistItems ? JSON.parse(wishlistItems) : [];
+        setWishlistItemsCount(Array.isArray(parsedWishlistItems) ? parsedWishlistItems.length : 0);
+      } catch {
+        setWishlistItemsCount(0);
       }
     };
 
@@ -284,7 +286,7 @@ export default function Navbar() {
               
               {/* User dropdown menu */}
               {showUserMenu && (
-                <div className="absolute right-0 mt-2 w-52 origin-top-right rounded-xl bg-white py-1 shadow-lg ring-1 ring-black/5 focus:outline-none z-20">
+                <div className="absolute right-0 mt-2 w-52 max-w-[calc(100vw-1.5rem)] origin-top-right rounded-xl bg-white py-1 shadow-lg ring-1 ring-black/5 focus:outline-none z-20">
                   <div className="border-b border-gray-100 px-4 py-2.5">
                     <p className="text-sm font-bold text-gray-900">{authUser?.name || 'User'}</p>
                     <p className="truncate text-xs text-gray-500">

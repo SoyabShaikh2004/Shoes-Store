@@ -24,6 +24,7 @@ import {
   RefundRecord,
   ReturnRecord,
   ShippingRecord,
+  SupportMessageRecord,
   UserRecord,
 } from './schema';
 import {
@@ -388,6 +389,9 @@ function normalizeLoadedDatabaseDefaults(db: DatabaseSchema): DatabaseSchema {
   if (!Array.isArray(db.adminNotifications)) {
     db.adminNotifications = [];
   }
+  if (!Array.isArray(db.supportMessages)) {
+    db.supportMessages = [];
+  }
   return db;
 }
 
@@ -396,6 +400,7 @@ async function reconcileLegacyOrdersIntoDb(db: DatabaseSchema): Promise<boolean>
   if (!Array.isArray(rawOrders) || rawOrders.length === 0) return false;
 
   const existingNumbers = new Set(db.orders.map((o) => normalizeOrderNumber(o.orderNumber)));
+  const purgeCutoffMs = db.lastPurgedAt ? new Date(db.lastPurgedAt).getTime() : 0;
   let changed = false;
   const now = new Date().toISOString();
 
@@ -403,6 +408,12 @@ async function reconcileLegacyOrdersIntoDb(db: DatabaseSchema): Promise<boolean>
     if (!ro || !ro.orderId) continue;
     const orderNumber = normalizeOrderNumber(String(ro.orderId));
     if (!orderNumber || existingNumbers.has(orderNumber)) continue;
+
+    const rawDateStr = String(ro.date || ro.updatedAt || '');
+    const rawOrderMs = rawDateStr ? new Date(rawDateStr).getTime() : NaN;
+    if (purgeCutoffMs > 0 && (!Number.isFinite(rawOrderMs) || rawOrderMs <= purgeCutoffMs)) {
+      continue;
+    }
 
     existingNumbers.add(orderNumber);
     changed = true;
@@ -961,6 +972,7 @@ async function buildStarterDatabaseFromLegacyFiles(): Promise<DatabaseSchema> {
     notifications,
     adminNotifications: [],
     heroBanners: DEFAULT_HERO_BANNERS.map((b) => ({ ...b })),
+    supportMessages: [],
   };
 
   return db;
@@ -1134,7 +1146,11 @@ function ensureCategoryAndBrand(
   };
 }
 
-function rebuildProductRelations(db: DatabaseSchema, product: ProductRecord): void {
+function rebuildProductRelations(
+  db: DatabaseSchema,
+  product: ProductRecord,
+  options?: { preserveExisting?: boolean }
+): void {
   const now = new Date().toISOString();
   db.productImages = db.productImages.filter((img) => img.productId !== product.id);
   product.images.forEach((url, idx) => {
@@ -1148,30 +1164,54 @@ function rebuildProductRelations(db: DatabaseSchema, product: ProductRecord): vo
     });
   });
 
+  const existingVariants = db.productVariants.filter((v) => v.productId === product.id);
   db.productVariants = db.productVariants.filter((v) => v.productId !== product.id);
-  const perVariantStock =
-    product.stockQuantity > 0
-      ? Math.max(
-          1,
-          Math.floor(
-            product.stockQuantity /
-              Math.max(1, product.sizes.length * product.colors.length)
-          )
-        )
-      : 0;
 
+  const pairs: Array<{ size: number; color: string }> = [];
   for (const size of product.sizes) {
     for (const color of product.colors) {
-      db.productVariants.push({
-        id: `var-${product.id}-${size}-${slugify(color)}`,
-        productId: product.id,
-        sku: `${product.sku}-${size}-${slugify(color).toUpperCase().slice(0, 4)}`,
-        size,
-        color,
-        stockQuantity: perVariantStock,
-      });
+      pairs.push({ size, color });
     }
   }
+
+  if (pairs.length === 0) return;
+
+  if (options?.preserveExisting && existingVariants.length > 0) {
+    const existingMap = new Map<string, number>();
+    for (const ev of existingVariants) {
+      existingMap.set(`${ev.size}::${ev.color.toLowerCase()}`, Math.max(0, ev.stockQuantity));
+    }
+    const allMatched = pairs.every((p) => existingMap.has(`${p.size}::${p.color.toLowerCase()}`));
+    if (allMatched && pairs.length === existingVariants.length) {
+      for (const { size, color } of pairs) {
+        db.productVariants.push({
+          id: `var-${product.id}-${size}-${slugify(color)}`,
+          productId: product.id,
+          sku: `${product.sku}-${size}-${slugify(color).toUpperCase().slice(0, 4)}`,
+          size,
+          color,
+          stockQuantity: existingMap.get(`${size}::${color.toLowerCase()}`) ?? 0,
+        });
+      }
+      return;
+    }
+  }
+
+  const totalStock = Math.max(0, Math.floor(product.stockQuantity || 0));
+  const baseQty = Math.floor(totalStock / pairs.length);
+  const remainder = totalStock % pairs.length;
+
+  pairs.forEach(({ size, color }, idx) => {
+    const qty = totalStock > 0 ? baseQty + (idx < remainder ? 1 : 0) : 0;
+    db.productVariants.push({
+      id: `var-${product.id}-${size}-${slugify(color)}`,
+      productId: product.id,
+      sku: `${product.sku}-${size}-${slugify(color).toUpperCase().slice(0, 4)}`,
+      size,
+      color,
+      stockQuantity: qty,
+    });
+  });
 }
 
 // ---------- Product Operations ----------
@@ -1340,7 +1380,12 @@ export async function updateProductInDb(
     };
 
     db.products[idx] = updated;
-    rebuildProductRelations(db, updated);
+    const stockChanged =
+      updates.stockQuantity !== undefined ||
+      updates.inStock !== undefined ||
+      updates.sizes !== undefined ||
+      updates.colors !== undefined;
+    rebuildProductRelations(db, updated, { preserveExisting: !stockChanged });
     return updated;
   });
 }
@@ -1596,6 +1641,25 @@ export async function bulkMutateProductsTransactional(
 
 // ---------- Stock Management Helpers ----------
 
+function findMatchingVariantIndex(
+  variants: ProductVariantRecord[],
+  productId: number,
+  selectedSize?: number,
+  selectedColor?: string
+): number {
+  if (selectedSize === undefined) return -1;
+  if (selectedColor) {
+    const exact = variants.findIndex(
+      (v) =>
+        v.productId === productId &&
+        v.size === selectedSize &&
+        v.color.toLowerCase() === selectedColor.toLowerCase()
+    );
+    if (exact >= 0) return exact;
+  }
+  return variants.findIndex((v) => v.productId === productId && v.size === selectedSize);
+}
+
 function applyStockDeduction(db: DatabaseSchema, order: OrderRecord): void {
   if (order.stockDeducted) return;
   const items = db.orderItems.filter((i) => i.orderId === order.id);
@@ -1607,19 +1671,17 @@ function applyStockDeduction(db: DatabaseSchema, order: OrderRecord): void {
       db.products[prodIdx].inStock = nextStock > 0;
       db.products[prodIdx].updatedAt = new Date().toISOString();
     }
-    if (item.selectedSize !== undefined) {
-      const varIdx = db.productVariants.findIndex(
-        (v) =>
-          v.productId === item.productId &&
-          v.size === item.selectedSize &&
-          (!item.selectedColor || v.color.toLowerCase() === item.selectedColor.toLowerCase())
+    const varIdx = findMatchingVariantIndex(
+      db.productVariants,
+      item.productId,
+      item.selectedSize,
+      item.selectedColor
+    );
+    if (varIdx >= 0) {
+      db.productVariants[varIdx].stockQuantity = Math.max(
+        0,
+        db.productVariants[varIdx].stockQuantity - item.quantity
       );
-      if (varIdx >= 0) {
-        db.productVariants[varIdx].stockQuantity = Math.max(
-          0,
-          db.productVariants[varIdx].stockQuantity - item.quantity
-        );
-      }
     }
   }
   order.stockDeducted = true;
@@ -1636,16 +1698,14 @@ function applyStockRestoration(db: DatabaseSchema, order: OrderRecord): void {
       db.products[prodIdx].inStock = nextStock > 0;
       db.products[prodIdx].updatedAt = new Date().toISOString();
     }
-    if (item.selectedSize !== undefined) {
-      const varIdx = db.productVariants.findIndex(
-        (v) =>
-          v.productId === item.productId &&
-          v.size === item.selectedSize &&
-          (!item.selectedColor || v.color.toLowerCase() === item.selectedColor.toLowerCase())
-      );
-      if (varIdx >= 0) {
-        db.productVariants[varIdx].stockQuantity += item.quantity;
-      }
+    const varIdx = findMatchingVariantIndex(
+      db.productVariants,
+      item.productId,
+      item.selectedSize,
+      item.selectedColor
+    );
+    if (varIdx >= 0) {
+      db.productVariants[varIdx].stockQuantity += item.quantity;
     }
   }
   order.stockDeducted = false;
@@ -1935,22 +1995,74 @@ export async function placeOrderTransactional(
       }
     }
 
-    // Validate live catalog inventory before persisting order
+    // Validate live catalog inventory & compute server-authoritative totals before persisting order
+    const FREE_SHIPPING_THRESHOLD = 2999;
+    const STANDARD_SHIPPING_FEE = 199;
+
     const requestedByProduct = new Map<number, number>();
+    const requestedByVariant = new Map<string, { prodId: number; size: number; color?: string; qty: number }>();
+    let authoritativeSubtotal = 0;
+    let authoritativeDiscount = 0;
+
     for (const item of input.items) {
       const prodId = Number(item.id);
-      const qty = Math.max(1, Number(item.quantity) || 1);
+      const qty = Math.max(1, Math.floor(Number(item.quantity) || 1));
+      const prod = db.products.find((p) => p.id === prodId && !p.isDeleted);
+      if (!prod) {
+        throw new Error(`INSUFFICIENT_STOCK: Product #${prodId} is no longer available in the catalog.`);
+      }
       requestedByProduct.set(prodId, (requestedByProduct.get(prodId) || 0) + qty);
+
+      if (item.selectedSize !== undefined && !isNaN(Number(item.selectedSize))) {
+        const sizeNum = Number(item.selectedSize);
+        const colorKey = item.selectedColor ? item.selectedColor.trim().toLowerCase() : '';
+        const vKey = `${prodId}::${sizeNum}::${colorKey}`;
+        const prev = requestedByVariant.get(vKey);
+        requestedByVariant.set(vKey, {
+          prodId,
+          size: sizeNum,
+          color: item.selectedColor?.trim(),
+          qty: (prev?.qty || 0) + qty,
+        });
+      }
+
+      const unitPrice = Math.max(0, Number(prod.price) || 0);
+      const unitMrp = Math.max(unitPrice, Number(prod.mrp) || unitPrice);
+      authoritativeSubtotal += unitPrice * qty;
+      authoritativeDiscount += Math.max(0, unitMrp - unitPrice) * qty;
     }
+
     for (const [prodId, reqQty] of requestedByProduct.entries()) {
       const prod = db.products.find((p) => p.id === prodId && !p.isDeleted);
-      if (prod) {
-        if (prod.status === 'inactive' || !prod.inStock || prod.stockQuantity <= 0) {
-          throw new Error(`INSUFFICIENT_STOCK: "${prod.name}" is currently out of stock.`);
-        }
-        if (prod.stockQuantity < reqQty) {
+      if (!prod) {
+        throw new Error(`INSUFFICIENT_STOCK: Product #${prodId} is no longer available.`);
+      }
+      if (prod.status === 'inactive' || !prod.inStock || prod.stockQuantity <= 0) {
+        throw new Error(`INSUFFICIENT_STOCK: "${prod.name}" is currently out of stock.`);
+      }
+      if (prod.stockQuantity < reqQty) {
+        throw new Error(
+          `INSUFFICIENT_STOCK: Only ${prod.stockQuantity} pair(s) of "${prod.name}" left in stock.`
+        );
+      }
+    }
+
+    for (const reqVar of requestedByVariant.values()) {
+      const prod = db.products.find((p) => p.id === reqVar.prodId && !p.isDeleted);
+      if (!prod) continue;
+      const sizeVariants = db.productVariants.filter(
+        (v) => v.productId === reqVar.prodId && v.size === reqVar.size
+      );
+      if (sizeVariants.length > 0) {
+        const exactColorVar = reqVar.color
+          ? sizeVariants.find((v) => v.color.toLowerCase() === reqVar.color!.toLowerCase())
+          : undefined;
+        const availableForSize = exactColorVar
+          ? exactColorVar.stockQuantity
+          : sizeVariants.reduce((sum, v) => sum + Math.max(0, v.stockQuantity), 0);
+        if (availableForSize < reqVar.qty) {
           throw new Error(
-            `INSUFFICIENT_STOCK: Only ${prod.stockQuantity} pair(s) of "${prod.name}" left in stock.`
+            `INSUFFICIENT_STOCK: Only ${availableForSize} pair(s) of "${prod.name}" (UK ${reqVar.size}) left in stock.`
           );
         }
       }
@@ -2009,9 +2121,10 @@ export async function placeOrderTransactional(
         ? 'Order Confirmed'
         : 'Order Placed';
 
-    const shippingFee = Number(input.shippingFee) || 0;
-    const totalAmount = Number(input.totalAmount);
-    const subtotal = Math.max(0, totalAmount - shippingFee);
+    const subtotal = authoritativeSubtotal;
+    const discountAmount = authoritativeDiscount;
+    const shippingFee = subtotal >= FREE_SHIPPING_THRESHOLD ? 0 : STANDARD_SHIPPING_FEE;
+    const totalAmount = subtotal + shippingFee;
 
     const newOrder: OrderRecord = {
       id: orderId,
@@ -2024,6 +2137,7 @@ export async function placeOrderTransactional(
       pincode: input.customer.pincode || 'N/A',
       subtotal,
       shippingFee,
+      discountAmount,
       totalAmount,
       status: initialStatus,
       paymentStatus: payStatus,
@@ -2036,14 +2150,14 @@ export async function placeOrderTransactional(
 
     db.orders.unshift(newOrder);
 
-    // Create OrderItems
+    // Create OrderItems using authoritative catalog prices
     let totalItemPairs = 0;
     let firstItemName = 'Footwear';
     input.items.forEach((item, idx) => {
       const prod = db.products.find((p) => p.id === Number(item.id));
-      const qty = Math.max(1, Number(item.quantity) || 1);
-      const unitPrice = Number(item.price) || prod?.price || 0;
-      const resolvedName = item.name || prod?.name || 'Footwear';
+      const qty = Math.max(1, Math.floor(Number(item.quantity) || 1));
+      const unitPrice = prod ? Math.max(0, Number(prod.price) || 0) : Math.max(0, Number(item.price) || 0);
+      const resolvedName = prod?.name || item.name || 'Footwear';
       if (idx === 0) firstItemName = resolvedName;
       totalItemPairs += qty;
       db.orderItems.push({
@@ -2052,9 +2166,9 @@ export async function placeOrderTransactional(
         productId: Number(item.id),
         sku: prod?.sku || `STEP-${String(item.id).padStart(4, '0')}`,
         name: resolvedName,
-        imagePath: item.imagePath || prod?.imagePath || '/images/Empty-cart.jpg',
-        brand: item.brand || prod?.brand || 'StepStyle',
-        category: item.category || prod?.category || 'Sneakers',
+        imagePath: prod?.imagePath || item.imagePath || '/images/Empty-cart.jpg',
+        brand: prod?.brand || item.brand || 'StepStyle',
+        category: prod?.category || item.category || 'Sneakers',
         selectedSize: item.selectedSize ? Number(item.selectedSize) : undefined,
         selectedColor: item.selectedColor,
         quantity: qty,
@@ -2189,10 +2303,19 @@ export async function reconcileClientOrdersTransactional(
 ): Promise<{
   importedCount: number;
   alreadyPresentCount: number;
+  skippedPurgedCount: number;
   importedOrderNumbers: string[];
+  lastPurgedAt: string | null;
 }> {
   if (!Array.isArray(rawOrders) || rawOrders.length === 0) {
-    return { importedCount: 0, alreadyPresentCount: 0, importedOrderNumbers: [] };
+    const db = await getDatabase();
+    return {
+      importedCount: 0,
+      alreadyPresentCount: 0,
+      skippedPurgedCount: 0,
+      importedOrderNumbers: [],
+      lastPurgedAt: db.lastPurgedAt || null,
+    };
   }
 
   return withTransaction((db) => {
@@ -2202,9 +2325,11 @@ export async function reconcileClientOrdersTransactional(
         .map((p) => (p.transactionId || '').trim())
         .filter((t) => t.length > 0 && t.toUpperCase() !== 'N/A')
     );
+    const purgeCutoffMs = db.lastPurgedAt ? new Date(db.lastPurgedAt).getTime() : 0;
 
     let importedCount = 0;
     let alreadyPresentCount = 0;
+    let skippedPurgedCount = 0;
     const importedOrderNumbers: string[] = [];
     const fallbackNow = new Date().toISOString();
 
@@ -2213,6 +2338,22 @@ export async function reconcileClientOrdersTransactional(
       const rawCode = String(ro.orderNumber || ro.orderId || '').trim();
       const orderNumber = normalizeOrderNumber(rawCode);
       if (!orderNumber || orderNumber.length < 4 || orderNumber.length > 32) continue;
+
+      const parsedDate = ro.date ? new Date(ro.date) : null;
+      const parsedUpdated = ro.updatedAt ? new Date(ro.updatedAt) : null;
+      const effectiveOrderMs =
+        parsedDate && !isNaN(parsedDate.getTime())
+          ? parsedDate.getTime()
+          : parsedUpdated && !isNaN(parsedUpdated.getTime())
+          ? parsedUpdated.getTime()
+          : NaN;
+      if (
+        purgeCutoffMs > 0 &&
+        (!Number.isFinite(effectiveOrderMs) || effectiveOrderMs <= purgeCutoffMs)
+      ) {
+        skippedPurgedCount++;
+        continue;
+      }
 
       const cleanTxn = ro.transactionId ? String(ro.transactionId).trim() : '';
       if (
@@ -2234,10 +2375,8 @@ export async function reconcileClientOrdersTransactional(
         : 0;
       const subtotal = Math.max(0, totalAmount - shippingFee);
 
-      const parsedDate = ro.date ? new Date(ro.date) : null;
       const createdAt =
         parsedDate && !isNaN(parsedDate.getTime()) ? parsedDate.toISOString() : fallbackNow;
-      const parsedUpdated = ro.updatedAt ? new Date(ro.updatedAt) : null;
       const updatedAt =
         parsedUpdated && !isNaN(parsedUpdated.getTime()) ? parsedUpdated.toISOString() : createdAt;
 
@@ -2420,7 +2559,13 @@ export async function reconcileClientOrdersTransactional(
       importedOrderNumbers.push(orderNumber);
     }
 
-    return { importedCount, alreadyPresentCount, importedOrderNumbers };
+    return {
+      importedCount,
+      alreadyPresentCount,
+      skippedPurgedCount,
+      importedOrderNumbers,
+      lastPurgedAt: db.lastPurgedAt || null,
+    };
   });
 }
 
@@ -3142,6 +3287,7 @@ export async function getAdminOverviewSnapshotFromDb() {
   );
 
   const admins = db.adminUsers.map(({ passwordHash: _h, passwordSalt: _s, ...safe }) => safe);
+  const supportList = Array.isArray(db.supportMessages) ? db.supportMessages : [];
   const storageMode: 'mongodb' | 'local-json' | 'local-memory-fallback' = isMongoConfigured()
     ? 'mongodb'
     : globalForDb.__stepstyleMemoryFallbackActive
@@ -3157,10 +3303,140 @@ export async function getAdminOverviewSnapshotFromDb() {
     ...entities,
     adminNotifications: sortedNotifications.slice(0, 50),
     unreadNotificationsCount: sortedNotifications.filter((n) => !n.isRead).length,
+    openSupportCount: supportList.filter((m) => m.status !== 'resolved').length,
+    supportMessagesCount: supportList.length,
     admins,
     storageMode,
+    lastPurgedAt: db.lastPurgedAt || null,
     syncedAt: new Date().toISOString(),
   };
+}
+
+export async function getLastPurgedAtFromDb(): Promise<string | null> {
+  const db = await getDatabase();
+  return db.lastPurgedAt || null;
+}
+
+export async function verifySuperAdminPasswordAndPurgeOldDataInDb(params: {
+  adminId: string;
+  password: string;
+}): Promise<
+  | {
+      success: true;
+      purged: {
+        orders: number;
+        orderItems: number;
+        customers: number;
+        payments: number;
+        shipping: number;
+        returns: number;
+        refunds: number;
+        tickets: number;
+        notifications: number;
+      };
+      lastPurgedAt: string;
+      storageMode: 'mongodb' | 'local-json' | 'local-memory-fallback';
+    }
+  | { success: false; error: string; status: number }
+> {
+  const cleanPassword = params.password;
+  if (!cleanPassword || !cleanPassword.trim()) {
+    return {
+      success: false as const,
+      error: 'Super Admin password is required to delete old data.',
+      status: 400,
+    };
+  }
+
+  const checkPasswordForAdmin = (adminUser: AdminUserRecord | undefined) => {
+    if (!adminUser || adminUser.status !== 'active') {
+      return {
+        ok: false as const,
+        status: 403,
+        error: 'Super Admin account is inactive or unavailable.',
+      };
+    }
+    if (adminUser.role !== 'Super Admin') {
+      return {
+        ok: false as const,
+        status: 403,
+        error: 'Only a Super Admin can delete old transactional data.',
+      };
+    }
+    const envOverride =
+      adminUser.id === 'admin-soyab-super' && process.env.SUPER_ADMIN_PASSWORD
+        ? cleanPassword === process.env.SUPER_ADMIN_PASSWORD
+        : false;
+    const valid =
+      envOverride || verifyPassword(cleanPassword, adminUser.passwordHash, adminUser.passwordSalt);
+    if (!valid) {
+      return {
+        ok: false as const,
+        status: 401,
+        error: 'Incorrect Super Admin password. Deletion cancelled.',
+      };
+    }
+    return { ok: true as const };
+  };
+
+  // Pre-verify read-only so failed password attempts never write to disk/Mongo
+  const currentDb = await getDatabase(true);
+  const preCheck = checkPasswordForAdmin(
+    currentDb.adminUsers.find((u) => u.id === params.adminId)
+  );
+  if (!preCheck.ok) {
+    return { success: false as const, error: preCheck.error, status: preCheck.status };
+  }
+
+  return withTransaction((db) => {
+    const txCheck = checkPasswordForAdmin(db.adminUsers.find((u) => u.id === params.adminId));
+    if (!txCheck.ok) {
+      return { success: false as const, error: txCheck.error, status: txCheck.status };
+    }
+
+    const purged = {
+      orders: db.orders.length,
+      orderItems: db.orderItems.length,
+      customers: db.users.length,
+      payments: db.payments.length,
+      shipping: db.shipping.length,
+      returns: db.returns.length,
+      refunds: db.refunds.length,
+      tickets: Array.isArray(db.supportMessages) ? db.supportMessages.length : 0,
+      notifications:
+        (Array.isArray(db.adminNotifications) ? db.adminNotifications.length : 0) +
+        db.notifications.length,
+    };
+
+    db.orders = [];
+    db.orderItems = [];
+    db.orderStatusHistory = [];
+    db.payments = [];
+    db.shipping = [];
+    db.returns = [];
+    db.refunds = [];
+    db.adminNotes = [];
+    db.notifications = [];
+    db.adminNotifications = [];
+    db.users = [];
+    db.supportMessages = [];
+
+    const lastPurgedAt = new Date().toISOString();
+    db.lastPurgedAt = lastPurgedAt;
+
+    const storageMode: 'mongodb' | 'local-json' | 'local-memory-fallback' = isMongoConfigured()
+      ? 'mongodb'
+      : globalForDb.__stepstyleMemoryFallbackActive
+      ? 'local-memory-fallback'
+      : 'local-json';
+
+    return {
+      success: true as const,
+      purged,
+      lastPurgedAt,
+      storageMode,
+    };
+  });
 }
 
 // ---------- Hero Banner Operations ----------
@@ -3269,4 +3545,574 @@ export async function getStorefrontSignatureFromDb(): Promise<string> {
     .join('|');
 
   return crypto.createHash('sha1').update(`${productSig}##${bannerSig}`).digest('hex');
+}
+
+// ---------- Customer Auth & Profile Helpers ----------
+
+export type SafeUserRecord = Omit<UserRecord, 'passwordHash' | 'passwordSalt'>;
+
+function sanitizeUserRecord(user: UserRecord): SafeUserRecord {
+  const { passwordHash: _h, passwordSalt: _s, ...safe } = user;
+  return safe;
+}
+
+export async function registerCustomerInDb(params: {
+  name: string;
+  email?: string;
+  phone?: string;
+  identifier?: string;
+  password: string;
+}): Promise<
+  | { success: true; user: SafeUserRecord }
+  | { success: false; error: string; status: number }
+> {
+  const cleanName = params.name.trim().slice(0, 80);
+  const rawIdentifier = String(params.identifier || '').trim();
+  const identifierIsEmail = /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(rawIdentifier);
+  const cleanEmail = normalizeCustomerEmail(
+    params.email || (identifierIsEmail ? rawIdentifier : '')
+  );
+  const cleanPhone10 = normalizeCustomerPhone10(
+    params.phone || (!identifierIsEmail ? rawIdentifier : '')
+  );
+  const cleanPassword = params.password;
+
+  if (cleanName.length < 2) {
+    return { success: false, error: 'Please enter your full name.', status: 400 };
+  }
+  const hasValidEmail = Boolean(cleanEmail && /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(cleanEmail));
+  const hasValidPhone = cleanPhone10.length === 10;
+
+  if (cleanEmail && !hasValidEmail) {
+    return { success: false, error: 'Please enter a valid email address.', status: 400 };
+  }
+  if (!hasValidEmail && !hasValidPhone) {
+    return {
+      success: false,
+      error: 'Please enter a valid email address or 10-digit mobile number.',
+      status: 400,
+    };
+  }
+  if (cleanPassword.length < 6) {
+    return { success: false, error: 'Password must be at least 6 characters long.', status: 400 };
+  }
+
+  return withTransaction((db) => {
+    const emailMatch = hasValidEmail
+      ? db.users.find((u) => normalizeCustomerEmail(u.email) === cleanEmail)
+      : undefined;
+    const phoneMatch = hasValidPhone
+      ? db.users.find((u) => normalizeCustomerPhone10(u.phone) === cleanPhone10)
+      : undefined;
+
+    if (emailMatch?.passwordHash) {
+      return {
+        success: false,
+        error: 'An account with this email already exists. Please sign in.',
+        status: 409,
+      };
+    }
+    if (phoneMatch?.passwordHash && phoneMatch.id !== emailMatch?.id) {
+      return {
+        success: false,
+        error: 'An account with this mobile number already exists. Please sign in.',
+        status: 409,
+      };
+    }
+
+    const { hash, salt } = hashPassword(cleanPassword);
+    const now = new Date().toISOString();
+    let user = mergeDuplicateUsersInDb(db, cleanEmail, cleanPhone10);
+
+    if (!user) {
+      user = {
+        id: `usr-${Date.now()}-${crypto.randomBytes(3).toString('hex')}`,
+        name: cleanName,
+        email: cleanEmail,
+        phone: hasValidPhone ? cleanPhone10 : 'N/A',
+        passwordHash: hash,
+        passwordSalt: salt,
+        loginMethod: 'password',
+        createdAt: now,
+        lastLoginAt: now,
+      };
+      db.users.unshift(user);
+    } else {
+      user.name = cleanName;
+      if (hasValidEmail) user.email = cleanEmail;
+      if (hasValidPhone) user.phone = cleanPhone10;
+      user.passwordHash = hash;
+      user.passwordSalt = salt;
+      user.loginMethod = 'password';
+      user.lastLoginAt = now;
+    }
+
+    return { success: true, user: sanitizeUserRecord(user) };
+  });
+}
+
+export async function authenticateCustomerInDb(params: {
+  identifier: string;
+  password: string;
+}): Promise<
+  | { success: true; user: SafeUserRecord }
+  | { success: false; error: string; status: number }
+> {
+  const cleanIdent = params.identifier.trim().toLowerCase();
+  const cleanPhone10 = normalizeCustomerPhone10(params.identifier);
+  const cleanPassword = params.password;
+
+  if (!cleanIdent || !cleanPassword) {
+    return { success: false, error: 'Email/phone and password are required.', status: 400 };
+  }
+
+  return withTransaction((db) => {
+    const idx = db.users.findIndex((u) => {
+      const uEmail = normalizeCustomerEmail(u.email);
+      const uPhone = normalizeCustomerPhone10(u.phone);
+      return (uEmail && uEmail === cleanIdent) || (cleanPhone10 && uPhone === cleanPhone10);
+    });
+
+    if (idx === -1) {
+      return { success: false, error: 'No customer account found with those details.', status: 401 };
+    }
+
+    const user = db.users[idx];
+    if (!user.passwordHash || !user.passwordSalt) {
+      return {
+        success: false,
+        error: 'This account uses Google or OTP sign-in. Sign in with OTP or reset your password first.',
+        status: 401,
+      };
+    }
+
+    if (!verifyPassword(cleanPassword, user.passwordHash, user.passwordSalt)) {
+      return { success: false, error: 'Incorrect password. Please try again.', status: 401 };
+    }
+
+    db.users[idx].loginMethod = 'password';
+    db.users[idx].lastLoginAt = new Date().toISOString();
+    return { success: true, user: sanitizeUserRecord(db.users[idx]) };
+  });
+}
+
+export async function authenticateCustomerViaOtpInDb(params: {
+  identifier?: string;
+  phone?: string;
+  email?: string;
+  name?: string;
+}): Promise<
+  | { success: true; user: SafeUserRecord }
+  | { success: false; error: string; status: number }
+> {
+  const rawIdentifier = String(params.identifier || '').trim();
+  const identifierIsEmail = /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(rawIdentifier);
+  const cleanEmail = normalizeCustomerEmail(
+    params.email || (identifierIsEmail ? rawIdentifier : '')
+  );
+  const cleanPhone10 = normalizeCustomerPhone10(
+    params.phone || (!identifierIsEmail ? rawIdentifier : '')
+  );
+  const hasValidEmail = Boolean(cleanEmail && /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(cleanEmail));
+  const hasValidPhone = cleanPhone10.length === 10;
+
+  if (!hasValidEmail && !hasValidPhone) {
+    return {
+      success: false,
+      error: 'Please enter a valid email address or 10-digit mobile number.',
+      status: 400,
+    };
+  }
+
+  return withTransaction((db) => {
+    const now = new Date().toISOString();
+    let user = mergeDuplicateUsersInDb(db, cleanEmail, cleanPhone10);
+    const incomingName = (params.name || '').trim().slice(0, 80);
+
+    if (!user) {
+      user = {
+        id: `usr-${Date.now()}-${crypto.randomBytes(3).toString('hex')}`,
+        name: incomingName || (hasValidEmail ? cleanEmail.split('@')[0] : 'StepStyle Member'),
+        email: cleanEmail,
+        phone: hasValidPhone ? cleanPhone10 : 'N/A',
+        loginMethod: 'otp',
+        createdAt: now,
+        lastLoginAt: now,
+      };
+      db.users.unshift(user);
+    } else {
+      if (incomingName && isPlaceholderCustomerName(user.name, user.email)) {
+        user.name = incomingName;
+      }
+      if (hasValidEmail && !user.email) user.email = cleanEmail;
+      if (hasValidPhone) user.phone = cleanPhone10;
+      user.loginMethod = 'otp';
+      user.lastLoginAt = now;
+    }
+
+    return { success: true, user: sanitizeUserRecord(user) };
+  });
+}
+
+export async function resetCustomerPasswordInDb(params: {
+  identifier: string;
+  newPassword: string;
+}): Promise<
+  | { success: true; email: string }
+  | { success: false; error: string; status: number }
+> {
+  const cleanIdent = params.identifier.trim().toLowerCase();
+  const cleanPhone10 = normalizeCustomerPhone10(params.identifier);
+  const newPassword = params.newPassword;
+
+  if (!cleanIdent) {
+    return { success: false, error: 'Registered email or mobile number is required.', status: 400 };
+  }
+  if (newPassword.length < 6) {
+    return { success: false, error: 'New password must be at least 6 characters long.', status: 400 };
+  }
+
+  return withTransaction((db) => {
+    const idx = db.users.findIndex((u) => {
+      const uEmail = normalizeCustomerEmail(u.email);
+      const uPhone = normalizeCustomerPhone10(u.phone);
+      return (uEmail && uEmail === cleanIdent) || (cleanPhone10 && uPhone === cleanPhone10);
+    });
+
+    if (idx === -1) {
+      return {
+        success: false,
+        error: 'No customer account registered with that email or mobile number.',
+        status: 404,
+      };
+    }
+
+    const { hash, salt } = hashPassword(newPassword);
+    db.users[idx].passwordHash = hash;
+    db.users[idx].passwordSalt = salt;
+    return { success: true, email: db.users[idx].email || db.users[idx].phone };
+  });
+}
+
+// ---------- Support Inbox Operations ----------
+
+export async function createSupportMessageInDb(params: {
+  name: string;
+  email: string;
+  subject: string;
+  message: string;
+}): Promise<SupportMessageRecord> {
+  return withTransaction((db) => {
+    if (!Array.isArray(db.supportMessages)) {
+      db.supportMessages = [];
+    }
+    const now = new Date().toISOString();
+    const ticketNumber = `TKT-${Math.floor(100000 + Math.random() * 900000)}`;
+    const record: SupportMessageRecord = {
+      id: `sup-${Date.now()}-${crypto.randomBytes(3).toString('hex')}`,
+      ticketNumber,
+      name: params.name.trim().slice(0, 100),
+      email: params.email.trim().toLowerCase().slice(0, 140),
+      subject: params.subject.trim().slice(0, 180),
+      message: params.message.trim().slice(0, 2000),
+      status: 'open',
+      createdAt: now,
+      updatedAt: now,
+    };
+    db.supportMessages.unshift(record);
+
+    pushAdminNotification(db, {
+      type: 'support_message',
+      orderId: record.id,
+      orderNumber: ticketNumber,
+      customerName: record.name,
+      customerPhone: record.email,
+      totalAmount: 0,
+      paymentMethod: record.subject,
+      paymentStatus: 'Open',
+      itemCount: 1,
+      primaryItemName: record.subject,
+      message: `Support ticket ${ticketNumber} from ${record.name}: ${record.subject}`,
+      createdAt: now,
+    });
+
+    return record;
+  });
+}
+
+export async function getSupportMessagesFromDb(): Promise<SupportMessageRecord[]> {
+  const db = await getDatabase(true);
+  const list = Array.isArray(db.supportMessages) ? db.supportMessages : [];
+  return [...list].sort(
+    (a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
+  );
+}
+
+export async function updateSupportMessageInDb(params: {
+  id: string;
+  status?: 'open' | 'in_progress' | 'resolved';
+  adminNote?: string;
+  handledByAdminName?: string;
+}): Promise<SupportMessageRecord | null> {
+  return withTransaction((db) => {
+    if (!Array.isArray(db.supportMessages)) {
+      db.supportMessages = [];
+    }
+    const idx = db.supportMessages.findIndex((m) => m.id === params.id);
+    if (idx === -1) return null;
+
+    const current = db.supportMessages[idx];
+    if (params.status) current.status = params.status;
+    if (params.adminNote !== undefined) {
+      current.adminNote = params.adminNote.trim().slice(0, 1000);
+    }
+    if (params.handledByAdminName) {
+      current.handledByAdminName = params.handledByAdminName;
+    }
+    current.updatedAt = new Date().toISOString();
+    return current;
+  });
+}
+
+// ---------- Direct Local Database Explorer Helpers (Super Admin Only) ----------
+
+export type DatabaseCollectionKey =
+  | 'products'
+  | 'productVariants'
+  | 'orders'
+  | 'orderItems'
+  | 'users'
+  | 'payments'
+  | 'shipping'
+  | 'returns'
+  | 'refunds'
+  | 'supportMessages'
+  | 'categories'
+  | 'brands'
+  | 'heroBanners'
+  | 'adminNotifications'
+  | 'adminUsers';
+
+const COLLECTION_META: Array<{ key: DatabaseCollectionKey; label: string }> = [
+  { key: 'products', label: 'Products' },
+  { key: 'productVariants', label: 'Size & Color Variants' },
+  { key: 'orders', label: 'Orders' },
+  { key: 'orderItems', label: 'Order Line Items' },
+  { key: 'users', label: 'Customers (Users)' },
+  { key: 'payments', label: 'Payments' },
+  { key: 'shipping', label: 'Shipping & Tracking' },
+  { key: 'returns', label: 'Returns' },
+  { key: 'refunds', label: 'Refunds' },
+  { key: 'supportMessages', label: 'Support Inbox' },
+  { key: 'categories', label: 'Categories' },
+  { key: 'brands', label: 'Brands' },
+  { key: 'heroBanners', label: 'Hero Banners' },
+  { key: 'adminNotifications', label: 'Admin Notifications' },
+  { key: 'adminUsers', label: 'Admin Accounts' },
+];
+
+export async function getLocalDatabaseDiagnostics() {
+  const db = await getDatabase(true);
+  const storage = await resolveStorageTarget();
+  let fileSizeBytes = 0;
+  let lastModifiedAt: string | null = null;
+
+  try {
+    const stat = await fs.stat(storage.dbPath);
+    fileSizeBytes = stat.size;
+    lastModifiedAt = stat.mtime.toISOString();
+  } catch {
+    fileSizeBytes = Buffer.byteLength(JSON.stringify(db), 'utf8');
+  }
+
+  const storageMode: 'mongodb' | 'local-json' | 'local-memory-fallback' = isMongoConfigured()
+    ? 'mongodb'
+    : globalForDb.__stepstyleMemoryFallbackActive
+    ? 'local-memory-fallback'
+    : 'local-json';
+
+  const collections = COLLECTION_META.map(({ key, label }) => {
+    const list = db[key];
+    return {
+      key,
+      label,
+      count: Array.isArray(list) ? list.length : 0,
+    };
+  });
+
+  return {
+    storageMode,
+    dbPath: storage.dbPath,
+    bundledWritable: storage.bundledWritable,
+    memoryFallbackActive: Boolean(globalForDb.__stepstyleMemoryFallbackActive),
+    fileSizeBytes,
+    lastModifiedAt,
+    version: db.version,
+    collections,
+  };
+}
+
+function redactSensitiveFields<T>(collectionKey: DatabaseCollectionKey, items: T[]): unknown[] {
+  if (collectionKey === 'adminUsers' || collectionKey === 'users') {
+    return items.map((item) => {
+      if (!item || typeof item !== 'object') return item;
+      const copy = { ...(item as Record<string, unknown>) };
+      if ('passwordHash' in copy && copy.passwordHash) {
+        copy.passwordHash = '[REDACTED]';
+      }
+      if ('passwordSalt' in copy && copy.passwordSalt) {
+        copy.passwordSalt = '[REDACTED]';
+      }
+      return copy;
+    });
+  }
+  return items;
+}
+
+export async function getLocalDatabaseCollectionPreview(
+  collectionKey: DatabaseCollectionKey,
+  options?: { search?: string; limit?: number; offset?: number }
+) {
+  const db = await getDatabase(true);
+  const validMeta = COLLECTION_META.find((m) => m.key === collectionKey);
+  if (!validMeta) {
+    throw new Error(`Unsupported database collection "${collectionKey}".`);
+  }
+
+  const rawList = Array.isArray(db[collectionKey]) ? (db[collectionKey] as unknown[]) : [];
+  const safeList = redactSensitiveFields(collectionKey, rawList);
+
+  const q = (options?.search || '').trim().toLowerCase();
+  const filtered = q
+    ? safeList.filter((row) => JSON.stringify(row).toLowerCase().includes(q))
+    : safeList;
+
+  const limit = Math.max(1, Math.min(200, Number(options?.limit) || 25));
+  const offset = Math.max(0, Number(options?.offset) || 0);
+
+  return {
+    collection: validMeta.key,
+    label: validMeta.label,
+    totalCount: rawList.length,
+    filteredCount: filtered.length,
+    limit,
+    offset,
+    records: filtered.slice(offset, offset + limit),
+  };
+}
+
+export async function exportLocalDatabaseSnapshot(): Promise<DatabaseSchema> {
+  const db = await getDatabase(true);
+  const clone = JSON.parse(JSON.stringify(db)) as DatabaseSchema;
+
+  clone.adminUsers = clone.adminUsers.map((a) => ({
+    ...a,
+    passwordHash: '[REDACTED]',
+    passwordSalt: '[REDACTED]',
+  }));
+
+  clone.users = clone.users.map((u) => ({
+    ...u,
+    ...(u.passwordHash ? { passwordHash: '[REDACTED]' } : {}),
+    ...(u.passwordSalt ? { passwordSalt: '[REDACTED]' } : {}),
+  }));
+
+  return clone;
+}
+
+export async function restoreLocalDatabaseSnapshot(rawSnapshot: unknown) {
+  if (!rawSnapshot || typeof rawSnapshot !== 'object') {
+    throw new Error('Snapshot must be a valid JSON object.');
+  }
+
+  const candidate = rawSnapshot as Partial<DatabaseSchema>;
+  if (candidate.version !== 1) {
+    throw new Error('Invalid database snapshot: "version" must equal 1.');
+  }
+
+  const requiredArrays: Array<keyof DatabaseSchema> = [
+    'products',
+    'orders',
+    'orderItems',
+    'users',
+  ];
+  for (const field of requiredArrays) {
+    if (!Array.isArray(candidate[field])) {
+      throw new Error(`Invalid database snapshot: missing "${field}" array.`);
+    }
+  }
+
+  await withTransaction((db) => {
+    // Always preserve server-side admin credentials & existing customer password hashes when backup redacted them
+    const existingAdminMap = new Map(db.adminUsers.map((a) => [a.id, a]));
+    const existingUserMap = new Map(db.users.map((u) => [u.id, u]));
+
+    const incomingUsers = (candidate.users || []).map((u) => {
+      const prev = existingUserMap.get(u.id);
+      const next = { ...u };
+      if (
+        (next.passwordHash === '[REDACTED]' || !next.passwordHash) &&
+        prev?.passwordHash
+      ) {
+        next.passwordHash = prev.passwordHash;
+        next.passwordSalt = prev.passwordSalt;
+      }
+      return next;
+    });
+
+    const incomingAdmins = Array.isArray(candidate.adminUsers)
+      ? candidate.adminUsers
+          .map((a) => {
+            const prev = existingAdminMap.get(a.id);
+            if (!prev && (a.passwordHash === '[REDACTED]' || !a.passwordHash)) {
+              return null;
+            }
+            return prev && (a.passwordHash === '[REDACTED]' || !a.passwordHash)
+              ? { ...a, passwordHash: prev.passwordHash, passwordSalt: prev.passwordSalt }
+              : a;
+          })
+          .filter((a): a is AdminUserRecord => Boolean(a))
+      : [];
+
+    // Ensure at least current active Super Admins remain intact
+    for (const prevAdmin of db.adminUsers) {
+      if (!incomingAdmins.some((a) => a.id === prevAdmin.id)) {
+        incomingAdmins.push(prevAdmin);
+      }
+    }
+
+    db.users = incomingUsers;
+    db.adminUsers = incomingAdmins;
+    db.categories = Array.isArray(candidate.categories) ? candidate.categories : db.categories;
+    db.brands = Array.isArray(candidate.brands) ? candidate.brands : db.brands;
+    db.products = candidate.products || db.products;
+    db.productImages = Array.isArray(candidate.productImages) ? candidate.productImages : [];
+    db.productVariants = Array.isArray(candidate.productVariants) ? candidate.productVariants : [];
+    db.orders = candidate.orders || [];
+    db.orderItems = candidate.orderItems || [];
+    db.orderStatusHistory = Array.isArray(candidate.orderStatusHistory)
+      ? candidate.orderStatusHistory
+      : [];
+    db.payments = Array.isArray(candidate.payments) ? candidate.payments : [];
+    db.shipping = Array.isArray(candidate.shipping) ? candidate.shipping : [];
+    db.returns = Array.isArray(candidate.returns) ? candidate.returns : [];
+    db.refunds = Array.isArray(candidate.refunds) ? candidate.refunds : [];
+    db.adminNotes = Array.isArray(candidate.adminNotes) ? candidate.adminNotes : [];
+    db.notifications = Array.isArray(candidate.notifications) ? candidate.notifications : [];
+    db.adminNotifications = Array.isArray(candidate.adminNotifications)
+      ? candidate.adminNotifications
+      : [];
+    db.heroBanners =
+      Array.isArray(candidate.heroBanners) && candidate.heroBanners.length > 0
+        ? candidate.heroBanners
+        : DEFAULT_HERO_BANNERS.map((b) => ({ ...b }));
+    db.supportMessages = Array.isArray(candidate.supportMessages)
+      ? candidate.supportMessages
+      : [];
+    if (typeof candidate.lastPurgedAt === 'string' && candidate.lastPurgedAt.trim()) {
+      db.lastPurgedAt = candidate.lastPurgedAt.trim();
+    }
+  });
+
+  return getLocalDatabaseDiagnostics();
 }

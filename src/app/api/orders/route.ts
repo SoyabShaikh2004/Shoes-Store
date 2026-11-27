@@ -47,6 +47,7 @@ function serializeCustomerOrder(view: FullOrderView, isVerifiedOwner: boolean) {
     totalAmount: order.totalAmount,
     subtotal: order.subtotal,
     shippingFee: order.shippingFee,
+    discountAmount: order.discountAmount ?? 0,
     paymentStatus: order.paymentStatus,
     paymentMethod: order.paymentMethod,
     transactionId: isVerifiedOwner ? payment?.transactionId : undefined,

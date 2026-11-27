@@ -119,46 +119,38 @@ export default function SignupPage() {
     try {
       const cleanId = identifier.trim();
       const isPhone = /^[0-9]{10}$/.test(cleanId);
-      const existingUsersData = localStorage.getItem('users');
-      const existingUsers = existingUsersData ? JSON.parse(existingUsersData) : [];
-
-      const userData = {
-        name: name.trim(),
-        email: isPhone ? undefined : cleanId,
-        phone: isPhone ? cleanId : undefined,
-        password,
-        loginMethod: 'password',
-        loginTime: new Date().toISOString(),
-      };
-      const updatedUsers = [...existingUsers, userData];
-      localStorage.setItem('users', JSON.stringify(updatedUsers));
-
-      localStorage.setItem('isAuthenticated', 'true');
-      localStorage.setItem('authUser', JSON.stringify(userData));
-      window.dispatchEvent(new Event('authUpdated'));
-
-      try {
-        await fetch('/api/auth/customer/sync', {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-            'X-Requested-With': 'XMLHttpRequest',
-          },
-          body: JSON.stringify({
-            name: name.trim(),
-            email: isPhone ? undefined : cleanId,
-            phone: isPhone ? cleanId : undefined,
-          }),
-        });
-        notifyStorefrontChanged('customers');
-      } catch {
-        // continue locally if network unavailable
+      const res = await fetch('/api/auth/customer/sync', {
+        method: 'POST',
+        credentials: 'include',
+        headers: {
+          'Content-Type': 'application/json',
+          'X-Requested-With': 'XMLHttpRequest',
+        },
+        body: JSON.stringify({
+          action: 'signup',
+          name: name.trim(),
+          email: isPhone ? undefined : cleanId,
+          phone: isPhone ? cleanId : undefined,
+          identifier: cleanId,
+          password,
+        }),
+      });
+      const data = await res.json().catch(() => null);
+      if (!res.ok || !data?.success || !data?.user) {
+        setIsLoading(false);
+        setError(data?.error || 'Could not create your account. Please try again.');
+        return;
       }
 
+      localStorage.setItem('isAuthenticated', 'true');
+      localStorage.setItem('authUser', JSON.stringify(data.user));
+      localStorage.removeItem('users');
+      window.dispatchEvent(new Event('authUpdated'));
+      notifyStorefrontChanged('customers');
       router.push(redirectPath);
     } catch {
       setIsLoading(false);
-      setError('An error occurred during signup. Please try again.');
+      setError('Network error during signup. Please check your connection and try again.');
     }
   };
 

@@ -34,7 +34,7 @@ export default function ProductDetailActions({ product }: ProductDetailActionsPr
                   key={color}
                   type="button"
                   onClick={() => setSelectedColor(color)}
-                  className={`min-h-[40px] px-3.5 py-2 rounded-xl text-xs sm:text-sm font-semibold border transition-colors cursor-pointer inline-flex items-center gap-1.5 ${
+                  className={`min-h-[44px] px-3.5 py-2 rounded-xl text-xs sm:text-sm font-semibold border transition-colors cursor-pointer inline-flex items-center gap-1.5 ${
                     active
                       ? 'border-indigo-600 bg-indigo-50 text-indigo-700'
                       : 'border-gray-200 bg-white text-gray-700 hover:border-gray-400'

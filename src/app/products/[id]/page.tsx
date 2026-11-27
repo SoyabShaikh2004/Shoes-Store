@@ -91,7 +91,7 @@ export default async function ProductDetailPage({ params }: ProductDetailPagePro
         {/* Product Details */}
         <div className="flex flex-col space-y-4 sm:space-y-6">
           <div>
-            <div className="flex items-center gap-2 mb-2">
+            <div className="flex flex-wrap items-center gap-2 mb-2">
               <span className="text-xs font-semibold uppercase tracking-wider text-indigo-600 bg-indigo-50 px-2.5 py-1 rounded-md">
                 {product.brand || 'StepStyle'}
               </span>
@@ -116,7 +116,7 @@ export default async function ProductDetailPage({ params }: ProductDetailPagePro
             </h1>
             
             {/* Pricing Section with MRP */}
-            <div className="mt-3 flex items-baseline flex-wrap gap-3 tabular-nums">
+            <div className="mt-3 flex items-baseline flex-wrap gap-2 sm:gap-3 tabular-nums">
               <span className="text-2xl sm:text-3xl font-extrabold text-indigo-600">
                 ₹{product.price.toLocaleString('en-IN')}
               </span>

@@ -86,8 +86,9 @@ export interface CustomerSessionUser {
   sub: string;
   email: string;
   name: string;
+  phone?: string;
   picture?: string;
-  loginMethod: 'google';
+  loginMethod: 'google' | 'password' | 'otp';
   loginTime: string;
 }
 
@@ -107,15 +108,25 @@ export function verifyCustomerSessionToken(
   token: string
 ): CustomerSessionUser | null {
   const decoded = verifyPayload<CustomerSessionTokenPayload>(token);
-  if (!decoded || !decoded.sub || !decoded.email || decoded.exp < Date.now()) {
+  if (
+    !decoded ||
+    !decoded.sub ||
+    (!decoded.email && !decoded.phone) ||
+    decoded.exp < Date.now()
+  ) {
     return null;
   }
+  const method: CustomerSessionUser['loginMethod'] =
+    decoded.loginMethod === 'password' || decoded.loginMethod === 'otp'
+      ? decoded.loginMethod
+      : 'google';
   return {
     sub: decoded.sub,
-    email: decoded.email,
+    email: decoded.email || '',
     name: decoded.name,
+    phone: decoded.phone,
     picture: decoded.picture,
-    loginMethod: 'google',
+    loginMethod: method,
     loginTime: decoded.loginTime,
   };
 }

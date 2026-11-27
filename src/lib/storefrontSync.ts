@@ -86,3 +86,35 @@ export function notifyAdminSessionExpired(): void {
   if (typeof window === 'undefined') return;
   window.dispatchEvent(new Event(ADMIN_SESSION_EXPIRED_EVENT));
 }
+
+export function pruneLocalOrdersByCutoff(lastPurgedAt?: string | null): boolean {
+  if (typeof window === 'undefined' || !lastPurgedAt) return false;
+  const cutoffMs = new Date(lastPurgedAt).getTime();
+  if (!Number.isFinite(cutoffMs) || cutoffMs <= 0) return false;
+
+  try {
+    const raw = localStorage.getItem('orders');
+    if (!raw) return false;
+    const parsed = JSON.parse(raw);
+    if (!Array.isArray(parsed)) return false;
+
+    const kept = parsed.filter((o: { date?: string; updatedAt?: string }) => {
+      const tsStr = o?.date || o?.updatedAt;
+      const ms = tsStr ? new Date(tsStr).getTime() : NaN;
+      return Number.isFinite(ms) && ms > cutoffMs;
+    });
+
+    if (kept.length === parsed.length) return false;
+
+    if (kept.length === 0) {
+      localStorage.removeItem('orders');
+      localStorage.removeItem('orderVerifyHints');
+    } else {
+      localStorage.setItem('orders', JSON.stringify(kept));
+    }
+    window.dispatchEvent(new Event('ordersUpdated'));
+    return true;
+  } catch {
+    return false;
+  }
+}

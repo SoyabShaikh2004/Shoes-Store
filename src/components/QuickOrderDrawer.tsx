@@ -171,33 +171,35 @@ export default function QuickOrderDrawer({ product, onClose }: QuickOrderDrawerP
 
     setIsSigningIn(true);
     try {
-      await fetch('/api/auth/customer/sync', {
+      const res = await fetch('/api/auth/customer/sync', {
         method: 'POST',
+        credentials: 'include',
         headers: {
           'Content-Type': 'application/json',
           'X-Requested-With': 'XMLHttpRequest',
         },
         body: JSON.stringify({
-          email: emailValid ? cleanId : undefined,
-          phone: phoneValid ? cleanId : undefined,
+          action: 'login',
+          identifier: cleanId,
+          password,
         }),
-      }).catch(() => undefined);
+      });
+      const data = await res.json().catch(() => null);
+      if (!res.ok || !data?.success || !data?.user) {
+        setAuthError(data?.error || 'Invalid credentials. Please check your email/mobile and password.');
+        return;
+      }
 
       localStorage.setItem('isAuthenticated', 'true');
-      localStorage.setItem(
-        'authUser',
-        JSON.stringify({
-          email: emailValid ? cleanId : undefined,
-          phone: phoneValid ? cleanId : undefined,
-          loginMethod: 'password',
-          loginTime: new Date().toISOString(),
-        })
-      );
+      localStorage.setItem('authUser', JSON.stringify(data.user));
+      localStorage.removeItem('users');
       window.dispatchEvent(new Event('authUpdated'));
       notifyStorefrontChanged('customers');
       toast.success('Signed in! Proceeding to checkout...');
       onClose();
       router.push('/cart?checkout=quick');
+    } catch {
+      setAuthError('Network error while signing in. Please try again.');
     } finally {
       setIsSigningIn(false);
     }
@@ -417,7 +419,7 @@ export default function QuickOrderDrawer({ product, onClose }: QuickOrderDrawerP
                       onClick={onClose}
                       className="inline-flex items-center gap-1.5 text-xs font-semibold text-indigo-600 hover:text-indigo-800 py-2 px-3 rounded-lg hover:bg-indigo-50 transition-colors"
                     >
-                      <span>View 3D &amp; Specs</span>
+                      <span>View Full Specs</span>
                       <ExternalLink className="w-3.5 h-3.5" />
                     </Link>
                   </div>

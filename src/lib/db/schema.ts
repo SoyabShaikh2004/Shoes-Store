@@ -36,10 +36,14 @@ export interface UserRecord {
   name: string;
   email: string;
   phone: string;
+  passwordHash?: string;
+  passwordSalt?: string;
+  loginMethod?: 'password' | 'otp' | 'google';
   defaultAddress?: string;
   defaultPincode?: string;
   createdAt: string;
   lastOrderAt?: string;
+  lastLoginAt?: string;
 }
 
 export interface AdminUserRecord {
@@ -126,6 +130,7 @@ export interface OrderRecord {
   pincode: string;
   subtotal: number;
   shippingFee: number;
+  discountAmount?: number;
   totalAmount: number;
   status: OrderStatus;
   paymentStatus: 'Pending' | 'Paid' | 'Failed' | 'Refund Initiated' | 'Refunded';
@@ -239,7 +244,7 @@ export interface NotificationRecord {
 
 export interface AdminNotificationRecord {
   id: string;
-  type: 'new_order' | 'return_requested' | 'payment_update';
+  type: 'new_order' | 'return_requested' | 'payment_update' | 'support_message';
   orderId: string;
   orderNumber: string;
   customerName: string;
@@ -264,8 +269,23 @@ export interface HeroBannerRecord {
   updatedAt: string;
 }
 
+export interface SupportMessageRecord {
+  id: string;
+  ticketNumber: string;
+  name: string;
+  email: string;
+  subject: string;
+  message: string;
+  status: 'open' | 'in_progress' | 'resolved';
+  adminNote?: string;
+  handledByAdminName?: string;
+  createdAt: string;
+  updatedAt: string;
+}
+
 export interface DatabaseSchema {
   version: number;
+  lastPurgedAt?: string;
   users: UserRecord[];
   adminUsers: AdminUserRecord[];
   categories: CategoryRecord[];
@@ -284,4 +304,5 @@ export interface DatabaseSchema {
   notifications: NotificationRecord[];
   adminNotifications?: AdminNotificationRecord[];
   heroBanners?: HeroBannerRecord[];
+  supportMessages?: SupportMessageRecord[];
 }

@@ -90,7 +90,7 @@ export default async function ProductsPage({ searchParams }: ProductsPageProps) 
       </h1>
 
       {/* Categories */}
-      <div className="mb-5 sm:mb-8 overflow-x-auto no-scrollbar pb-2">
+      <div className="mb-5 sm:mb-8 overflow-x-auto no-scrollbar pb-3">
         <div className="flex flex-nowrap sm:flex-wrap gap-2 items-center justify-start sm:justify-center">
           <Link
             href="/products"

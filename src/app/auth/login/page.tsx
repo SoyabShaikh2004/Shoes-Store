@@ -66,43 +66,52 @@ export default function LoginPage() {
     }, 600);
   };
 
-  const completeCustomerLogin = async (method: 'otp' | 'password', matchedName?: string) => {
+  const completeCustomerLogin = async (method: 'otp' | 'password') => {
     const cleanId = identifier.trim();
     const isPhone = /^[0-9]{10}$/.test(cleanId);
 
-    localStorage.setItem('isAuthenticated', 'true');
-    localStorage.setItem(
-      'authUser',
-      JSON.stringify({
-        name: matchedName || undefined,
-        email: isPhone ? undefined : cleanId,
-        phone: isPhone ? cleanId : undefined,
-        loginMethod: method,
-        loginTime: new Date().toISOString(),
-      })
-    );
-    window.dispatchEvent(new Event('authUpdated'));
-
     try {
-      await fetch('/api/auth/customer/sync', {
+      const payload =
+        method === 'password'
+          ? {
+              action: 'login',
+              identifier: cleanId,
+              password,
+            }
+          : {
+              action: 'otp_login',
+              identifier: cleanId,
+              email: isPhone ? undefined : cleanId,
+              phone: isPhone ? cleanId : undefined,
+            };
+
+      const res = await fetch('/api/auth/customer/sync', {
         method: 'POST',
+        credentials: 'include',
         headers: {
           'Content-Type': 'application/json',
           'X-Requested-With': 'XMLHttpRequest',
         },
-        body: JSON.stringify({
-          name: matchedName || undefined,
-          email: isPhone ? undefined : cleanId,
-          phone: isPhone ? cleanId : undefined,
-        }),
+        body: JSON.stringify(payload),
       });
-      notifyStorefrontChanged('customers');
-    } catch {
-      // keep local login active if offline
-    }
+      const data = await res.json().catch(() => null);
+      if (!res.ok || !data?.success || !data?.user) {
+        setIsLoading(false);
+        setError(data?.error || 'Sign in failed. Please check your credentials and try again.');
+        return;
+      }
 
-    setIsLoading(false);
-    router.push(redirectPath);
+      localStorage.setItem('isAuthenticated', 'true');
+      localStorage.setItem('authUser', JSON.stringify(data.user));
+      localStorage.removeItem('users');
+      window.dispatchEvent(new Event('authUpdated'));
+      notifyStorefrontChanged('customers');
+      setIsLoading(false);
+      router.push(redirectPath);
+    } catch {
+      setIsLoading(false);
+      setError('Network error while signing in. Please try again.');
+    }
   };
 
   const handleVerifyOtp = async () => {
@@ -133,37 +142,9 @@ export default function LoginPage() {
       return;
     }
 
-    const cleanId = identifier.trim();
-    let matchedName: string | undefined;
-    try {
-      const storedUsersRaw = localStorage.getItem('users');
-      if (storedUsersRaw) {
-        const storedUsers = JSON.parse(storedUsersRaw) as Array<{
-          email?: string;
-          phone?: string;
-          password?: string;
-          name?: string;
-        }>;
-        const found = storedUsers.find(
-          (u) =>
-            (u.email && u.email.toLowerCase() === cleanId.toLowerCase()) ||
-            (u.phone && u.phone === cleanId)
-        );
-        if (found) {
-          if (found.password && found.password !== password) {
-            setError('Incorrect password. Please try again or reset your password.');
-            return;
-          }
-          matchedName = found.name;
-        }
-      }
-    } catch {
-      // ignore invalid stored JSON
-    }
-
     setIsLoading(true);
     setError('');
-    await completeCustomerLogin('password', matchedName);
+    await completeCustomerLogin('password');
   };
 
   return (

@@ -151,10 +151,10 @@ export default function OrderTracker({
 
   const accent = getStatusAccent(currentStatus);
 
-  const handleDownloadInvoice = () => {
+  const handleDownloadInvoice = async () => {
     setIsDownloadingInvoice(true);
     try {
-      generateTaxInvoicePDF({
+      await generateTaxInvoicePDF({
         orderId: order.orderNumber || order.orderId,
         date: order.date,
         items: order.items.map((item) => ({
@@ -167,6 +167,8 @@ export default function OrderTracker({
           brand: item.brand,
           category: item.category,
         })),
+        shippingFee: order.shippingFee,
+        discountAmount: order.discountAmount,
         totalAmount: order.totalAmount,
         paymentStatus: order.paymentStatus,
         paymentMethod: order.paymentMethod,

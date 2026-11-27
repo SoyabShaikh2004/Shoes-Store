@@ -452,7 +452,30 @@ export default function CartItems() {
       }
 
       const persistedRecord: Record<string, unknown> = data.order || orderPayload;
-      setCompletedSnapshot(invoiceSnapshot);
+      const serverShippingFee =
+        typeof persistedRecord.shippingFee === 'number'
+          ? persistedRecord.shippingFee
+          : invoiceSnapshot.shippingFee;
+      const serverDiscountAmount =
+        typeof persistedRecord.discountAmount === 'number'
+          ? persistedRecord.discountAmount
+          : invoiceSnapshot.discountAmount;
+      const serverTotalAmount =
+        typeof persistedRecord.totalAmount === 'number'
+          ? persistedRecord.totalAmount
+          : invoiceSnapshot.totalAmount;
+      const resolvedOrderId =
+        typeof persistedRecord.orderNumber === 'string' && persistedRecord.orderNumber
+          ? persistedRecord.orderNumber
+          : activeOrderId;
+
+      setCompletedSnapshot({
+        ...invoiceSnapshot,
+        orderId: resolvedOrderId,
+        shippingFee: serverShippingFee,
+        discountAmount: serverDiscountAmount,
+        totalAmount: serverTotalAmount,
+      });
       setOrderId('');
 
       try {
@@ -686,11 +709,11 @@ export default function CartItems() {
     toast.success('Order confirmed!');
   };
 
-  const handleDownloadInvoice = () => {
+  const handleDownloadInvoice = async () => {
     if (!completedSnapshot) return;
     setIsDownloadingInvoice(true);
     try {
-      generateTaxInvoicePDF(completedSnapshot);
+      await generateTaxInvoicePDF(completedSnapshot);
       toast.success('Tax Invoice PDF downloaded');
     } catch {
       toast.error('Failed to generate PDF invoice');

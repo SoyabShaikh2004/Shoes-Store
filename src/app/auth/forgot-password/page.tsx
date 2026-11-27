@@ -96,7 +96,7 @@ export default function ForgotPasswordPage() {
     }, 400);
   };
 
-  const handleResetPassword = (e: React.FormEvent) => {
+  const handleResetPassword = async (e: React.FormEvent) => {
     e.preventDefault();
 
     if (newPassword.length < 6) {
@@ -113,28 +113,32 @@ export default function ForgotPasswordPage() {
     setError('');
 
     try {
-      const cleanId = identifier.trim();
-      const rawUsers = localStorage.getItem('users');
-      const users = rawUsers
-        ? (JSON.parse(rawUsers) as Array<{ email?: string; phone?: string; password?: string }>)
-        : [];
-      const updated = users.map((u) => {
-        const matchesEmail = u.email && u.email.toLowerCase() === cleanId.toLowerCase();
-        const matchesPhone = u.phone && u.phone === cleanId;
-        if (matchesEmail || matchesPhone) {
-          return { ...u, password: newPassword };
-        }
-        return u;
+      const res = await fetch('/api/auth/customer/sync', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'X-Requested-With': 'XMLHttpRequest',
+        },
+        body: JSON.stringify({
+          action: 'reset_password',
+          identifier: identifier.trim(),
+          newPassword,
+        }),
       });
-      localStorage.setItem('users', JSON.stringify(updated));
-    } catch {
-      // ignore storage parse failure
-    }
+      const data = await res.json().catch(() => null);
+      if (!res.ok || !data?.success) {
+        setIsLoading(false);
+        setError(data?.error || 'Could not reset password. Please check your registered account details.');
+        return;
+      }
 
-    setTimeout(() => {
+      localStorage.removeItem('users');
       setIsLoading(false);
       router.push('/auth/login');
-    }, 500);
+    } catch {
+      setIsLoading(false);
+      setError('Network error resetting password. Please try again.');
+    }
   };
 
   return (

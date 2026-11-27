@@ -6,6 +6,7 @@ import Link from 'next/link';
 import Image from 'next/image';
 import { Package, Truck, Search, ArrowRight, Heart, LogOut, ShoppingBag } from 'lucide-react';
 import { CustomerOrderView, mapLegacyStageToStatus } from '@/lib/orderTypes';
+import { pruneLocalOrdersByCutoff, subscribeStorefrontChanges } from '@/lib/storefrontSync';
 
 interface UserData {
   email?: string;
@@ -68,6 +69,18 @@ export default function AccountPage() {
         }
       }
 
+      try {
+        const sigRes = await fetch('/api/storefront?signature=1', { cache: 'no-store' });
+        if (sigRes.ok) {
+          const sigData = await sigRes.json().catch(() => null);
+          if (sigData?.lastPurgedAt) {
+            pruneLocalOrdersByCutoff(sigData.lastPurgedAt);
+          }
+        }
+      } catch {
+        // ignore network check
+      }
+
       const merged = new Map<string, CustomerOrderView>();
 
       try {
@@ -118,7 +131,17 @@ export default function AccountPage() {
       setIsLoading(false);
     };
 
-    loadOrders();
+    void loadOrders();
+
+    const unsubscribe = subscribeStorefrontChanges((reason) => {
+      if (reason === 'all' || reason === 'orders') {
+        void loadOrders();
+      }
+    });
+
+    return () => {
+      unsubscribe();
+    };
   }, [router]);
 
   const formatDate = (dateString: string) => {

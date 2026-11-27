@@ -1,5 +1,3 @@
-import jsPDF from 'jspdf';
-
 export interface InvoiceOrderData {
   orderId: string;
   date: string;
@@ -31,7 +29,8 @@ export interface InvoiceOrderData {
   estimatedDelivery?: string;
 }
 
-export function generateTaxInvoicePDF(order: InvoiceOrderData) {
+export async function generateTaxInvoicePDF(order: InvoiceOrderData) {
+  const { default: jsPDF } = await import('jspdf');
   const doc = new jsPDF({
     orientation: 'portrait',
     unit: 'mm',

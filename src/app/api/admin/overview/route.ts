@@ -41,11 +41,14 @@ export async function GET(req: NextRequest) {
         notifications: snapshot.notifications,
         adminNotifications: snapshot.adminNotifications,
         unreadNotificationsCount: snapshot.unreadNotificationsCount,
+        openSupportCount: snapshot.openSupportCount,
+        supportMessagesCount: snapshot.supportMessagesCount,
         admins:
           auth.admin.role === 'Super Admin'
             ? snapshot.admins
             : snapshot.admins.filter((a) => a.id === auth.admin.id),
         storageMode: snapshot.storageMode,
+        lastPurgedAt: snapshot.lastPurgedAt,
         syncedAt: snapshot.syncedAt,
       },
       { headers: NO_STORE_HEADERS }

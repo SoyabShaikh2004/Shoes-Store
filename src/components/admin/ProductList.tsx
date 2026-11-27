@@ -316,7 +316,7 @@ export default function ProductList({
                 onClick={() => setViewMode('table')}
                 title="Table view"
                 aria-label="List view"
-                className={`min-w-[38px] min-h-[36px] inline-flex items-center justify-center rounded-md transition-colors cursor-pointer ${
+                className={`min-w-[44px] min-h-[44px] sm:min-w-[38px] sm:min-h-[36px] inline-flex items-center justify-center rounded-md transition-colors cursor-pointer ${
                   viewMode === 'table'
                     ? 'bg-white text-indigo-600 shadow-xs'
                     : 'text-slate-500 hover:text-slate-800'
@@ -329,7 +329,7 @@ export default function ProductList({
                 onClick={() => setViewMode('grid')}
                 title="Cards grid view"
                 aria-label="Grid view"
-                className={`min-w-[38px] min-h-[36px] inline-flex items-center justify-center rounded-md transition-colors cursor-pointer ${
+                className={`min-w-[44px] min-h-[44px] sm:min-w-[38px] sm:min-h-[36px] inline-flex items-center justify-center rounded-md transition-colors cursor-pointer ${
                   viewMode === 'grid'
                     ? 'bg-white text-indigo-600 shadow-xs'
                     : 'text-slate-500 hover:text-slate-800'
@@ -350,7 +350,7 @@ export default function ProductList({
             <button
               type="button"
               onClick={() => setSelectedCategory('All')}
-              className={`min-h-[36px] px-2.5 py-1 rounded-md border transition-colors cursor-pointer ${
+              className={`min-h-[44px] sm:min-h-[36px] px-3 py-1 rounded-md border transition-colors cursor-pointer ${
                 selectedCategory === 'All'
                   ? 'bg-slate-900 text-white border-slate-900 font-medium'
                   : 'bg-slate-50 text-slate-700 border-slate-200 hover:bg-slate-100'
@@ -365,7 +365,7 @@ export default function ProductList({
                   key={cat}
                   type="button"
                   onClick={() => setSelectedCategory(cat)}
-                  className={`min-h-[36px] px-2.5 py-1 rounded-md border transition-colors cursor-pointer ${
+                  className={`min-h-[44px] sm:min-h-[36px] px-3 py-1 rounded-md border transition-colors cursor-pointer ${
                     selectedCategory === cat
                       ? 'bg-slate-900 text-white border-slate-900 font-medium'
                       : 'bg-slate-50 text-slate-700 border-slate-200 hover:bg-slate-100'
@@ -382,7 +382,7 @@ export default function ProductList({
             <button
               type="button"
               onClick={() => setStockFilter('All')}
-              className={`min-h-[36px] px-2.5 py-1 rounded-md cursor-pointer ${
+              className={`min-h-[44px] sm:min-h-[36px] px-3 py-1 rounded-md cursor-pointer ${
                 stockFilter === 'All'
                   ? 'bg-slate-800 text-white font-medium'
                   : 'text-slate-600 hover:bg-slate-100'
@@ -393,7 +393,7 @@ export default function ProductList({
             <button
               type="button"
               onClick={() => setStockFilter('inStock')}
-              className={`min-h-[36px] px-2.5 py-1 rounded-md cursor-pointer ${
+              className={`min-h-[44px] sm:min-h-[36px] px-3 py-1 rounded-md cursor-pointer ${
                 stockFilter === 'inStock'
                   ? 'bg-emerald-600 text-white font-medium'
                   : 'text-emerald-700 hover:bg-emerald-50'
@@ -404,7 +404,7 @@ export default function ProductList({
             <button
               type="button"
               onClick={() => setStockFilter('outOfStock')}
-              className={`min-h-[36px] px-2.5 py-1 rounded-md cursor-pointer ${
+              className={`min-h-[44px] sm:min-h-[36px] px-3 py-1 rounded-md cursor-pointer ${
                 stockFilter === 'outOfStock'
                   ? 'bg-rose-600 text-white font-medium'
                   : 'text-rose-700 hover:bg-rose-50'
@@ -425,7 +425,7 @@ export default function ProductList({
             <button
               type="button"
               onClick={() => setSelectedIds([])}
-              className="min-h-[36px] px-2 text-xs text-slate-400 hover:text-white underline cursor-pointer ml-1"
+              className="min-h-[44px] sm:min-h-[36px] px-2 text-xs text-slate-400 hover:text-white underline cursor-pointer ml-1"
             >
               Clear
             </button>
@@ -436,7 +436,7 @@ export default function ProductList({
               type="button"
               disabled={isBulkRunning}
               onClick={() => setBulkModal('bulk_edit_price')}
-              className="min-h-[36px] px-3 py-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 border border-slate-700 font-medium cursor-pointer whitespace-nowrap"
+              className="min-h-[44px] sm:min-h-[36px] px-3 py-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 border border-slate-700 font-medium cursor-pointer whitespace-nowrap"
             >
               Edit Price
             </button>
@@ -444,7 +444,7 @@ export default function ProductList({
               type="button"
               disabled={isBulkRunning}
               onClick={() => setBulkModal('bulk_update_stock')}
-              className="min-h-[36px] px-3 py-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 border border-slate-700 font-medium cursor-pointer whitespace-nowrap"
+              className="min-h-[44px] sm:min-h-[36px] px-3 py-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 border border-slate-700 font-medium cursor-pointer whitespace-nowrap"
             >
               Update Stock
             </button>
@@ -452,7 +452,7 @@ export default function ProductList({
               type="button"
               disabled={isBulkRunning}
               onClick={() => setBulkModal('bulk_update_discount')}
-              className="min-h-[36px] px-3 py-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 border border-slate-700 font-medium cursor-pointer whitespace-nowrap"
+              className="min-h-[44px] sm:min-h-[36px] px-3 py-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 border border-slate-700 font-medium cursor-pointer whitespace-nowrap"
             >
               Set Discount
             </button>
@@ -460,7 +460,7 @@ export default function ProductList({
               type="button"
               disabled={isBulkRunning}
               onClick={() => setBulkModal('bulk_assign_category')}
-              className="min-h-[36px] px-3 py-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 border border-slate-700 font-medium cursor-pointer whitespace-nowrap"
+              className="min-h-[44px] sm:min-h-[36px] px-3 py-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 border border-slate-700 font-medium cursor-pointer whitespace-nowrap"
             >
               Assign Category
             </button>
@@ -468,7 +468,7 @@ export default function ProductList({
               type="button"
               disabled={isBulkRunning}
               onClick={() => setBulkModal('bulk_assign_brand')}
-              className="min-h-[36px] px-3 py-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 border border-slate-700 font-medium cursor-pointer whitespace-nowrap"
+              className="min-h-[44px] sm:min-h-[36px] px-3 py-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 border border-slate-700 font-medium cursor-pointer whitespace-nowrap"
             >
               Assign Brand
             </button>
@@ -476,7 +476,7 @@ export default function ProductList({
               type="button"
               disabled={isBulkRunning}
               onClick={() => runBulkAction({ action: 'bulk_activate' })}
-              className="min-h-[36px] px-3 py-1.5 rounded-lg bg-emerald-600 hover:bg-emerald-700 font-semibold cursor-pointer whitespace-nowrap"
+              className="min-h-[44px] sm:min-h-[36px] px-3 py-1.5 rounded-lg bg-emerald-600 hover:bg-emerald-700 font-semibold cursor-pointer whitespace-nowrap"
             >
               Activate
             </button>
@@ -484,7 +484,7 @@ export default function ProductList({
               type="button"
               disabled={isBulkRunning}
               onClick={() => runBulkAction({ action: 'bulk_deactivate' })}
-              className="min-h-[36px] px-3 py-1.5 rounded-lg bg-amber-600 hover:bg-amber-700 font-semibold cursor-pointer whitespace-nowrap"
+              className="min-h-[44px] sm:min-h-[36px] px-3 py-1.5 rounded-lg bg-amber-600 hover:bg-amber-700 font-semibold cursor-pointer whitespace-nowrap"
             >
               Deactivate
             </button>
@@ -492,7 +492,7 @@ export default function ProductList({
               type="button"
               disabled={isBulkRunning}
               onClick={() => setConfirmDeleteOpen(true)}
-              className="min-h-[36px] px-3 py-1.5 rounded-lg bg-rose-600 hover:bg-rose-700 font-semibold cursor-pointer whitespace-nowrap"
+              className="min-h-[44px] sm:min-h-[36px] px-3 py-1.5 rounded-lg bg-rose-600 hover:bg-rose-700 font-semibold cursor-pointer whitespace-nowrap"
             >
               Delete ({selectedIds.length})
             </button>
@@ -529,7 +529,7 @@ export default function ProductList({
               <button
                 type="button"
                 onClick={toggleSelectAll}
-                className="min-h-[36px] inline-flex items-center gap-2 text-slate-700 cursor-pointer"
+                className="min-h-[44px] inline-flex items-center gap-2 text-slate-700 cursor-pointer"
               >
                 {allFilteredSelected ? (
                   <CheckSquare className="w-4 h-4 text-indigo-600" />
@@ -957,7 +957,7 @@ export default function ProductList({
                   <Link
                     href={`/products/${product.id}`}
                     target="_blank"
-                    className="min-h-[40px] text-xs text-slate-600 hover:text-indigo-600 flex items-center gap-1 font-medium px-2.5 py-1.5 rounded-lg hover:bg-white transition-colors"
+                    className="min-h-[44px] text-xs text-slate-600 hover:text-indigo-600 flex items-center gap-1 font-medium px-2.5 py-1.5 rounded-lg hover:bg-white transition-colors"
                   >
                     <ExternalLink className="w-3.5 h-3.5" />
                     Preview
@@ -966,7 +966,7 @@ export default function ProductList({
                     <button
                       type="button"
                       onClick={() => handleDuplicate(product)}
-                      className="min-w-[40px] min-h-[40px] inline-flex items-center justify-center text-slate-500 hover:text-slate-800 rounded-lg hover:bg-white cursor-pointer"
+                      className="min-w-[44px] min-h-[44px] inline-flex items-center justify-center text-slate-500 hover:text-slate-800 rounded-lg hover:bg-white cursor-pointer"
                       aria-label={`Duplicate ${product.name}`}
                     >
                       <Copy className="w-4 h-4" />
@@ -974,7 +974,7 @@ export default function ProductList({
                     <button
                       type="button"
                       onClick={() => onEdit(product)}
-                      className="min-w-[40px] min-h-[40px] inline-flex items-center justify-center text-indigo-600 hover:text-indigo-800 rounded-lg hover:bg-white cursor-pointer"
+                      className="min-w-[44px] min-h-[44px] inline-flex items-center justify-center text-indigo-600 hover:text-indigo-800 rounded-lg hover:bg-white cursor-pointer"
                       aria-label={`Edit ${product.name}`}
                     >
                       <Edit2 className="w-4 h-4" />
@@ -982,7 +982,7 @@ export default function ProductList({
                     <button
                       type="button"
                       onClick={() => handleDelete(product.id, product.name)}
-                      className="min-w-[40px] min-h-[40px] inline-flex items-center justify-center text-rose-500 hover:text-rose-700 rounded-lg hover:bg-white cursor-pointer"
+                      className="min-w-[44px] min-h-[44px] inline-flex items-center justify-center text-rose-500 hover:text-rose-700 rounded-lg hover:bg-white cursor-pointer"
                       aria-label={`Delete ${product.name}`}
                     >
                       <Trash2 className="w-4 h-4" />
@@ -1234,14 +1234,14 @@ export default function ProductList({
       {/* Bulk Delete Confirmation Dialog */}
       {confirmDeleteOpen && (
         <div className="fixed inset-0 z-50 bg-slate-950/60 flex items-center justify-center p-4">
-          <div className="bg-white rounded-xl border border-slate-200 max-w-md w-full p-5 sm:p-6 space-y-4">
+          <div className="bg-white rounded-xl border border-slate-200 max-w-md w-full max-h-[90dvh] overflow-y-auto p-5 sm:p-6 space-y-4">
             <h3 className="text-base font-bold text-slate-900">
               Delete {selectedIds.length} Selected Shoe(s)?
             </h3>
             <p className="text-sm text-slate-600">
               This action permanently removes the selected shoes, their variant matrices, and catalog entries. It cannot be undone.
             </p>
-            <div className="flex justify-end gap-2 pt-2">
+            <div className="flex flex-col-reverse sm:flex-row sm:justify-end gap-2 pt-2">
               <button
                 type="button"
                 onClick={() => setConfirmDeleteOpen(false)}
@@ -1265,14 +1265,14 @@ export default function ProductList({
       {/* Single Shoe Delete Confirmation Dialog */}
       {pendingDeleteProduct && (
         <div className="fixed inset-0 z-50 bg-slate-950/60 flex items-center justify-center p-4">
-          <div className="bg-white rounded-xl border border-slate-200 max-w-md w-full p-5 sm:p-6 space-y-4">
+          <div className="bg-white rounded-xl border border-slate-200 max-w-md w-full max-h-[90dvh] overflow-y-auto p-5 sm:p-6 space-y-4">
             <h3 className="text-base font-bold text-slate-900">
               Delete &ldquo;{pendingDeleteProduct.name}&rdquo;?
             </h3>
             <p className="text-sm text-slate-600">
               This will permanently remove shoe ID #{pendingDeleteProduct.id} from the live storefront catalog. This action cannot be undone.
             </p>
-            <div className="flex justify-end gap-2 pt-2">
+            <div className="flex flex-col-reverse sm:flex-row sm:justify-end gap-2 pt-2">
               <button
                 type="button"
                 disabled={deletingId === pendingDeleteProduct.id}

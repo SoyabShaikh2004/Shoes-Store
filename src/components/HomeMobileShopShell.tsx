@@ -54,6 +54,9 @@ export default function HomeMobileShopShell({ products, heroBanners }: HomeMobil
       void refreshStorefront(true);
     });
 
+    const handleRemoteStorefrontChange = () => {
+      void refreshStorefront(true);
+    };
     const handleFocus = () => {
       void refreshStorefront(false);
     };
@@ -63,18 +66,13 @@ export default function HomeMobileShopShell({ products, heroBanners }: HomeMobil
       }
     };
 
-    const pollTimer = setInterval(() => {
-      if (document.visibilityState === 'visible') {
-        void refreshStorefront(false);
-      }
-    }, 4500);
-
+    window.addEventListener('stepstyle:remote-storefront-changed', handleRemoteStorefrontChange);
     window.addEventListener('focus', handleFocus);
     document.addEventListener('visibilitychange', handleVisibility);
 
     return () => {
       unsubscribe();
-      clearInterval(pollTimer);
+      window.removeEventListener('stepstyle:remote-storefront-changed', handleRemoteStorefrontChange);
       window.removeEventListener('focus', handleFocus);
       document.removeEventListener('visibilitychange', handleVisibility);
     };

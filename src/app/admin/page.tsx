@@ -12,6 +12,8 @@ import ProductForm from '@/components/admin/ProductForm';
 import AdminAuth from '@/components/admin/AdminAuth';
 import AdminOrdersManager from '@/components/admin/AdminOrdersManager';
 import AdminBulkUpload from '@/components/admin/AdminBulkUpload';
+import AdminSupportInbox from '@/components/admin/AdminSupportInbox';
+import AdminDatabaseManager from '@/components/admin/AdminDatabaseManager';
 import {
   OverviewPayload,
   OverviewSection,
@@ -32,6 +34,7 @@ import {
 } from '@/lib/adminAuth';
 import {
   ADMIN_SESSION_EXPIRED_EVENT,
+  pruneLocalOrdersByCutoff,
   subscribeStorefrontChanges,
 } from '@/lib/storefrontSync';
 import { toast } from 'react-hot-toast';
@@ -57,6 +60,8 @@ import {
   Bell,
   CheckCheck,
   ArrowRight,
+  Inbox,
+  Database,
 } from 'lucide-react';
 
 type AdminNavTab =
@@ -70,13 +75,16 @@ type AdminNavTab =
   | 'inventory'
   | 'payments'
   | 'shipping'
+  | 'support'
   | 'reports'
+  | 'database'
   | 'settings';
 
 const NAV_ITEMS: Array<{
   id: AdminNavTab;
   label: string;
   icon: React.ComponentType<{ className?: string }>;
+  superAdminOnly?: boolean;
 }> = [
   { id: 'overview', label: 'Dashboard Overview', icon: LayoutDashboard },
   { id: 'orders', label: 'Orders', icon: ShoppingCart },
@@ -87,7 +95,9 @@ const NAV_ITEMS: Array<{
   { id: 'inventory', label: 'Inventory', icon: Boxes },
   { id: 'payments', label: 'Payments', icon: CreditCard },
   { id: 'shipping', label: 'Shipping', icon: Truck },
+  { id: 'support', label: 'Support Inbox', icon: Inbox },
   { id: 'reports', label: 'Reports', icon: BarChart3 },
+  { id: 'database', label: 'Local Database', icon: Database, superAdminOnly: true },
   { id: 'settings', label: 'Settings', icon: Settings },
 ];
 
@@ -156,9 +166,13 @@ function AdminContent() {
 
       let activeOvJson = ovJson;
 
-      // Recover any placed storefront orders sitting only in this browser's localStorage
+      // Prune purged local orders first, then recover any newer storefront orders sitting only in localStorage
       if (ovRes.ok && ovJson?.success && !isSyncingLocalOrdersRef.current) {
         try {
+          if (ovJson.lastPurgedAt) {
+            pruneLocalOrdersByCutoff(ovJson.lastPurgedAt);
+          }
+
           const rawLocal = localStorage.getItem('orders');
           if (rawLocal) {
             const parsedLocal = JSON.parse(rawLocal);
@@ -185,6 +199,9 @@ function AdminContent() {
                   body: JSON.stringify({ orders: missingLocal.slice(0, 100) }),
                 });
                 const syncData = await syncRes.json().catch(() => null);
+                if (syncData?.lastPurgedAt) {
+                  pruneLocalOrdersByCutoff(syncData.lastPurgedAt);
+                }
                 if (syncRes.ok && syncData?.success && Number(syncData.importedCount) > 0) {
                   toast.success(
                     `Synced ${syncData.importedCount} placed order(s) into Admin Orders`
@@ -319,6 +336,13 @@ function AdminContent() {
     setNotifDropdownOpen(false);
     setMobileSidebarOpen(false);
     setEditingProduct(null);
+    if (notif.type === 'support_message') {
+      setActiveTab('support');
+      if (!notif.isRead) {
+        void handleMarkNotificationsRead({ id: notif.id });
+      }
+      return;
+    }
     setPendingInspectOrderNumber(notif.orderNumber);
     setActiveTab('orders');
     if (!notif.isRead) {
@@ -511,6 +535,11 @@ function AdminContent() {
         : 'Add New Shoe'
       : NAV_ITEMS.find((i) => i.id === activeTab)?.label || 'Dashboard Overview';
 
+  const visibleNavItems = NAV_ITEMS.filter(
+    (item) => !item.superAdminOnly || currentAdmin.role === 'Super Admin'
+  );
+  const openSupportCount = overviewData?.openSupportCount ?? 0;
+
   return (
     <div className="min-h-screen bg-slate-50 flex overflow-x-clip">
       {/* Desktop Sidebar: Icon-only rail before hover, expands on hover as a floating overlay without shifting content */}
@@ -531,7 +560,7 @@ function AdminContent() {
         </div>
 
         <nav className="flex-1 overflow-y-auto overflow-x-hidden px-3 py-4 space-y-1 no-scrollbar">
-          {NAV_ITEMS.map((item) => {
+          {visibleNavItems.map((item) => {
             const Icon = item.icon;
             const isActive =
               activeTab === item.id || (item.id === 'products' && activeTab === 'create');
@@ -558,6 +587,12 @@ function AdminContent() {
                       <span
                         aria-hidden="true"
                         className="absolute -top-0.5 right-2.5 w-2.5 h-2.5 rounded-full bg-rose-500 ring-2 ring-slate-950 lg:group-hover:hidden lg:group-focus-within:hidden"
+                      />
+                    )}
+                    {item.id === 'support' && openSupportCount > 0 && (
+                      <span
+                        aria-hidden="true"
+                        className="absolute -top-0.5 right-2.5 w-2.5 h-2.5 rounded-full bg-amber-500 ring-2 ring-slate-950 lg:group-hover:hidden lg:group-focus-within:hidden"
                       />
                     )}
                   </span>
@@ -587,6 +622,11 @@ function AdminContent() {
                 {item.id === 'customers' && overviewData && (
                   <span className="hidden lg:group-hover:inline lg:group-focus-within:inline tabular-nums text-[11px] opacity-80 shrink-0">
                     {overviewData.customers.length}
+                  </span>
+                )}
+                {item.id === 'support' && openSupportCount > 0 && (
+                  <span className="hidden lg:group-hover:inline lg:group-focus-within:inline px-1.5 py-0.5 rounded-md bg-amber-500 text-slate-950 text-[10px] font-bold tabular-nums leading-none shrink-0">
+                    {openSupportCount} open
                   </span>
                 )}
               </button>
@@ -652,7 +692,7 @@ function AdminContent() {
               </button>
             </div>
             <nav className="flex-1 overflow-y-auto p-3 space-y-1">
-              {NAV_ITEMS.map((item) => {
+              {visibleNavItems.map((item) => {
                 const Icon = item.icon;
                 const isActive =
                   activeTab === item.id || (item.id === 'products' && activeTab === 'create');
@@ -695,6 +735,11 @@ function AdminContent() {
                     {item.id === 'customers' && overviewData && (
                       <span className="tabular-nums text-[11px] opacity-80">
                         {overviewData.customers.length}
+                      </span>
+                    )}
+                    {item.id === 'support' && openSupportCount > 0 && (
+                      <span className="px-1.5 py-0.5 rounded-md bg-amber-500 text-slate-950 text-[10px] font-bold tabular-nums leading-none">
+                        {openSupportCount} open
                       </span>
                     )}
                   </button>
@@ -787,7 +832,7 @@ function AdminContent() {
                       <button
                         type="button"
                         onClick={() => void handleMarkNotificationsRead({ all: true })}
-                        className="text-[11px] font-semibold text-indigo-600 hover:text-indigo-800 inline-flex items-center gap-1 cursor-pointer py-1 px-1.5 rounded"
+                        className="min-h-[44px] sm:min-h-[36px] text-[11px] font-semibold text-indigo-600 hover:text-indigo-800 inline-flex items-center gap-1 cursor-pointer py-1 px-2 rounded-lg hover:bg-indigo-50"
                       >
                         <CheckCheck className="w-3.5 h-3.5" />
                         <span>Mark all read</span>
@@ -822,19 +867,29 @@ function AdminContent() {
                                 className={`px-1.5 py-0.5 rounded text-[10px] font-semibold ${
                                   notif.type === 'return_requested'
                                     ? 'bg-amber-100 text-amber-800'
+                                    : notif.type === 'support_message'
+                                    ? 'bg-indigo-100 text-indigo-800'
                                     : 'bg-emerald-100 text-emerald-800'
                                 }`}
                               >
-                                {notif.type === 'return_requested' ? 'Return' : 'New Order'}
+                                {notif.type === 'return_requested'
+                                  ? 'Return'
+                                  : notif.type === 'support_message'
+                                  ? 'Support'
+                                  : 'New Order'}
                               </span>
                             </div>
                             <p className="text-xs font-medium text-slate-800 truncate">
-                              {notif.customerName} · {notif.itemCount}{' '}
-                              {notif.itemCount === 1 ? 'pair' : 'pairs'}
+                              {notif.type === 'support_message'
+                                ? `${notif.customerName} · ${notif.primaryItemName || notif.message}`
+                                : `${notif.customerName} · ${notif.itemCount} ${
+                                    notif.itemCount === 1 ? 'pair' : 'pairs'
+                                  }`}
                             </p>
                             <p className="text-[11px] text-slate-500 tabular-nums mt-0.5">
-                              ₹{notif.totalAmount.toLocaleString('en-IN')} · {notif.paymentMethod} ·{' '}
-                              {formatDateTimeIN(notif.createdAt)}
+                              {notif.type === 'support_message'
+                                ? `${notif.customerPhone} · ${formatDateTimeIN(notif.createdAt)}`
+                                : `₹${notif.totalAmount.toLocaleString('en-IN')} · ${notif.paymentMethod} · ${formatDateTimeIN(notif.createdAt)}`}
                             </p>
                           </div>
                           <ArrowRight className="w-4 h-4 text-slate-400 shrink-0 mt-1" />
@@ -892,8 +947,9 @@ function AdminContent() {
               }}
               className="inline-flex min-h-[44px] items-center gap-1.5 px-3 sm:px-3.5 py-2 rounded-lg bg-slate-900 hover:bg-slate-800 text-xs font-semibold text-white cursor-pointer whitespace-nowrap"
             >
-              <Plus className="w-4 h-4" />
-              <span>Add Shoe</span>
+              <Plus className="w-4 h-4 shrink-0" />
+              <span className="hidden xs:inline sm:inline">Add Shoe</span>
+              <span className="xs:hidden sm:hidden">Add</span>
             </button>
           </div>
         </header>
@@ -976,8 +1032,26 @@ function AdminContent() {
 
           {activeTab === 'shipping' && <ShippingSection data={overviewData} />}
 
+          {activeTab === 'support' && (
+            <AdminSupportInbox
+              onTicketsUpdated={() => {
+                void loadDashboardData();
+                void fetchAdminNotifications();
+              }}
+            />
+          )}
+
           {activeTab === 'reports' && (
             <ReportsSection data={overviewData} products={products} />
+          )}
+
+          {activeTab === 'database' && currentAdmin.role === 'Super Admin' && (
+            <AdminDatabaseManager
+              onDatabaseRestored={() => {
+                void loadDashboardData();
+                void fetchAdminNotifications();
+              }}
+            />
           )}
 
           {activeTab === 'settings' && (
@@ -985,7 +1059,16 @@ function AdminContent() {
               admins={overviewData?.admins || [currentAdmin]}
               currentAdmin={currentAdmin}
               products={products}
+              overviewData={overviewData}
               onResetComplete={() => loadDashboardData()}
+              onPurgeComplete={() => {
+                seenNotifIdsRef.current = new Set();
+                lastSyncKeyRef.current = null;
+                setAdminNotifications([]);
+                setUnreadNotificationsCount(0);
+                void loadDashboardData();
+                void fetchAdminNotifications();
+              }}
             />
           )}
         </div>

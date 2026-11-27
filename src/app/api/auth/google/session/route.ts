@@ -42,6 +42,7 @@ export async function GET(req: NextRequest) {
     user: {
       email: user.email,
       name: user.name,
+      phone: user.phone,
       picture: user.picture,
       loginMethod: user.loginMethod,
       loginTime: user.loginTime,

@@ -3,6 +3,7 @@
 import { useState } from 'react';
 import toast from 'react-hot-toast';
 import { CheckCircle2, Send } from 'lucide-react';
+import { notifyStorefrontChanged } from '@/lib/storefrontSync';
 
 export default function ContactForm() {
   const [name, setName] = useState('');
@@ -11,8 +12,9 @@ export default function ContactForm() {
   const [message, setMessage] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [submitted, setSubmitted] = useState(false);
+  const [ticketNumber, setTicketNumber] = useState<string>('');
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (name.trim().length < 2) {
       toast.error('Please enter your name');
@@ -22,17 +24,41 @@ export default function ContactForm() {
       toast.error('Please enter a valid email address');
       return;
     }
-    if (subject.trim().length < 2 || message.trim().length < 5) {
-      toast.error('Please include a subject and brief message');
+    if (subject.trim().length < 3 || message.trim().length < 10) {
+      toast.error('Please include a subject and brief message (at least 10 characters)');
       return;
     }
 
     setIsSubmitting(true);
-    setTimeout(() => {
-      setIsSubmitting(false);
+    try {
+      const res = await fetch('/api/contact', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'X-Requested-With': 'XMLHttpRequest',
+        },
+        body: JSON.stringify({
+          name: name.trim(),
+          email: email.trim(),
+          subject: subject.trim(),
+          message: message.trim(),
+        }),
+      });
+      const data = await res.json().catch(() => null);
+      if (!res.ok || !data?.success) {
+        toast.error(data?.error || 'Could not send message. Please try again.');
+        return;
+      }
+
+      setTicketNumber(String(data.ticketNumber || ''));
       setSubmitted(true);
-      toast.success('Message received! Our support desk will reply shortly.');
-    }, 450);
+      notifyStorefrontChanged('all');
+      toast.success('Support ticket logged! Our team will respond shortly.');
+    } catch {
+      toast.error('Network error sending your message. Please try again.');
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
   if (submitted) {
@@ -42,8 +68,14 @@ export default function ContactForm() {
           <CheckCircle2 className="w-6 h-6" />
         </div>
         <h3 className="text-base font-bold text-slate-900">Thank you, {name.trim()}!</h3>
+        {ticketNumber && (
+          <div className="inline-flex items-center px-3 py-1 rounded-md bg-white border border-emerald-200 text-xs font-mono font-bold text-emerald-800">
+            Ticket Ref: {ticketNumber}
+          </div>
+        )}
         <p className="text-xs sm:text-sm text-slate-600 leading-relaxed">
-          We&apos;ve logged your inquiry about <span className="font-semibold text-slate-800">{subject.trim()}</span> and will respond to{' '}
+          We&apos;ve saved your inquiry about{' '}
+          <span className="font-semibold text-slate-800">{subject.trim()}</span> to our support desk and will respond to{' '}
           <span className="font-medium text-slate-800 break-all">{email.trim()}</span> within 24 hours.
         </p>
         <button
@@ -53,6 +85,7 @@ export default function ContactForm() {
             setEmail('');
             setSubject('');
             setMessage('');
+            setTicketNumber('');
             setSubmitted(false);
           }}
           className="min-h-[44px] inline-flex items-center justify-center px-4 py-2 rounded-lg bg-slate-900 hover:bg-slate-800 text-white text-xs font-semibold transition-colors cursor-pointer"

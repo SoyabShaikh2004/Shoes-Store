@@ -27,6 +27,9 @@ import {
   ArrowRight,
   Phone,
   Mail,
+  Trash2,
+  Lock,
+  EyeOff,
 } from 'lucide-react';
 import { Product } from '@/lib/data';
 import { AdminUser, getAdminAuthHeaders, handleAdminUnauthorized } from '@/lib/adminAuth';
@@ -95,7 +98,10 @@ export interface OverviewPayload {
     initiatedAt: string;
   }>;
   admins: AdminUser[];
+  openSupportCount?: number;
+  supportMessagesCount?: number;
   storageMode?: 'mongodb' | 'local-json' | 'local-memory-fallback';
+  lastPurgedAt?: string | null;
   syncedAt?: string;
 }
 
@@ -137,7 +143,7 @@ export function OverviewSection({
           <button
             type="button"
             onClick={() => onNavigate('orders')}
-            className="min-h-[36px] inline-flex items-center text-xs font-semibold text-indigo-600 hover:underline mt-0.5 cursor-pointer"
+            className="min-h-[44px] inline-flex items-center text-xs font-semibold text-indigo-600 hover:underline mt-0.5 cursor-pointer"
           >
             Manage orders →
           </button>
@@ -151,7 +157,7 @@ export function OverviewSection({
           <button
             type="button"
             onClick={() => onNavigate('bulk')}
-            className="min-h-[36px] inline-flex items-center text-xs font-semibold text-indigo-600 hover:underline mt-0.5 cursor-pointer"
+            className="min-h-[44px] inline-flex items-center text-xs font-semibold text-indigo-600 hover:underline mt-0.5 cursor-pointer"
           >
             Bulk upload shoes →
           </button>
@@ -165,7 +171,7 @@ export function OverviewSection({
           <button
             type="button"
             onClick={() => onNavigate('inventory')}
-            className="min-h-[36px] inline-flex items-center text-xs font-semibold text-indigo-600 hover:underline mt-0.5 cursor-pointer"
+            className="min-h-[44px] inline-flex items-center text-xs font-semibold text-indigo-600 hover:underline mt-0.5 cursor-pointer"
           >
             Inspect inventory →
           </button>
@@ -262,7 +268,7 @@ export function CategoriesSection({ data }: { data: OverviewPayload | null }) {
         </div>
         <div className="divide-y divide-slate-100 text-xs sm:text-sm">
           {(data?.categories || []).map((cat) => (
-            <div key={cat.id} className="py-3 flex items-center justify-between">
+            <div key={cat.id} className="py-3 flex flex-wrap items-center justify-between gap-2">
               <span className="font-semibold text-slate-900">{cat.name}</span>
               <span className="text-slate-600 tabular-nums">
                 {cat.productCount} products · {cat.totalStock} pairs in stock
@@ -278,7 +284,7 @@ export function CategoriesSection({ data }: { data: OverviewPayload | null }) {
         </h3>
         <div className="divide-y divide-slate-100 text-xs sm:text-sm">
           {(data?.brands || []).map((b) => (
-            <div key={b.id} className="py-3 flex items-center justify-between">
+            <div key={b.id} className="py-3 flex flex-wrap items-center justify-between gap-2">
               <span className="font-semibold text-slate-900">{b.name}</span>
               <span className="text-slate-600 tabular-nums">{b.productCount} models</span>
             </div>
@@ -549,7 +555,7 @@ export function CustomersSection({
               <button
                 type="button"
                 onClick={() => setSearchQuery('')}
-                className="mt-2 min-h-[40px] px-3.5 py-1.5 rounded-lg border border-slate-200 hover:bg-slate-50 text-xs font-semibold text-slate-700 cursor-pointer"
+                className="mt-2 min-h-[44px] px-4 py-2 rounded-lg border border-slate-200 hover:bg-slate-50 text-xs font-semibold text-slate-700 cursor-pointer"
               >
                 Clear Search
               </button>
@@ -593,8 +599,8 @@ export function CustomersSection({
                     </div>
                   )}
 
-                  <div className="flex items-center justify-between gap-2 pt-1">
-                    <div className="text-[11px] text-slate-500 font-mono tabular-nums">
+                  <div className="flex flex-wrap items-center justify-between gap-2 pt-1">
+                    <div className="text-[11px] text-slate-500 font-mono tabular-nums min-w-0 truncate">
                       {c.lastOrderNumber ? `Latest: ${c.lastOrderNumber}` : 'Account registered'}
                     </div>
                     <button
@@ -603,7 +609,7 @@ export function CustomersSection({
                         e.stopPropagation();
                         setSelectedCustomerId(c.id);
                       }}
-                      className="min-h-[40px] px-3 py-1.5 rounded-lg bg-indigo-50 hover:bg-indigo-100 text-indigo-700 border border-indigo-200 text-xs font-semibold inline-flex items-center gap-1 cursor-pointer whitespace-nowrap shrink-0"
+                      className="min-h-[44px] px-3.5 py-2 rounded-lg bg-indigo-50 hover:bg-indigo-100 text-indigo-700 border border-indigo-200 text-xs font-semibold inline-flex items-center gap-1.5 cursor-pointer whitespace-nowrap shrink-0"
                     >
                       <Eye className="w-3.5 h-3.5" />
                       <span>View Orders</span>
@@ -711,16 +717,26 @@ export function CustomersSection({
             onClick={(e) => e.stopPropagation()}
             className="bg-white w-full max-w-2xl h-full overflow-y-auto border-l border-slate-200 flex flex-col"
           >
-            <div className="sticky top-0 z-10 bg-white border-b border-slate-200 px-4 sm:px-6 py-4 flex items-center justify-between gap-3">
-              <div className="min-w-0">
-                <h3 className="text-base sm:text-lg font-bold text-slate-900 truncate">
-                  {selectedCustomer.name}
-                </h3>
-                <p className="text-xs text-slate-500 mt-0.5 tabular-nums">
-                  {selectedCustomer.ordersCount}{' '}
-                  {selectedCustomer.ordersCount === 1 ? 'order' : 'orders'} · Total spend ₹
-                  {selectedCustomer.totalSpent.toLocaleString('en-IN')}
-                </p>
+            <div className="sticky top-0 z-10 bg-white border-b border-slate-200 px-4 sm:px-6 py-4 space-y-3 sm:space-y-0 sm:flex sm:items-center sm:justify-between sm:gap-3">
+              <div className="flex items-start justify-between gap-3 min-w-0">
+                <div className="min-w-0">
+                  <h3 className="text-base sm:text-lg font-bold text-slate-900 truncate">
+                    {selectedCustomer.name}
+                  </h3>
+                  <p className="text-xs text-slate-500 mt-0.5 tabular-nums">
+                    {selectedCustomer.ordersCount}{' '}
+                    {selectedCustomer.ordersCount === 1 ? 'order' : 'orders'} · Total spend ₹
+                    {selectedCustomer.totalSpent.toLocaleString('en-IN')}
+                  </p>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => setSelectedCustomerId(null)}
+                  aria-label="Close customer profile"
+                  className="sm:hidden min-w-[44px] min-h-[44px] inline-flex items-center justify-center rounded-lg text-slate-400 hover:text-slate-700 hover:bg-slate-100 cursor-pointer shrink-0"
+                >
+                  <X className="w-5 h-5" />
+                </button>
               </div>
               <div className="flex items-center gap-2 shrink-0">
                 {onFilterOrdersByCustomer &&
@@ -735,7 +751,7 @@ export function CustomersSection({
                         setSelectedCustomerId(null);
                         onFilterOrdersByCustomer(query);
                       }}
-                      className="min-h-[40px] px-3 py-1.5 rounded-lg bg-slate-900 hover:bg-indigo-600 text-white text-xs font-semibold inline-flex items-center gap-1.5 cursor-pointer whitespace-nowrap shrink-0"
+                      className="w-full sm:w-auto min-h-[44px] px-3.5 py-2 rounded-lg bg-slate-900 hover:bg-indigo-600 text-white text-xs font-semibold inline-flex items-center justify-center gap-1.5 cursor-pointer whitespace-nowrap shrink-0"
                     >
                       <span>Open in Orders Tab</span>
                       <ArrowRight className="w-3.5 h-3.5" />
@@ -745,7 +761,7 @@ export function CustomersSection({
                   type="button"
                   onClick={() => setSelectedCustomerId(null)}
                   aria-label="Close customer profile"
-                  className="min-w-[44px] min-h-[44px] inline-flex items-center justify-center rounded-lg text-slate-400 hover:text-slate-700 hover:bg-slate-100 cursor-pointer"
+                  className="hidden sm:inline-flex min-w-[44px] min-h-[44px] items-center justify-center rounded-lg text-slate-400 hover:text-slate-700 hover:bg-slate-100 cursor-pointer"
                 >
                   <X className="w-5 h-5" />
                 </button>
@@ -846,7 +862,7 @@ export function CustomersSection({
                                 setSelectedCustomerId(null);
                                 onInspectOrder(ord.orderNumber);
                               }}
-                              className="min-h-[40px] px-3 py-1.5 rounded-lg bg-indigo-50 hover:bg-indigo-100 text-indigo-700 border border-indigo-200 text-xs font-semibold inline-flex items-center gap-1 cursor-pointer whitespace-nowrap"
+                              className="min-h-[44px] px-3.5 py-2 rounded-lg bg-indigo-50 hover:bg-indigo-100 text-indigo-700 border border-indigo-200 text-xs font-semibold inline-flex items-center gap-1.5 cursor-pointer whitespace-nowrap"
                             >
                               <Eye className="w-3.5 h-3.5" />
                               <span>Inspect Order</span>
@@ -901,7 +917,7 @@ export function InventorySection({
 
   return (
     <div className="bg-white rounded-xl border border-slate-200 overflow-hidden">
-      <div className="px-4 sm:px-5 py-4 border-b border-slate-200 flex items-center justify-between">
+      <div className="px-4 sm:px-5 py-4 border-b border-slate-200 flex flex-col sm:flex-row sm:items-center justify-between gap-2">
         <div>
           <h3 className="text-base font-bold text-slate-900">SKU Stock Ledger</h3>
           <p className="text-xs text-slate-500">
@@ -1295,16 +1311,21 @@ export function SettingsSection({
   admins,
   currentAdmin,
   products,
+  overviewData,
   onResetComplete,
+  onPurgeComplete,
 }: {
   admins: AdminUser[];
   currentAdmin: AdminUser;
   products: Product[];
+  overviewData?: OverviewPayload | null;
   onResetComplete: () => void;
+  onPurgeComplete?: () => void;
 }) {
   const canEditHeroBanners = ['Super Admin', 'Catalog Manager', 'Inventory Admin'].includes(
     currentAdmin.role
   );
+  const isSuperAdmin = currentAdmin.role === 'Super Admin';
 
   const [slides, setSlides] = useState<HeroBannerDraft[]>(DEFAULT_BANNER_DRAFTS);
   const [loadingBanners, setLoadingBanners] = useState(true);
@@ -1316,6 +1337,29 @@ export function SettingsSection({
     'reset_banners' | 'reset_catalog' | null
   >(null);
   const [isResettingCatalog, setIsResettingCatalog] = useState(false);
+
+  const [purgeModalOpen, setPurgeModalOpen] = useState(false);
+  const [purgePassword, setPurgePassword] = useState('');
+  const [showPurgePassword, setShowPurgePassword] = useState(false);
+  const [purgeError, setPurgeError] = useState<string | null>(null);
+  const [isPurgingOldData, setIsPurgingOldData] = useState(false);
+
+  useEffect(() => {
+    const onKeyDown = (e: KeyboardEvent) => {
+      if (e.key !== 'Escape') return;
+      if (purgeModalOpen && !isPurgingOldData) {
+        setPurgeModalOpen(false);
+        setPurgePassword('');
+        setPurgeError(null);
+      } else if (confirmResetAction && !savingBanners && !isResettingCatalog) {
+        setConfirmResetAction(null);
+      }
+    };
+    if (purgeModalOpen || confirmResetAction) {
+      window.addEventListener('keydown', onKeyDown);
+    }
+    return () => window.removeEventListener('keydown', onKeyDown);
+  }, [purgeModalOpen, isPurgingOldData, confirmResetAction, savingBanners, isResettingCatalog]);
 
   const categoryOptions = Array.from(
     new Set([
@@ -1532,6 +1576,88 @@ export function SettingsSection({
     }
   };
 
+  const openPurgeModal = () => {
+    if (!isSuperAdmin) return;
+    setPurgePassword('');
+    setShowPurgePassword(false);
+    setPurgeError(null);
+    setPurgeModalOpen(true);
+  };
+
+  const closePurgeModal = () => {
+    if (isPurgingOldData) return;
+    setPurgeModalOpen(false);
+    setPurgePassword('');
+    setPurgeError(null);
+  };
+
+  const executePurgeOldData = async (e?: React.FormEvent) => {
+    if (e) e.preventDefault();
+    if (!isSuperAdmin || isPurgingOldData) return;
+    if (!purgePassword.trim()) {
+      setPurgeError('Please enter your Super Admin password to confirm deletion.');
+      return;
+    }
+
+    setIsPurgingOldData(true);
+    setPurgeError(null);
+    const toastId = toast.loading('Verifying Super Admin password & clearing old data...');
+    try {
+      const res = await fetch('/api/admin/purge', {
+        method: 'POST',
+        credentials: 'include',
+        headers: getAdminAuthHeaders({ 'Content-Type': 'application/json' }),
+        body: JSON.stringify({ password: purgePassword }),
+      });
+      const data = await res.json().catch(() => null);
+
+      if (!res.ok || !data?.success) {
+        const msg = data?.error || 'Could not delete old data.';
+        if (
+          (res.status === 401 && /session|authentication|expired/i.test(msg)) ||
+          (res.status === 403 && /inactive|missing/i.test(msg))
+        ) {
+          handleAdminUnauthorized(res.status, msg);
+        }
+        setPurgeError(msg);
+        toast.error(msg, { id: toastId });
+        return;
+      }
+
+      // Remove all browser-cached transactional order artifacts immediately
+      try {
+        localStorage.removeItem('orders');
+        localStorage.removeItem('orderVerifyHints');
+        window.dispatchEvent(new Event('ordersUpdated'));
+      } catch {
+        // ignore storage errors
+      }
+      notifyStorefrontChanged('all');
+
+      const purged = data.purged || {};
+      toast.success(
+        `Deleted ${purged.orders ?? 0} orders, ${purged.customers ?? 0} customers, ${
+          purged.payments ?? 0
+        } payments, and ${purged.tickets ?? 0} support tickets.`,
+        { id: toastId }
+      );
+      setPurgeModalOpen(false);
+      setPurgePassword('');
+      setPurgeError(null);
+      if (onPurgeComplete) {
+        onPurgeComplete();
+      } else {
+        onResetComplete();
+      }
+    } catch (err: unknown) {
+      const msg = err instanceof Error ? err.message : 'Network error deleting old data';
+      setPurgeError(msg);
+      toast.error(msg, { id: toastId });
+    } finally {
+      setIsPurgingOldData(false);
+    }
+  };
+
   return (
     <div className="max-w-5xl space-y-6">
       <div className="bg-white p-4 sm:p-6 rounded-xl border border-slate-200 space-y-5">
@@ -1587,7 +1713,7 @@ export function SettingsSection({
                       href={linkInvalid ? '/products' : slide.link || '/products'}
                       target="_blank"
                       rel="noreferrer"
-                      className="inline-flex items-center gap-1 text-[11px] font-medium text-indigo-700 hover:text-indigo-900 truncate max-w-[170px] min-h-[32px]"
+                      className="inline-flex items-center gap-1 text-[11px] font-medium text-indigo-700 hover:text-indigo-900 truncate min-w-0 max-w-[165px] min-h-[44px]"
                       title={slide.link}
                     >
                       <span className="truncate">{slide.link || '/products'}</span>
@@ -1856,7 +1982,7 @@ export function SettingsSection({
           </button>
         </div>
 
-        {currentAdmin.role === 'Super Admin' && (
+        {isSuperAdmin && (
           <div className="p-4 rounded-xl border border-rose-200 bg-rose-50/50 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
             <div>
               <div className="text-sm font-semibold text-rose-900">
@@ -1878,9 +2004,91 @@ export function SettingsSection({
         )}
       </div>
 
+      {/* Super Admin Only: Delete Old Data */}
+      {isSuperAdmin && (
+        <div className="bg-white p-4 sm:p-6 rounded-xl border-2 border-rose-200 space-y-4">
+          <div className="flex flex-col sm:flex-row sm:items-start justify-between gap-3">
+            <div className="space-y-1">
+              <div className="flex flex-wrap items-center gap-2">
+                <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md bg-rose-100 text-rose-800 text-[11px] font-bold">
+                  <Lock className="w-3 h-3 shrink-0" />
+                  <span>Super Admin Only</span>
+                </span>
+                {overviewData?.lastPurgedAt && (
+                  <span className="text-[11px] font-medium text-slate-500 tabular-nums">
+                    Last purged {formatDateTimeIN(overviewData.lastPurgedAt)}
+                  </span>
+                )}
+              </div>
+              <h3 className="text-base font-bold text-slate-900 pt-1">
+                Delete Old Data (Orders, Customers, Payments & Tickets)
+              </h3>
+              <p className="text-xs text-slate-600 leading-relaxed">
+                Permanently deletes all old orders, customer accounts, payment logs, shipping/return records, notifications, and support tickets across the database and clears cached order history.
+              </p>
+            </div>
+          </div>
+
+          <div className="grid grid-cols-2 sm:grid-cols-4 gap-2.5 text-xs">
+            <div className="p-3 rounded-lg bg-slate-50 border border-slate-200">
+              <div className="text-[11px] text-slate-500">Orders</div>
+              <div className="text-base font-bold text-slate-900 tabular-nums mt-0.5">
+                {overviewData?.overview.totalOrders ?? 0}
+              </div>
+            </div>
+            <div className="p-3 rounded-lg bg-slate-50 border border-slate-200">
+              <div className="text-[11px] text-slate-500">Customers</div>
+              <div className="text-base font-bold text-slate-900 tabular-nums mt-0.5">
+                {overviewData?.customers.length ?? 0}
+              </div>
+            </div>
+            <div className="p-3 rounded-lg bg-slate-50 border border-slate-200">
+              <div className="text-[11px] text-slate-500">Payments</div>
+              <div className="text-base font-bold text-slate-900 tabular-nums mt-0.5">
+                {overviewData?.payments.length ?? 0}
+              </div>
+            </div>
+            <div className="p-3 rounded-lg bg-slate-50 border border-slate-200">
+              <div className="text-[11px] text-slate-500">Support Tickets</div>
+              <div className="text-base font-bold text-slate-900 tabular-nums mt-0.5">
+                {overviewData?.supportMessagesCount ?? overviewData?.openSupportCount ?? 0}
+              </div>
+            </div>
+          </div>
+
+          <div className="p-3.5 rounded-xl border border-rose-200 bg-rose-50/70 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+            <div className="text-xs text-rose-900 space-y-1">
+              <div className="font-semibold flex items-center gap-1.5">
+                <AlertTriangle className="w-4 h-4 text-rose-600 shrink-0" />
+                <span>Preserved automatically:</span>
+              </div>
+              <p className="text-rose-800">
+                Products ({products.length}), Size/Color Variants, Categories, Brands, Hero Banners, and Admin Team accounts stay intact.
+              </p>
+            </div>
+            <button
+              type="button"
+              onClick={openPurgeModal}
+              className="min-h-[44px] w-full sm:w-auto px-4 py-2.5 rounded-lg bg-rose-600 hover:bg-rose-700 text-white text-xs font-bold inline-flex items-center justify-center gap-2 cursor-pointer shrink-0 whitespace-nowrap"
+            >
+              <Trash2 className="w-4 h-4" />
+              <span>Delete Old Data</span>
+            </button>
+          </div>
+        </div>
+      )}
+
       {confirmResetAction && (
-        <div className="fixed inset-0 z-50 bg-slate-950/60 flex items-center justify-center p-4">
-          <div className="bg-white rounded-xl border border-slate-200 max-w-md w-full p-5 sm:p-6 space-y-4">
+        <div
+          role="dialog"
+          aria-modal="true"
+          onClick={() => !savingBanners && !isResettingCatalog && setConfirmResetAction(null)}
+          className="fixed inset-0 z-50 bg-slate-950/60 flex items-center justify-center p-4"
+        >
+          <div
+            onClick={(e) => e.stopPropagation()}
+            className="bg-white rounded-xl border border-slate-200 max-w-md w-full max-h-[90dvh] overflow-y-auto p-5 sm:p-6 space-y-4"
+          >
             <h3 className="text-base font-bold text-slate-900">
               {confirmResetAction === 'reset_banners'
                 ? 'Restore Default Hero Banners?'
@@ -1891,7 +2099,7 @@ export function SettingsSection({
                 ? 'This will replace all 3 homepage hero slides with the default StepStyle promotional banners.'
                 : 'This will reset the catalog back to the 20 baseline StepStyle shoes. Custom products will be overwritten.'}
             </p>
-            <div className="flex justify-end gap-2 pt-2">
+            <div className="flex flex-col-reverse sm:flex-row sm:justify-end gap-2 pt-2">
               <button
                 type="button"
                 disabled={savingBanners || isResettingCatalog}
@@ -1921,6 +2129,136 @@ export function SettingsSection({
                   : 'Restore Catalog'}
               </button>
             </div>
+          </div>
+        </div>
+      )}
+
+      {/* Super Admin Password Verification Modal for Delete Old Data */}
+      {purgeModalOpen && isSuperAdmin && (
+        <div
+          role="dialog"
+          aria-modal="true"
+          aria-labelledby="purge-modal-title"
+          onClick={closePurgeModal}
+          className="fixed inset-0 z-50 bg-slate-950/65 flex items-center justify-center p-4"
+        >
+          <div
+            onClick={(e) => e.stopPropagation()}
+            className="bg-white rounded-2xl border border-slate-200 max-w-md w-full max-h-[90dvh] overflow-y-auto p-5 sm:p-6 space-y-4 shadow-2xl"
+          >
+            <div className="flex items-start justify-between gap-3">
+              <div className="flex items-start gap-3 min-w-0">
+                <div className="w-10 h-10 rounded-xl bg-rose-100 text-rose-700 flex items-center justify-center shrink-0">
+                  <Trash2 className="w-5 h-5" />
+                </div>
+                <div className="min-w-0">
+                  <h3 id="purge-modal-title" className="text-base font-bold text-slate-900">
+                    Confirm Delete Old Data
+                  </h3>
+                  <p className="text-xs text-slate-500 mt-0.5">
+                    Restricted to Super Admin password verification
+                  </p>
+                </div>
+              </div>
+              <button
+                type="button"
+                disabled={isPurgingOldData}
+                onClick={closePurgeModal}
+                aria-label="Close modal"
+                className="min-w-[44px] min-h-[44px] -mt-1 -mr-1 inline-flex items-center justify-center rounded-lg text-slate-400 hover:text-slate-700 hover:bg-slate-100 cursor-pointer shrink-0 disabled:opacity-50"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+
+            <div className="p-3.5 rounded-xl bg-rose-50 border border-rose-200 text-xs text-rose-900 space-y-1.5">
+              <p className="font-semibold">
+                This action cannot be undone and will permanently delete:
+              </p>
+              <ul className="list-disc pl-4 space-y-0.5 text-rose-800">
+                <li>All Orders, Line Items &amp; Status History ({overviewData?.overview.totalOrders ?? 0})</li>
+                <li>All Customer Profiles &amp; Accounts ({overviewData?.customers.length ?? 0})</li>
+                <li>All Payment, Shipping, Return &amp; Refund Records ({overviewData?.payments.length ?? 0})</li>
+                <li>All Support Inbox Tickets &amp; Order Notifications ({overviewData?.supportMessagesCount ?? overviewData?.openSupportCount ?? 0})</li>
+              </ul>
+              <p className="text-[11px] font-medium text-rose-700 pt-1">
+                Products, categories, brands, hero banners, and admin accounts will remain intact.
+              </p>
+            </div>
+
+            <form onSubmit={executePurgeOldData} className="space-y-4">
+              <div className="space-y-1.5">
+                <label
+                  htmlFor="super-admin-purge-password"
+                  className="block text-xs font-semibold text-slate-800"
+                >
+                  Enter Super Admin Password ({currentAdmin.email})
+                </label>
+                <div className="relative flex items-center">
+                  <input
+                    id="super-admin-purge-password"
+                    type={showPurgePassword ? 'text' : 'password'}
+                    value={purgePassword}
+                    onChange={(e) => {
+                      setPurgePassword(e.target.value);
+                      if (purgeError) setPurgeError(null);
+                    }}
+                    autoComplete="current-password"
+                    autoFocus
+                    disabled={isPurgingOldData}
+                    placeholder="Enter Super Admin password"
+                    className="w-full min-h-[44px] pl-3.5 pr-12 py-2.5 rounded-lg border border-slate-300 bg-white text-base sm:text-sm text-slate-900 focus:outline-none focus:ring-2 focus:ring-rose-500 focus:border-rose-500 disabled:bg-slate-100"
+                  />
+                  <button
+                    type="button"
+                    onClick={() => setShowPurgePassword((prev) => !prev)}
+                    aria-label={showPurgePassword ? 'Hide password' : 'Show password'}
+                    className="absolute right-0.5 min-w-[44px] min-h-[44px] inline-flex items-center justify-center rounded-lg text-slate-500 hover:text-slate-800 cursor-pointer"
+                  >
+                    {showPurgePassword ? (
+                      <EyeOff className="w-4 h-4" />
+                    ) : (
+                      <Eye className="w-4 h-4" />
+                    )}
+                  </button>
+                </div>
+              </div>
+
+              {purgeError && (
+                <div className="p-3 rounded-lg bg-rose-50 border border-rose-200 text-xs font-medium text-rose-800 flex items-start gap-2">
+                  <AlertTriangle className="w-4 h-4 text-rose-600 shrink-0 mt-0.5" />
+                  <span>{purgeError}</span>
+                </div>
+              )}
+
+              <div className="flex flex-col-reverse sm:flex-row sm:justify-end gap-2 pt-1">
+                <button
+                  type="button"
+                  disabled={isPurgingOldData}
+                  onClick={closePurgeModal}
+                  className="min-h-[44px] px-4 py-2.5 text-xs font-semibold bg-slate-100 hover:bg-slate-200 text-slate-800 rounded-lg cursor-pointer disabled:opacity-50"
+                >
+                  Cancel
+                </button>
+                <button
+                  type="submit"
+                  disabled={isPurgingOldData || !purgePassword.trim()}
+                  className="min-h-[44px] px-4 py-2.5 text-xs font-bold bg-rose-600 hover:bg-rose-700 disabled:opacity-50 text-white rounded-lg inline-flex items-center justify-center gap-2 cursor-pointer"
+                >
+                  {isPurgingOldData ? (
+                    <>
+                      <Loader2 className="w-4 h-4 animate-spin" />
+                      <span>Deleting Old Data...</span>
+                    </>
+                  ) : (
+                    <>
+                      <Trash2 className="w-4 h-4" />
+                      <span>Confirm &amp; Delete Old Data</span>
+                    </>
+                  )}
+                </button>
+              </div>
+            </form>
           </div>
         </div>
       )}

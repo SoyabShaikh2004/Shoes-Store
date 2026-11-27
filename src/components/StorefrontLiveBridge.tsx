@@ -98,6 +98,7 @@ export default function StorefrontLiveBridge() {
         }
         if (data.signature !== lastSignatureRef.current) {
           lastSignatureRef.current = data.signature;
+          window.dispatchEvent(new Event('stepstyle:remote-storefront-changed'));
           triggerRefresh();
         }
       } catch {

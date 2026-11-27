@@ -1,6 +1,10 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getProductById, getProducts } from '@/lib/data';
-import { getHeroBannersFromDb, getStorefrontSignatureFromDb } from '@/lib/db/store';
+import {
+  getHeroBannersFromDb,
+  getLastPurgedAtFromDb,
+  getStorefrontSignatureFromDb,
+} from '@/lib/db/store';
 
 export const dynamic = 'force-dynamic';
 
@@ -17,11 +21,15 @@ export async function GET(req: NextRequest) {
     const signatureOnly = searchParams.get('signature') === '1';
 
     if (signatureOnly) {
-      const signature = await getStorefrontSignatureFromDb();
+      const [signature, lastPurgedAt] = await Promise.all([
+        getStorefrontSignatureFromDb(),
+        getLastPurgedAtFromDb(),
+      ]);
       return NextResponse.json(
         {
           success: true,
           signature,
+          lastPurgedAt,
           timestamp: Date.now(),
         },
         { headers: NO_STORE_HEADERS }
@@ -64,10 +72,11 @@ export async function GET(req: NextRequest) {
       );
     }
 
-    const [allProducts, heroBanners, signature] = await Promise.all([
+    const [allProducts, heroBanners, signature, lastPurgedAt] = await Promise.all([
       getProducts(false),
       getHeroBannersFromDb(),
       getStorefrontSignatureFromDb(),
+      getLastPurgedAtFromDb(),
     ]);
 
     const products = allProducts
@@ -94,6 +103,7 @@ export async function GET(req: NextRequest) {
         categories,
         heroBanners,
         signature,
+        lastPurgedAt,
         timestamp: Date.now(),
       },
       { headers: NO_STORE_HEADERS }

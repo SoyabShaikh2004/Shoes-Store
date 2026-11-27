@@ -26,10 +26,11 @@ export const MONGO_COLLECTIONS = {
   notifications: 'notifications',
   adminNotifications: 'admin_notifications',
   heroBanners: 'hero_banners',
+  supportMessages: 'support_messages',
   meta: 'store_meta',
 } as const;
 
-type ArraySchemaKey = Exclude<keyof DatabaseSchema, 'version'>;
+type ArraySchemaKey = Exclude<keyof DatabaseSchema, 'version' | 'lastPurgedAt'>;
 
 const COLLECTION_KEYS: Array<{ schemaKey: ArraySchemaKey; collectionName: string }> = [
   { schemaKey: 'users', collectionName: MONGO_COLLECTIONS.users },
@@ -50,6 +51,7 @@ const COLLECTION_KEYS: Array<{ schemaKey: ArraySchemaKey; collectionName: string
   { schemaKey: 'notifications', collectionName: MONGO_COLLECTIONS.notifications },
   { schemaKey: 'adminNotifications', collectionName: MONGO_COLLECTIONS.adminNotifications },
   { schemaKey: 'heroBanners', collectionName: MONGO_COLLECTIONS.heroBanners },
+  { schemaKey: 'supportMessages', collectionName: MONGO_COLLECTIONS.supportMessages },
 ];
 
 export function isMongoConfigured(): boolean {
@@ -144,6 +146,7 @@ async function ensureMongoIndexes(db: Db): Promise<void> {
     db.collection(MONGO_COLLECTIONS.notifications).createIndex({ orderId: 1 }),
     db.collection(MONGO_COLLECTIONS.adminNotifications).createIndex({ createdAt: -1 }),
     db.collection(MONGO_COLLECTIONS.heroBanners).createIndex({ id: 1 }, { unique: true }),
+    db.collection(MONGO_COLLECTIONS.supportMessages).createIndex({ createdAt: -1 }),
   ]);
 }
 
@@ -247,7 +250,14 @@ export async function loadDatabaseFromMongo(
     })
   );
 
+  const purgeMeta = await db
+    .collection<{ _id: string; lastPurgedAt?: string }>(MONGO_COLLECTIONS.meta)
+    .findOne({ _id: 'purge_meta' });
+
   const assembled: Record<string, unknown> = { version: 1 };
+  if (purgeMeta?.lastPurgedAt) {
+    assembled.lastPurgedAt = purgeMeta.lastPurgedAt;
+  }
   for (const { schemaKey, items } of results) {
     assembled[schemaKey] = items;
   }
@@ -332,6 +342,19 @@ export async function syncDatabaseToMongo(
           await col.deleteMany({});
         }
       })()
+    );
+  }
+
+  if (prevDb?.lastPurgedAt !== nextDb.lastPurgedAt && nextDb.lastPurgedAt) {
+    tasks.push(
+      db
+        .collection<{ _id: string; lastPurgedAt: string }>(MONGO_COLLECTIONS.meta)
+        .updateOne(
+          { _id: 'purge_meta' },
+          { $set: { lastPurgedAt: nextDb.lastPurgedAt } },
+          { upsert: true }
+        )
+        .then(() => undefined)
     );
   }
 

@@ -27,6 +27,7 @@ import {
   formatDateTimeIN,
   mapLegacyStageToStatus,
 } from '@/lib/orderTypes';
+import { pruneLocalOrdersByCutoff, subscribeStorefrontChanges } from '@/lib/storefrontSync';
 
 function normalizeOrderCode(input: string): string {
   return input.trim().replace(/^#+/, '').toUpperCase();
@@ -98,7 +99,21 @@ export default function OrderTrackingClient() {
 
   // Load recent orders belonging to the signed-in user / current browser session
   useEffect(() => {
+    let active = true;
+
     const loadUserOrders = async () => {
+      try {
+        const sigRes = await fetch('/api/storefront?signature=1', { cache: 'no-store' });
+        if (sigRes.ok) {
+          const sigData = await sigRes.json().catch(() => null);
+          if (sigData?.lastPurgedAt) {
+            pruneLocalOrdersByCutoff(sigData.lastPurgedAt);
+          }
+        }
+      } catch {
+        // ignore network check
+      }
+
       const mergedMap = new Map<string, CustomerOrderView>();
 
       try {
@@ -124,7 +139,9 @@ export default function OrderTrackingClient() {
             const params = new URLSearchParams();
             if (authUser.email) params.set('email', authUser.email);
             if (authUser.phone) params.set('phone', authUser.phone);
-            const res = await fetch(`/api/orders?${params.toString()}`);
+            const res = await fetch(`/api/orders?${params.toString()}`, {
+              cache: 'no-store',
+            });
             if (res.ok) {
               const data = await res.json();
               if (data.success && Array.isArray(data.orders)) {
@@ -140,13 +157,25 @@ export default function OrderTrackingClient() {
         // ignore
       }
 
+      if (!active) return;
       const combined = Array.from(mergedMap.values()).sort(
         (a, b) => new Date(b.date).getTime() - new Date(a.date).getTime()
       );
       setRecentOrders(combined);
     };
 
-    loadUserOrders();
+    void loadUserOrders();
+
+    const unsubscribe = subscribeStorefrontChanges((reason) => {
+      if (reason === 'all' || reason === 'orders') {
+        void loadUserOrders();
+      }
+    });
+
+    return () => {
+      active = false;
+      unsubscribe();
+    };
   }, []);
 
   const lookupOrder = useCallback(
@@ -215,9 +244,21 @@ export default function OrderTrackingClient() {
           }
         }
 
-        // Fallback to localStorage only when not silent and server returned 404
+        // Fallback to localStorage only when not silent and server returned 404 (respecting purge cutoff)
         if (!options?.silent) {
           try {
+            try {
+              const sigRes = await fetch('/api/storefront?signature=1', { cache: 'no-store' });
+              if (sigRes.ok) {
+                const sigData = await sigRes.json().catch(() => null);
+                if (sigData?.lastPurgedAt) {
+                  pruneLocalOrdersByCutoff(sigData.lastPurgedAt);
+                }
+              }
+            } catch {
+              // ignore signature failure
+            }
+
             const localOrdersRaw = localStorage.getItem('orders');
             if (localOrdersRaw) {
               const localOrders: CustomerOrderView[] = JSON.parse(localOrdersRaw);
@@ -282,7 +323,9 @@ export default function OrderTrackingClient() {
     if (!activeCode) return;
 
     const timer = setInterval(() => {
-      lookupOrder(activeCode, { updateUrl: false, silent: true });
+      if (document.visibilityState === 'visible') {
+        lookupOrder(activeCode, { updateUrl: false, silent: true });
+      }
     }, 8000);
 
     const handleVisibility = () => {
@@ -297,6 +340,15 @@ export default function OrderTrackingClient() {
       document.removeEventListener('visibilitychange', handleVisibility);
     };
   }, [foundOrder, lookupOrder]);
+
+  useEffect(() => {
+    if (!showReturnModal) return;
+    const onKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') setShowReturnModal(false);
+    };
+    document.addEventListener('keydown', onKeyDown);
+    return () => document.removeEventListener('keydown', onKeyDown);
+  }, [showReturnModal]);
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -764,6 +816,24 @@ export default function OrderTrackingClient() {
                       </span>
                     </div>
                   )}
+                  {typeof foundOrder.discountAmount === 'number' && foundOrder.discountAmount > 0 && (
+                    <div className="flex justify-between text-emerald-700">
+                      <span>MRP Savings</span>
+                      <span className="font-semibold tabular-nums">
+                        -₹{foundOrder.discountAmount.toLocaleString('en-IN')}
+                      </span>
+                    </div>
+                  )}
+                  {typeof foundOrder.shippingFee === 'number' && (
+                    <div className="flex justify-between text-slate-600">
+                      <span>Shipping Fee</span>
+                      <span className="font-semibold tabular-nums text-slate-900">
+                        {foundOrder.shippingFee === 0
+                          ? 'FREE'
+                          : `₹${foundOrder.shippingFee.toLocaleString('en-IN')}`}
+                      </span>
+                    </div>
+                  )}
                   <div className="flex justify-between border-t border-slate-100 pt-2.5 text-sm">
                     <span className="font-bold text-slate-900">Total Amount</span>
                     <span className="font-bold text-slate-900 tabular-nums">
@@ -829,10 +899,15 @@ export default function OrderTrackingClient() {
 
       {/* Return Request Modal */}
       {showReturnModal && foundOrder && (
-        <div className="fixed inset-0 z-50 bg-slate-950/60 flex items-center justify-center p-4">
+        <div
+          role="dialog"
+          aria-modal="true"
+          aria-labelledby="return-modal-title"
+          className="fixed inset-0 z-50 bg-slate-950/60 flex items-center justify-center p-4"
+        >
           <div className="bg-white rounded-2xl border border-slate-200 max-w-md w-full max-h-[90dvh] overflow-y-auto p-5 sm:p-6 space-y-4">
             <div className="flex items-center justify-between gap-2">
-              <h3 className="text-base font-bold text-slate-900">
+              <h3 id="return-modal-title" className="text-base font-bold text-slate-900">
                 Request Return — {foundOrder.orderNumber || foundOrder.orderId}
               </h3>
               <button
@@ -846,10 +921,14 @@ export default function OrderTrackingClient() {
             </div>
             <form onSubmit={handleRequestReturn} className="space-y-4">
               <div>
-                <label className="block text-xs font-semibold text-slate-700 mb-1.5">
+                <label
+                  htmlFor="return-reason-input"
+                  className="block text-xs font-semibold text-slate-700 mb-1.5"
+                >
                   Reason for Return *
                 </label>
                 <textarea
+                  id="return-reason-input"
                   rows={3}
                   required
                   value={returnReason}
@@ -858,7 +937,7 @@ export default function OrderTrackingClient() {
                   className="w-full px-3 py-2.5 text-base sm:text-sm border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-600"
                 />
               </div>
-              <div className="flex justify-end gap-2">
+              <div className="flex flex-col-reverse sm:flex-row sm:justify-end gap-2">
                 <button
                   type="button"
                   onClick={() => setShowReturnModal(false)}

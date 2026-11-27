@@ -83,6 +83,7 @@ export interface CustomerOrderView {
   totalAmount: number;
   subtotal?: number;
   shippingFee?: number;
+  discountAmount?: number;
   paymentStatus: string;
   paymentMethod: string;
   transactionId?: string;

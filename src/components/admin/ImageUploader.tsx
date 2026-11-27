@@ -127,7 +127,7 @@ export default function ImageUploader({
 
   return (
     <div className="space-y-4">
-      <div className="flex items-center justify-between">
+      <div className="flex flex-wrap items-center justify-between gap-2">
         <div>
           <label className="block text-sm font-semibold text-gray-800">
             Shoe Images ({images.length}/{maxImages})
@@ -139,7 +139,7 @@ export default function ImageUploader({
         <button
           type="button"
           onClick={() => setShowUrlInput(!showUrlInput)}
-          className="text-xs font-medium text-indigo-600 hover:text-indigo-800 flex items-center gap-1 bg-indigo-50 px-2.5 py-1 rounded-md"
+          className="min-h-[44px] text-xs font-medium text-indigo-600 hover:text-indigo-800 flex items-center gap-1.5 bg-indigo-50 px-3 py-1.5 rounded-lg cursor-pointer"
         >
           <LinkIcon className="w-3.5 h-3.5" />
           {showUrlInput ? 'Hide URL input' : 'Add by URL'}
@@ -147,13 +147,13 @@ export default function ImageUploader({
       </div>
 
       {showUrlInput && (
-        <div className="flex items-center gap-2 p-2 bg-gray-50 rounded-lg border border-gray-200">
+        <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2 p-2.5 bg-gray-50 rounded-lg border border-gray-200">
           <input
             type="url"
             value={urlInput}
             onChange={(e) => setUrlInput(e.target.value)}
             placeholder="Paste image URL (https://... or /images/...)"
-            className="flex-1 text-sm bg-white border border-gray-300 rounded-md px-3 py-1.5 focus:outline-none focus:ring-2 focus:ring-indigo-500"
+            className="flex-1 min-h-[44px] text-base sm:text-sm bg-white border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-indigo-500"
             onKeyDown={(e) => {
               if (e.key === 'Enter') {
                 e.preventDefault();
@@ -164,7 +164,7 @@ export default function ImageUploader({
           <button
             type="button"
             onClick={handleAddUrl}
-            className="bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-medium px-3 py-2 rounded-md transition-colors"
+            className="min-h-[44px] bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-semibold px-4 py-2 rounded-md transition-colors cursor-pointer shrink-0"
           >
             Add Image
           </button>
@@ -247,8 +247,8 @@ export default function ImageUploader({
                     </div>
                   )}
 
-                  {/* Overlay Actions */}
-                  <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center gap-2 p-2">
+                  {/* Desktop Hover Overlay Actions */}
+                  <div className="hidden sm:flex absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity items-center justify-center gap-2 p-2">
                     {!isPrimary && (
                       <button
                         type="button"
@@ -257,7 +257,7 @@ export default function ImageUploader({
                           handleSetPrimary(index);
                         }}
                         title="Set as Main Cover"
-                        className="bg-white/90 hover:bg-white text-gray-800 text-xs font-medium px-2 py-1 rounded-md shadow transition-transform active:scale-95 flex items-center gap-1"
+                        className="min-h-[36px] bg-white/95 hover:bg-white text-gray-800 text-xs font-medium px-2.5 py-1 rounded-md shadow transition-transform active:scale-95 flex items-center gap-1 cursor-pointer"
                       >
                         <Star className="w-3 h-3 text-amber-500" />
                         Cover
@@ -270,11 +270,44 @@ export default function ImageUploader({
                         handleRemoveImage(index);
                       }}
                       title="Remove image"
-                      className="bg-red-600/90 hover:bg-red-600 text-white p-1.5 rounded-md shadow transition-transform active:scale-95"
+                      aria-label={`Remove shoe photo ${index + 1}`}
+                      className="min-w-[36px] min-h-[36px] inline-flex items-center justify-center bg-red-600/95 hover:bg-red-600 text-white p-1.5 rounded-md shadow transition-transform active:scale-95 cursor-pointer"
                     >
                       <X className="w-3.5 h-3.5" />
                     </button>
                   </div>
+                </div>
+
+                {/* Touch-Visible Action Strip for Mobile */}
+                <div className="sm:hidden border-t border-gray-100 bg-gray-50/90 p-1.5 flex items-center justify-between gap-1.5">
+                  {!isPrimary ? (
+                    <button
+                      type="button"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        handleSetPrimary(index);
+                      }}
+                      className="flex-1 min-h-[44px] bg-white border border-gray-200 text-gray-800 text-xs font-medium px-2 py-1 rounded-lg flex items-center justify-center gap-1 cursor-pointer"
+                    >
+                      <Star className="w-3.5 h-3.5 text-amber-500" />
+                      <span>Cover</span>
+                    </button>
+                  ) : (
+                    <span className="flex-1 text-[11px] font-semibold text-indigo-700 px-2">
+                      Primary
+                    </span>
+                  )}
+                  <button
+                    type="button"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      handleRemoveImage(index);
+                    }}
+                    aria-label={`Remove shoe photo ${index + 1}`}
+                    className="min-w-[44px] min-h-[44px] inline-flex items-center justify-center bg-rose-50 hover:bg-rose-100 border border-rose-200 text-rose-700 rounded-lg cursor-pointer"
+                  >
+                    <X className="w-4 h-4" />
+                  </button>
                 </div>
               </div>
             );

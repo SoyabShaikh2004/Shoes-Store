@@ -145,6 +145,17 @@ export default function AdminOrdersManager({
     }
   }, [externalSearch]);
 
+  useEffect(() => {
+    if (!selectedOrder) return;
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') {
+        setSelectedOrder(null);
+      }
+    };
+    document.addEventListener('keydown', handleKeyDown);
+    return () => document.removeEventListener('keydown', handleKeyDown);
+  }, [selectedOrder]);
+
   const markNotificationsRead = useCallback(
     async (params: { id?: string; orderNumber?: string; all?: boolean }) => {
       try {
@@ -608,7 +619,7 @@ export default function AdminOrdersManager({
                   <button
                     type="button"
                     onClick={() => void handleOpenOrderByNumber(notif.orderNumber)}
-                    className="min-h-[40px] px-3 py-1.5 rounded-lg bg-slate-100 hover:bg-slate-200 text-slate-800 font-semibold cursor-pointer self-start sm:self-auto"
+                    className="min-h-[44px] px-3.5 py-2 rounded-lg bg-slate-100 hover:bg-slate-200 text-slate-800 font-semibold cursor-pointer self-start sm:self-auto"
                   >
                     Open Order
                   </button>
@@ -826,7 +837,7 @@ export default function AdminOrdersManager({
                   setDateFrom('');
                   setDateTo('');
                 }}
-                className="mt-2 min-h-[40px] px-3.5 py-1.5 rounded-lg border border-slate-200 hover:bg-slate-50 text-xs font-semibold text-slate-700 cursor-pointer"
+                className="mt-2 min-h-[44px] px-4 py-2 rounded-lg border border-slate-200 hover:bg-slate-50 text-xs font-semibold text-slate-700 cursor-pointer"
               >
                 Clear All Filters
               </button>
@@ -878,8 +889,8 @@ export default function AdminOrdersManager({
                       </div>
                     </div>
 
-                    <div className="flex items-center justify-between gap-3 pt-1">
-                      <div className="tabular-nums">
+                    <div className="flex flex-wrap items-center justify-between gap-2 pt-1">
+                      <div className="tabular-nums min-w-0">
                         <div className="text-sm font-bold text-slate-900">
                           ₹{order.totalAmount.toLocaleString('en-IN')}
                         </div>
@@ -888,7 +899,7 @@ export default function AdminOrdersManager({
                         </div>
                       </div>
                       {shipping?.trackingNumber && (
-                        <div className="text-[11px] font-mono text-slate-400 text-right truncate max-w-[160px]">
+                        <div className="text-[11px] font-mono text-slate-400 text-right break-all min-w-0">
                           {shipping.trackingNumber}
                         </div>
                       )}
@@ -1032,34 +1043,55 @@ export default function AdminOrdersManager({
 
       {/* Order Details & Workflow Drawer Modal */}
       {selectedOrder && (
-        <div className="fixed inset-0 z-50 bg-slate-950/60 flex justify-end">
+        <div
+          className="fixed inset-0 z-50 bg-slate-950/60 flex justify-end"
+          role="dialog"
+          aria-modal="true"
+          aria-labelledby="admin-order-drawer-title"
+          onClick={(e) => {
+            if (e.target === e.currentTarget) setSelectedOrder(null);
+          }}
+        >
           <div className="bg-white w-full max-w-3xl h-full overflow-y-auto border-l border-slate-200 flex flex-col">
             {/* Modal Header */}
-            <div className="sticky top-0 z-10 bg-white border-b border-slate-200 px-4 sm:px-6 py-4 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
-              <div className="min-w-0">
-                <div className="flex flex-wrap items-center gap-2">
-                  <h2 className="text-base sm:text-lg font-bold text-slate-900 font-mono">
-                    {selectedOrder.order.orderNumber}
-                  </h2>
-                  <span
-                    className={`px-2 py-0.5 rounded-md border text-xs font-semibold ${statusBadgeStyle(
-                      selectedOrder.order.status
-                    )}`}
-                  >
-                    {selectedOrder.order.status}
-                  </span>
+            <div className="sticky top-0 z-10 bg-white border-b border-slate-200 px-4 sm:px-6 py-4 space-y-3 sm:space-y-0 sm:flex sm:items-center sm:justify-between sm:gap-3">
+              <div className="flex items-start justify-between gap-3 min-w-0">
+                <div className="min-w-0">
+                  <div className="flex flex-wrap items-center gap-2">
+                    <h2
+                      id="admin-order-drawer-title"
+                      className="text-base sm:text-lg font-bold text-slate-900 font-mono"
+                    >
+                      {selectedOrder.order.orderNumber}
+                    </h2>
+                    <span
+                      className={`px-2 py-0.5 rounded-md border text-xs font-semibold ${statusBadgeStyle(
+                        selectedOrder.order.status
+                      )}`}
+                    >
+                      {selectedOrder.order.status}
+                    </span>
+                  </div>
+                  <p className="text-xs text-slate-500 mt-0.5 truncate">
+                    Placed {formatDateTimeIN(selectedOrder.order.createdAt)} · Customer:{' '}
+                    {selectedOrder.order.customerName}
+                  </p>
                 </div>
-                <p className="text-xs text-slate-500 mt-0.5 truncate">
-                  Placed {formatDateTimeIN(selectedOrder.order.createdAt)} · Customer:{' '}
-                  {selectedOrder.order.customerName}
-                </p>
+                <button
+                  type="button"
+                  onClick={() => setSelectedOrder(null)}
+                  aria-label="Close drawer"
+                  className="sm:hidden min-w-[44px] min-h-[44px] inline-flex items-center justify-center rounded-lg text-slate-400 hover:text-slate-700 hover:bg-slate-100 cursor-pointer shrink-0"
+                >
+                  <X className="w-5 h-5" />
+                </button>
               </div>
 
               <div className="flex flex-wrap items-center gap-2 shrink-0">
                 <button
                   type="button"
                   onClick={() =>
-                    generateTaxInvoicePDF({
+                    void generateTaxInvoicePDF({
                       orderId: selectedOrder.order.orderNumber,
                       date: selectedOrder.order.createdAt,
                       items: selectedOrder.items.map((i) => ({
@@ -1072,6 +1104,8 @@ export default function AdminOrdersManager({
                         brand: i.brand,
                         category: i.category,
                       })),
+                      shippingFee: selectedOrder.order.shippingFee,
+                      discountAmount: selectedOrder.order.discountAmount,
                       totalAmount: selectedOrder.order.totalAmount,
                       paymentStatus: selectedOrder.order.paymentStatus,
                       paymentMethod: selectedOrder.order.paymentMethod,
@@ -1087,7 +1121,7 @@ export default function AdminOrdersManager({
                       estimatedDelivery: selectedOrder.order.estimatedDelivery,
                     })
                   }
-                  className="min-h-[44px] px-3 py-1.5 rounded-lg border border-slate-200 hover:bg-slate-50 text-xs font-semibold text-slate-700 inline-flex items-center gap-1.5 cursor-pointer"
+                  className="flex-1 sm:flex-none min-h-[44px] px-3 py-1.5 rounded-lg border border-slate-200 hover:bg-slate-50 text-xs font-semibold text-slate-700 inline-flex items-center justify-center gap-1.5 cursor-pointer"
                 >
                   <FileText className="w-3.5 h-3.5" />
                   <span>PDF Invoice</span>
@@ -1095,7 +1129,7 @@ export default function AdminOrdersManager({
                 <button
                   type="button"
                   onClick={() => window.print()}
-                  className="min-h-[44px] px-3 py-1.5 rounded-lg border border-slate-200 hover:bg-slate-50 text-xs font-semibold text-slate-700 inline-flex items-center gap-1.5 cursor-pointer"
+                  className="flex-1 sm:flex-none min-h-[44px] px-3 py-1.5 rounded-lg border border-slate-200 hover:bg-slate-50 text-xs font-semibold text-slate-700 inline-flex items-center justify-center gap-1.5 cursor-pointer"
                 >
                   <Printer className="w-3.5 h-3.5" />
                   <span>Print</span>
@@ -1104,7 +1138,7 @@ export default function AdminOrdersManager({
                   type="button"
                   onClick={() => setSelectedOrder(null)}
                   aria-label="Close drawer"
-                  className="min-w-[44px] min-h-[44px] inline-flex items-center justify-center rounded-lg text-slate-400 hover:text-slate-700 hover:bg-slate-100 cursor-pointer"
+                  className="hidden sm:inline-flex min-w-[44px] min-h-[44px] items-center justify-center rounded-lg text-slate-400 hover:text-slate-700 hover:bg-slate-100 cursor-pointer"
                 >
                   <X className="w-5 h-5" />
                 </button>
@@ -1123,10 +1157,14 @@ export default function AdminOrdersManager({
 
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                   <div>
-                    <label className="block text-xs font-semibold text-slate-700 mb-1">
+                    <label
+                      htmlFor="admin-order-next-status"
+                      className="block text-xs font-semibold text-slate-700 mb-1"
+                    >
                       Order Status *
                     </label>
                     <select
+                      id="admin-order-next-status"
                       value={nextStatus}
                       onChange={(e) => setNextStatus(e.target.value as OrderStatus)}
                       className="w-full min-h-[44px] px-3 py-2 text-base sm:text-sm bg-white border border-slate-300 rounded-lg font-medium"
@@ -1140,10 +1178,14 @@ export default function AdminOrdersManager({
                   </div>
 
                   <div>
-                    <label className="block text-xs font-semibold text-slate-700 mb-1">
+                    <label
+                      htmlFor="admin-order-carrier"
+                      className="block text-xs font-semibold text-slate-700 mb-1"
+                    >
                       Shipping Company
                     </label>
                     <input
+                      id="admin-order-carrier"
                       type="text"
                       value={carrierInput}
                       onChange={(e) => setCarrierInput(e.target.value)}
@@ -1153,10 +1195,14 @@ export default function AdminOrdersManager({
                   </div>
 
                   <div>
-                    <label className="block text-xs font-semibold text-slate-700 mb-1">
+                    <label
+                      htmlFor="admin-order-tracking"
+                      className="block text-xs font-semibold text-slate-700 mb-1"
+                    >
                       Tracking / AWB Number
                     </label>
                     <input
+                      id="admin-order-tracking"
                       type="text"
                       value={trackingInput}
                       onChange={(e) => setTrackingInput(e.target.value)}
@@ -1166,10 +1212,14 @@ export default function AdminOrdersManager({
                   </div>
 
                   <div>
-                    <label className="block text-xs font-semibold text-slate-700 mb-1">
+                    <label
+                      htmlFor="admin-order-est-delivery"
+                      className="block text-xs font-semibold text-slate-700 mb-1"
+                    >
                       Estimated Delivery
                     </label>
                     <input
+                      id="admin-order-est-delivery"
                       type="text"
                       value={estDeliveryInput}
                       onChange={(e) => setEstDeliveryInput(e.target.value)}
@@ -1180,10 +1230,14 @@ export default function AdminOrdersManager({
 
                   {nextStatus === 'Order Cancelled' && (
                     <div className="sm:col-span-2">
-                      <label className="block text-xs font-semibold text-rose-700 mb-1">
+                      <label
+                        htmlFor="admin-order-cancel-reason"
+                        className="block text-xs font-semibold text-rose-700 mb-1"
+                      >
                         Cancellation Reason * (Restores inventory if deducted)
                       </label>
                       <input
+                        id="admin-order-cancel-reason"
                         type="text"
                         required
                         value={cancelReasonInput}
@@ -1195,10 +1249,14 @@ export default function AdminOrdersManager({
                   )}
 
                   <div className="sm:col-span-2">
-                    <label className="block text-xs font-semibold text-slate-700 mb-1">
+                    <label
+                      htmlFor="admin-order-status-note"
+                      className="block text-xs font-semibold text-slate-700 mb-1"
+                    >
                       Status Update Note (Visible in Customer Timeline)
                     </label>
                     <input
+                      id="admin-order-status-note"
                       type="text"
                       value={statusNoteInput}
                       onChange={(e) => setStatusNoteInput(e.target.value)}
@@ -1358,9 +1416,9 @@ export default function AdminOrdersManager({
                   <div className="space-y-2">
                     {selectedOrder.adminNotes.map((n) => (
                       <div key={n.id} className="p-2.5 rounded-lg bg-slate-50 border border-slate-100 text-xs">
-                        <div className="flex justify-between text-slate-500 mb-0.5">
+                        <div className="flex flex-col sm:flex-row sm:justify-between gap-0.5 sm:gap-2 text-slate-500 mb-0.5">
                           <span className="font-semibold text-slate-800">{n.adminName}</span>
-                          <span className="tabular-nums">{formatDateTimeIN(n.createdAt)}</span>
+                          <span className="tabular-nums text-[11px]">{formatDateTimeIN(n.createdAt)}</span>
                         </div>
                         <p className="text-slate-700">{n.note}</p>
                       </div>
@@ -1377,15 +1435,15 @@ export default function AdminOrdersManager({
                 </div>
                 <div className="divide-y divide-slate-100">
                   {[...selectedOrder.statusHistory].reverse().map((h) => (
-                    <div key={h.id} className="px-4 py-2.5 text-xs flex justify-between gap-4">
-                      <div>
+                    <div key={h.id} className="px-4 py-2.5 text-xs flex flex-col sm:flex-row sm:justify-between gap-1 sm:gap-4">
+                      <div className="min-w-0">
                         <span className="font-semibold text-slate-900">{h.status}</span>{' '}
                         <span className="text-slate-500">
                           by {h.updatedByAdminName} ({h.updatedByRole})
                         </span>
                         {h.note && <p className="text-slate-600 mt-0.5">{h.note}</p>}
                       </div>
-                      <span className="font-mono text-slate-500 shrink-0 tabular-nums">
+                      <span className="font-mono text-[11px] text-slate-500 shrink-0 tabular-nums">
                         {formatDateTimeIN(h.timestamp)}
                       </span>
                     </div>
@@ -1402,14 +1460,14 @@ export default function AdminOrdersManager({
                   </div>
                   <div className="divide-y divide-slate-100 max-h-48 overflow-y-auto">
                     {selectedOrder.notifications.map((n) => (
-                      <div key={n.id} className="px-4 py-2 text-xs flex justify-between gap-2">
-                        <div>
+                      <div key={n.id} className="px-4 py-2 text-xs flex flex-col sm:flex-row sm:justify-between gap-1 sm:gap-2">
+                        <div className="min-w-0">
                           <span className="font-semibold uppercase text-indigo-700">
                             {n.channel}
                           </span>{' '}
                           <span className="text-slate-800">{n.message}</span>
                         </div>
-                        <span className="font-mono text-slate-400 shrink-0 tabular-nums">
+                        <span className="font-mono text-[11px] text-slate-400 shrink-0 tabular-nums">
                           {formatDateTimeIN(n.sentAt)}
                         </span>
                       </div>

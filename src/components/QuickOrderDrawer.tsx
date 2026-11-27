@@ -19,6 +19,7 @@ import {
 import toast from 'react-hot-toast';
 import { Product } from '@/lib/data';
 import { resolveProductImage } from '@/lib/productImages';
+import { notifyStorefrontChanged } from '@/lib/storefrontSync';
 import GoogleSignInButton from '@/components/GoogleSignInButton';
 
 interface QuickOrderDrawerProps {
@@ -193,6 +194,7 @@ export default function QuickOrderDrawer({ product, onClose }: QuickOrderDrawerP
         })
       );
       window.dispatchEvent(new Event('authUpdated'));
+      notifyStorefrontChanged('customers');
       toast.success('Signed in! Proceeding to checkout...');
       onClose();
       router.push('/cart?checkout=quick');

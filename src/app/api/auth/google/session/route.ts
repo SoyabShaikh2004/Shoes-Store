@@ -8,6 +8,7 @@ import {
   verifyCustomerSessionToken,
   verifyGoogleHandoffToken,
 } from '@/lib/server/customerSession';
+import { upsertCustomerInDb } from '@/lib/db/store';
 
 export const dynamic = 'force-dynamic';
 
@@ -76,6 +77,11 @@ export async function POST(req: NextRequest) {
         { status: 401 }
       );
     }
+
+    await upsertCustomerInDb({
+      name: user.name,
+      email: user.email,
+    });
 
     const sessionToken = signCustomerSessionToken(user);
     const res = NextResponse.json({

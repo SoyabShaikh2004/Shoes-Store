@@ -158,7 +158,7 @@ export default function AdminAuth({ onSuccess }: AdminAuthProps) {
                       required
                       value={signInEmail}
                       onChange={(e) => setSignInEmail(e.target.value)}
-                      placeholder="admin@stepstyle.in"
+                      placeholder="owner@stepstyle.in"
                       className="w-full min-h-[44px] pl-9 pr-4 py-2 text-base sm:text-sm bg-slate-50 border border-slate-200 rounded-lg focus:bg-white focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-600 transition-colors"
                     />
                   </div>
@@ -231,7 +231,7 @@ export default function AdminAuth({ onSuccess }: AdminAuthProps) {
                       required
                       value={signUpName}
                       onChange={(e) => setSignUpName(e.target.value)}
-                      placeholder="Alex Henderson"
+                      placeholder="Rohan Mehta"
                       className="w-full min-h-[44px] pl-9 pr-4 py-2 text-base sm:text-sm bg-slate-50 border border-slate-200 rounded-lg focus:bg-white focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-600"
                     />
                   </div>

@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useRef } from 'react';
 import { Loader2 } from 'lucide-react';
+import { notifyStorefrontChanged } from '@/lib/storefrontSync';
 
 interface GoogleUserProfile {
   email: string;
@@ -78,6 +79,7 @@ export default function GoogleSignInButton({
           localStorage.setItem('isAuthenticated', 'true');
           localStorage.setItem('authUser', JSON.stringify(data.user));
           window.dispatchEvent(new Event('authUpdated'));
+          notifyStorefrontChanged('customers');
 
           setIsConnecting(false);
           onSuccessRef.current(data.user);

@@ -6,6 +6,7 @@ import { useRouter } from 'next/navigation';
 import Image from 'next/image';
 import { Loader2 } from 'lucide-react';
 import GoogleSignInButton from '@/components/GoogleSignInButton';
+import { notifyStorefrontChanged } from '@/lib/storefrontSync';
 
 export default function LoginPage() {
   const router = useRouter();
@@ -95,6 +96,7 @@ export default function LoginPage() {
           phone: isPhone ? cleanId : undefined,
         }),
       });
+      notifyStorefrontChanged('customers');
     } catch {
       // keep local login active if offline
     }

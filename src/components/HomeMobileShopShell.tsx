@@ -67,7 +67,7 @@ export default function HomeMobileShopShell({ products, heroBanners }: HomeMobil
       if (document.visibilityState === 'visible') {
         void refreshStorefront(false);
       }
-    }, 15000);
+    }, 4500);
 
     window.addEventListener('focus', handleFocus);
     document.addEventListener('visibilitychange', handleVisibility);

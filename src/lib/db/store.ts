@@ -3,6 +3,7 @@ import os from 'os';
 import path from 'path';
 import crypto from 'crypto';
 import {
+  ALL_ORDER_STATUSES,
   AdminNoteRecord,
   AdminNotificationRecord,
   AdminRole,
@@ -90,6 +91,7 @@ const globalForDb = globalThis as typeof globalThis & {
   __stepstyleDbCache?: DatabaseSchema;
   __stepstyleMongoCacheAt?: number;
   __stepstyleStorageTarget?: { dbPath: string; bundledWritable: boolean };
+  __stepstyleMemoryFallbackActive?: boolean;
 };
 
 async function isDirectoryWritable(dirPath: string): Promise<boolean> {
@@ -334,6 +336,7 @@ async function persistDatabase(
     await syncDatabaseToMongo(prevDb, db);
     globalForDb.__stepstyleDbCache = db;
     globalForDb.__stepstyleMongoCacheAt = Date.now();
+    globalForDb.__stepstyleMemoryFallbackActive = false;
     if (storage.bundledWritable) {
       try {
         await syncLegacyFiles(db);
@@ -345,8 +348,10 @@ async function persistDatabase(
   }
 
   globalForDb.__stepstyleDbCache = db;
+  let diskPersisted = false;
   try {
     await writeAtomicJson(storage.dbPath, db);
+    diskPersisted = true;
   } catch (err) {
     // Fallback to temp path if primary became read-only
     if (storage.dbPath !== TMP_DB_FILE_PATH) {
@@ -356,11 +361,16 @@ async function persistDatabase(
           dbPath: TMP_DB_FILE_PATH,
           bundledWritable: false,
         };
+        diskPersisted = true;
       } catch {
         console.warn('Database persisted in memory fallback:', err);
       }
+    } else {
+      console.warn('Database persisted in memory fallback:', err);
     }
   }
+
+  globalForDb.__stepstyleMemoryFallbackActive = !diskPersisted;
 
   if (storage.bundledWritable) {
     try {
@@ -381,17 +391,212 @@ function normalizeLoadedDatabaseDefaults(db: DatabaseSchema): DatabaseSchema {
   return db;
 }
 
+async function reconcileLegacyOrdersIntoDb(db: DatabaseSchema): Promise<boolean> {
+  const rawOrders = await readJsonSafe<any[]>(ORDERS_FILE_PATH, []);
+  if (!Array.isArray(rawOrders) || rawOrders.length === 0) return false;
+
+  const existingNumbers = new Set(db.orders.map((o) => normalizeOrderNumber(o.orderNumber)));
+  let changed = false;
+  const now = new Date().toISOString();
+
+  for (const ro of rawOrders) {
+    if (!ro || !ro.orderId) continue;
+    const orderNumber = normalizeOrderNumber(String(ro.orderId));
+    if (!orderNumber || existingNumbers.has(orderNumber)) continue;
+
+    existingNumbers.add(orderNumber);
+    changed = true;
+
+    const orderInternalId = `ord-${slugify(orderNumber) || Date.now()}`;
+    const cleanEmail = normalizeCustomerEmail(ro.customer?.email);
+    const cleanPhoneRaw = String(ro.customer?.phone || 'N/A').trim();
+    const cleanPhone10 = normalizeCustomerPhone10(cleanPhoneRaw);
+    const cleanPhone = cleanPhone10 || cleanPhoneRaw || 'N/A';
+    const cleanName = String(ro.customer?.name || 'Customer').trim() || 'Customer';
+    const cleanAddress = String(ro.customer?.address || 'N/A').trim() || 'N/A';
+    const cleanPincode = String(ro.customer?.pincode || 'N/A').trim() || 'N/A';
+    const createdAt = String(ro.date || now);
+    const updatedAt = String(ro.updatedAt || createdAt);
+
+    let user = mergeDuplicateUsersInDb(db, cleanEmail, cleanPhone10);
+    if (!user) {
+      user = {
+        id: `usr-${slugify(cleanEmail || cleanPhone || orderInternalId) || Date.now()}`,
+        name: cleanName,
+        email: cleanEmail,
+        phone: cleanPhone,
+        defaultAddress: cleanAddress !== 'N/A' ? cleanAddress : undefined,
+        defaultPincode: cleanPincode !== 'N/A' ? cleanPincode : undefined,
+        createdAt,
+        lastOrderAt: createdAt,
+      };
+      db.users.push(user);
+    } else {
+      if (
+        cleanName !== 'Customer' &&
+        (isPlaceholderCustomerName(user.name, user.email) || !user.name)
+      ) {
+        user.name = cleanName;
+      }
+      if (cleanEmail && !user.email) user.email = cleanEmail;
+      if (cleanPhone !== 'N/A' && (!user.phone || user.phone === 'N/A')) {
+        user.phone = cleanPhone;
+      }
+      if (
+        !user.lastOrderAt ||
+        new Date(createdAt).getTime() > new Date(user.lastOrderAt).getTime()
+      ) {
+        user.lastOrderAt = createdAt;
+      }
+      if (cleanAddress !== 'N/A' && (!user.defaultAddress || user.defaultAddress === 'N/A')) {
+        user.defaultAddress = cleanAddress;
+      }
+      if (cleanPincode !== 'N/A' && (!user.defaultPincode || user.defaultPincode === 'N/A')) {
+        user.defaultPincode = cleanPincode;
+      }
+    }
+
+    const rawStatus = typeof ro.status === 'string' ? ro.status.trim() : '';
+    const status: OrderStatus = ALL_ORDER_STATUSES.includes(rawStatus as OrderStatus)
+      ? (rawStatus as OrderStatus)
+      : mapLegacyStageToStatus(ro.stage, ro.paymentStatus);
+    const payStatus = mapPaymentStatusFromOrder(String(ro.paymentStatus || ''));
+    const totalAmount = Number(ro.totalAmount) || 0;
+    const shippingFee = Number(ro.shippingFee) || 0;
+    const subtotal = Math.max(0, totalAmount - shippingFee);
+
+    const newOrder: OrderRecord = {
+      id: orderInternalId,
+      orderNumber,
+      userId: user.id,
+      customerName: cleanName,
+      customerPhone: cleanPhone,
+      customerEmail: cleanEmail,
+      deliveryAddress: cleanAddress,
+      pincode: cleanPincode,
+      subtotal,
+      shippingFee,
+      totalAmount,
+      status,
+      paymentStatus: payStatus,
+      paymentMethod: String(ro.paymentMethod || 'UPI'),
+      stockDeducted: false,
+      estimatedDelivery: String(ro.estimatedDelivery || 'Within 3-5 Business Days'),
+      createdAt,
+      updatedAt,
+    };
+    db.orders.push(newOrder);
+
+    let totalPairs = 0;
+    let firstItemName = 'Footwear';
+    const rawItems = Array.isArray(ro.items) ? ro.items : [];
+    rawItems.forEach((item: any, idx: number) => {
+      const prod = db.products.find((p) => p.id === Number(item?.id));
+      const qty = Math.max(1, Number(item?.quantity) || 1);
+      const unitPrice = Number(item?.price) || prod?.price || 0;
+      const itemName = String(item?.name || prod?.name || 'Footwear Item');
+      if (idx === 0) firstItemName = itemName;
+      totalPairs += qty;
+      db.orderItems.push({
+        id: `oi-${orderInternalId}-${idx + 1}`,
+        orderId: orderInternalId,
+        productId: Number(item?.id) || 0,
+        sku: prod?.sku || `STEP-${String(item?.id || idx + 1).padStart(4, '0')}`,
+        name: itemName,
+        imagePath: String(item?.imagePath || prod?.imagePath || '/images/Empty-cart.jpg'),
+        brand: String(item?.brand || prod?.brand || 'StepStyle'),
+        category: String(item?.category || prod?.category || 'Sneakers'),
+        selectedSize: item?.selectedSize ? Number(item.selectedSize) : undefined,
+        selectedColor: item?.selectedColor ? String(item.selectedColor) : undefined,
+        quantity: qty,
+        unitPrice,
+        lineTotal: unitPrice * qty,
+      });
+    });
+
+    db.orderStatusHistory.push({
+      id: `hist-${orderInternalId}-1`,
+      orderId: orderInternalId,
+      status: 'Order Placed',
+      note: 'Order created at checkout',
+      updatedByAdminName: 'System',
+      updatedByRole: 'Checkout',
+      timestamp: createdAt,
+    });
+
+    if (status !== 'Order Placed') {
+      db.orderStatusHistory.push({
+        id: `hist-${orderInternalId}-2`,
+        orderId: orderInternalId,
+        status,
+        previousStatus: 'Order Placed',
+        note: payStatus === 'Paid' ? 'Payment verified' : 'Order recorded',
+        updatedByAdminName: 'System',
+        updatedByRole: 'System',
+        timestamp: updatedAt,
+      });
+    }
+
+    db.payments.push({
+      id: `pay-${orderInternalId}`,
+      orderId: orderInternalId,
+      method: String(ro.paymentMethod || 'UPI'),
+      status: payStatus,
+      amount: totalAmount,
+      transactionId: ro.transactionId ? String(ro.transactionId) : undefined,
+      utrNumber: ro.utrNumber ? String(ro.utrNumber) : undefined,
+      paidToUPI: ro.paidToUPI ? String(ro.paidToUPI) : undefined,
+      paidAt: payStatus === 'Paid' ? createdAt : undefined,
+      updatedAt: createdAt,
+    });
+
+    db.shipping.push({
+      id: `ship-${orderInternalId}`,
+      orderId: orderInternalId,
+      carrier: String(ro.carrier || 'BlueDart Express'),
+      trackingNumber: String(
+        ro.trackingNumber || `BD-IN-${orderNumber.replace(/\D/g, '').slice(-8) || '84920194'}`
+      ),
+      estimatedDelivery: String(ro.estimatedDelivery || 'Within 3-5 Business Days'),
+      updatedAt: createdAt,
+    });
+
+    pushAdminNotification(db, {
+      type: 'new_order',
+      orderId: orderInternalId,
+      orderNumber,
+      customerName: cleanName,
+      customerPhone: cleanPhone,
+      totalAmount,
+      paymentMethod: String(ro.paymentMethod || 'UPI'),
+      paymentStatus: payStatus,
+      itemCount: Math.max(1, totalPairs),
+      primaryItemName: firstItemName,
+      message: `Order ${orderNumber} placed by ${cleanName} (₹${totalAmount.toLocaleString(
+        'en-IN'
+      )})`,
+      createdAt,
+    });
+  }
+
+  return changed;
+}
+
 async function buildSeedSchemaFromFiles(): Promise<DatabaseSchema> {
   const storage = await resolveStorageTarget();
   const primaryDb = await readJsonSafe<DatabaseSchema | null>(storage.dbPath, null);
   if (primaryDb && primaryDb.version === 1 && Array.isArray(primaryDb.products)) {
-    return normalizeLoadedDatabaseDefaults(primaryDb);
+    normalizeLoadedDatabaseDefaults(primaryDb);
+    await reconcileLegacyOrdersIntoDb(primaryDb);
+    return primaryDb;
   }
 
   if (storage.dbPath !== BUNDLED_DB_FILE_PATH) {
     const bundledDb = await readJsonSafe<DatabaseSchema | null>(BUNDLED_DB_FILE_PATH, null);
     if (bundledDb && bundledDb.version === 1 && Array.isArray(bundledDb.products)) {
-      return normalizeLoadedDatabaseDefaults(bundledDb);
+      normalizeLoadedDatabaseDefaults(bundledDb);
+      await reconcileLegacyOrdersIntoDb(bundledDb);
+      return bundledDb;
     }
   }
 
@@ -410,7 +615,13 @@ async function bootstrapDatabase(forceFresh = false): Promise<DatabaseSchema> {
     );
     globalForDb.__stepstyleDbCache = mongoDb;
     globalForDb.__stepstyleMongoCacheAt = Date.now();
+    globalForDb.__stepstyleMemoryFallbackActive = false;
     return mongoDb;
+  }
+
+  // If previous writes fell back strictly to memory cache (e.g. read-only filesystem), do not overwrite with stale disk data
+  if (globalForDb.__stepstyleMemoryFallbackActive && globalForDb.__stepstyleDbCache) {
+    return globalForDb.__stepstyleDbCache;
   }
 
   const storage = await resolveStorageTarget();
@@ -419,11 +630,13 @@ async function bootstrapDatabase(forceFresh = false): Promise<DatabaseSchema> {
   // When running from read-only deployment (/var/task), hydrate initial state from bundled database.json
   if (!existingDb && storage.dbPath !== BUNDLED_DB_FILE_PATH) {
     if (globalForDb.__stepstyleDbCache) {
+      await reconcileLegacyOrdersIntoDb(globalForDb.__stepstyleDbCache);
       return globalForDb.__stepstyleDbCache;
     }
     existingDb = await readJsonSafe<DatabaseSchema | null>(BUNDLED_DB_FILE_PATH, null);
     if (existingDb && existingDb.version === 1 && Array.isArray(existingDb.products)) {
       normalizeLoadedDatabaseDefaults(existingDb);
+      await reconcileLegacyOrdersIntoDb(existingDb);
       await persistDatabase(existingDb, storage);
       return existingDb;
     }
@@ -431,11 +644,16 @@ async function bootstrapDatabase(forceFresh = false): Promise<DatabaseSchema> {
 
   if (existingDb && existingDb.version === 1 && Array.isArray(existingDb.products)) {
     normalizeLoadedDatabaseDefaults(existingDb);
+    const reconciled = await reconcileLegacyOrdersIntoDb(existingDb);
     globalForDb.__stepstyleDbCache = existingDb;
+    if (reconciled) {
+      await persistDatabase(existingDb, storage);
+    }
     return existingDb;
   }
 
   if (globalForDb.__stepstyleDbCache) {
+    await reconcileLegacyOrdersIntoDb(globalForDb.__stepstyleDbCache);
     return globalForDb.__stepstyleDbCache;
   }
 
@@ -627,7 +845,10 @@ async function buildStarterDatabaseFromLegacyFiles(): Promise<DatabaseSchema> {
     }
     const user = usersMap.get(userKey)!;
 
-    const status: OrderStatus = ro.status || mapLegacyStageToStatus(ro.stage, ro.paymentStatus);
+    const rawStatus = typeof ro.status === 'string' ? ro.status.trim() : '';
+    const status: OrderStatus = ALL_ORDER_STATUSES.includes(rawStatus as OrderStatus)
+      ? (rawStatus as OrderStatus)
+      : mapLegacyStageToStatus(ro.stage, ro.paymentStatus);
     const payStatus = mapPaymentStatusFromOrder(ro.paymentStatus || '');
     const createdAt = ro.date || now;
 
@@ -745,8 +966,8 @@ async function buildStarterDatabaseFromLegacyFiles(): Promise<DatabaseSchema> {
   return db;
 }
 
-export async function getDatabase(): Promise<DatabaseSchema> {
-  return runLocked(() => bootstrapDatabase(false));
+export async function getDatabase(forceFresh = false): Promise<DatabaseSchema> {
+  return runLocked(() => bootstrapDatabase(forceFresh));
 }
 
 export async function withTransaction<T>(
@@ -1925,6 +2146,284 @@ export async function placeOrderTransactional(
   });
 }
 
+export interface ClientSyncOrderInput {
+  orderId?: string;
+  orderNumber?: string;
+  date?: string;
+  updatedAt?: string;
+  items: Array<{
+    id: number;
+    name: string;
+    price: number;
+    quantity: number;
+    selectedColor?: string;
+    selectedSize?: number;
+    imagePath?: string;
+    brand?: string;
+    category?: string;
+  }>;
+  totalAmount: number;
+  shippingFee?: number;
+  paymentStatus?: string;
+  paymentMethod?: string;
+  transactionId?: string;
+  utrNumber?: string;
+  paidToUPI?: string;
+  status?: string;
+  stage?: string;
+  customer: {
+    name?: string;
+    phone?: string;
+    address?: string;
+    pincode?: string;
+    email?: string;
+  };
+  estimatedDelivery?: string;
+  carrier?: string;
+  trackingNumber?: string;
+}
+
+export async function reconcileClientOrdersTransactional(
+  rawOrders: ClientSyncOrderInput[],
+  options?: { allowStatusPreservation?: boolean }
+): Promise<{
+  importedCount: number;
+  alreadyPresentCount: number;
+  importedOrderNumbers: string[];
+}> {
+  if (!Array.isArray(rawOrders) || rawOrders.length === 0) {
+    return { importedCount: 0, alreadyPresentCount: 0, importedOrderNumbers: [] };
+  }
+
+  return withTransaction((db) => {
+    const existingNumbers = new Set(db.orders.map((o) => normalizeOrderNumber(o.orderNumber)));
+    const existingTxnIds = new Set(
+      db.payments
+        .map((p) => (p.transactionId || '').trim())
+        .filter((t) => t.length > 0 && t.toUpperCase() !== 'N/A')
+    );
+
+    let importedCount = 0;
+    let alreadyPresentCount = 0;
+    const importedOrderNumbers: string[] = [];
+    const fallbackNow = new Date().toISOString();
+
+    for (const ro of rawOrders) {
+      if (!ro || typeof ro !== 'object') continue;
+      const rawCode = String(ro.orderNumber || ro.orderId || '').trim();
+      const orderNumber = normalizeOrderNumber(rawCode);
+      if (!orderNumber || orderNumber.length < 4 || orderNumber.length > 32) continue;
+
+      const cleanTxn = ro.transactionId ? String(ro.transactionId).trim() : '';
+      if (
+        existingNumbers.has(orderNumber) ||
+        (cleanTxn && cleanTxn.toUpperCase() !== 'N/A' && existingTxnIds.has(cleanTxn))
+      ) {
+        alreadyPresentCount++;
+        continue;
+      }
+
+      const rawItems = Array.isArray(ro.items) ? ro.items : [];
+      if (rawItems.length === 0) continue;
+
+      const totalAmount = Number(ro.totalAmount);
+      if (!Number.isFinite(totalAmount) || totalAmount <= 0) continue;
+
+      const shippingFee = Number.isFinite(Number(ro.shippingFee))
+        ? Math.max(0, Number(ro.shippingFee))
+        : 0;
+      const subtotal = Math.max(0, totalAmount - shippingFee);
+
+      const parsedDate = ro.date ? new Date(ro.date) : null;
+      const createdAt =
+        parsedDate && !isNaN(parsedDate.getTime()) ? parsedDate.toISOString() : fallbackNow;
+      const parsedUpdated = ro.updatedAt ? new Date(ro.updatedAt) : null;
+      const updatedAt =
+        parsedUpdated && !isNaN(parsedUpdated.getTime()) ? parsedUpdated.toISOString() : createdAt;
+
+      const cleanEmail = normalizeCustomerEmail(ro.customer?.email);
+      const cleanPhoneRaw = String(ro.customer?.phone || 'N/A').trim();
+      const cleanPhone10 = normalizeCustomerPhone10(cleanPhoneRaw);
+      const cleanPhone = cleanPhone10 || cleanPhoneRaw || 'N/A';
+      const cleanName = String(ro.customer?.name || 'Customer').trim().slice(0, 120) || 'Customer';
+      const cleanAddress = String(ro.customer?.address || 'N/A').trim().slice(0, 500) || 'N/A';
+      const cleanPincode = String(ro.customer?.pincode || 'N/A').trim().slice(0, 20) || 'N/A';
+
+      let user = mergeDuplicateUsersInDb(db, cleanEmail, cleanPhone10);
+      if (!user) {
+        user = {
+          id: `usr-${Date.now()}-${crypto.randomBytes(3).toString('hex')}`,
+          name: cleanName,
+          email: cleanEmail,
+          phone: cleanPhone,
+          defaultAddress: cleanAddress !== 'N/A' ? cleanAddress : undefined,
+          defaultPincode: cleanPincode !== 'N/A' ? cleanPincode : undefined,
+          createdAt,
+          lastOrderAt: createdAt,
+        };
+        db.users.push(user);
+      } else {
+        if (cleanName !== 'Customer' && (isPlaceholderCustomerName(user.name, user.email) || !user.name)) {
+          user.name = cleanName;
+        }
+        if (cleanEmail && !user.email) user.email = cleanEmail;
+        if (cleanPhone !== 'N/A' && (!user.phone || user.phone === 'N/A')) {
+          user.phone = cleanPhone;
+        }
+        if (!user.lastOrderAt || new Date(createdAt).getTime() > new Date(user.lastOrderAt).getTime()) {
+          user.lastOrderAt = createdAt;
+        }
+        if (cleanAddress !== 'N/A' && (!user.defaultAddress || user.defaultAddress === 'N/A')) {
+          user.defaultAddress = cleanAddress;
+        }
+        if (cleanPincode !== 'N/A' && (!user.defaultPincode || user.defaultPincode === 'N/A')) {
+          user.defaultPincode = cleanPincode;
+        }
+      }
+
+      const payStatus = mapPaymentStatusFromOrder(String(ro.paymentStatus || 'Pending'));
+      const rawStatus = typeof ro.status === 'string' ? ro.status.trim() : '';
+      const status: OrderStatus =
+        options?.allowStatusPreservation && ALL_ORDER_STATUSES.includes(rawStatus as OrderStatus)
+          ? (rawStatus as OrderStatus)
+          : payStatus === 'Failed'
+          ? 'Payment Failed'
+          : payStatus === 'Paid'
+          ? 'Order Confirmed'
+          : 'Order Placed';
+
+      const orderId = `ord-${Date.now()}-${crypto.randomBytes(3).toString('hex')}`;
+      const newOrder: OrderRecord = {
+        id: orderId,
+        orderNumber,
+        userId: user.id,
+        customerName: cleanName,
+        customerPhone: cleanPhone,
+        customerEmail: cleanEmail,
+        deliveryAddress: cleanAddress,
+        pincode: cleanPincode,
+        subtotal,
+        shippingFee,
+        totalAmount,
+        status,
+        paymentStatus: payStatus,
+        paymentMethod: String(ro.paymentMethod || 'Online Payment').trim().slice(0, 80),
+        stockDeducted: false,
+        estimatedDelivery: String(ro.estimatedDelivery || 'Within 3-5 Business Days').slice(0, 120),
+        createdAt,
+        updatedAt,
+      };
+
+      db.orders.unshift(newOrder);
+      existingNumbers.add(orderNumber);
+      if (cleanTxn && cleanTxn.toUpperCase() !== 'N/A') {
+        existingTxnIds.add(cleanTxn);
+      }
+
+      let totalPairs = 0;
+      let firstItemName = 'Footwear';
+      rawItems.forEach((item, idx) => {
+        const prodId = Number(item?.id) || 0;
+        const prod = db.products.find((p) => p.id === prodId);
+        const qty = Math.max(1, Math.min(50, Math.floor(Number(item?.quantity) || 1)));
+        const unitPrice = Math.max(0, Number(item?.price) || prod?.price || 0);
+        const resolvedName = String(item?.name || prod?.name || 'Footwear Item').slice(0, 160);
+        if (idx === 0) firstItemName = resolvedName;
+        totalPairs += qty;
+
+        db.orderItems.push({
+          id: `oi-${orderId}-${idx + 1}`,
+          orderId,
+          productId: prodId,
+          sku: prod?.sku || `STEP-${String(prodId || idx + 1).padStart(4, '0')}`,
+          name: resolvedName,
+          imagePath: String(item?.imagePath || prod?.imagePath || '/images/Empty-cart.jpg').slice(0, 300),
+          brand: String(item?.brand || prod?.brand || 'StepStyle').slice(0, 80),
+          category: String(item?.category || prod?.category || 'Sneakers').slice(0, 80),
+          selectedSize: item?.selectedSize ? Number(item.selectedSize) : undefined,
+          selectedColor: item?.selectedColor ? String(item.selectedColor).slice(0, 80) : undefined,
+          quantity: qty,
+          unitPrice,
+          lineTotal: unitPrice * qty,
+        });
+      });
+
+      db.payments.push({
+        id: `pay-${orderId}`,
+        orderId,
+        method: newOrder.paymentMethod,
+        status: payStatus,
+        amount: totalAmount,
+        transactionId: cleanTxn && cleanTxn.toUpperCase() !== 'N/A' ? cleanTxn.slice(0, 80) : undefined,
+        utrNumber:
+          ro.utrNumber && String(ro.utrNumber).trim().toUpperCase() !== 'N/A'
+            ? String(ro.utrNumber).trim().slice(0, 80)
+            : undefined,
+        paidToUPI: ro.paidToUPI ? String(ro.paidToUPI).trim().slice(0, 120) : undefined,
+        paidAt: payStatus === 'Paid' ? createdAt : undefined,
+        updatedAt,
+      });
+
+      const shipRecord: ShippingRecord = {
+        id: `ship-${orderId}`,
+        orderId,
+        carrier: String(ro.carrier || 'BlueDart Express').slice(0, 80),
+        trackingNumber: String(
+          ro.trackingNumber || `BD-IN-${orderNumber.replace(/\D/g, '').slice(-8) || '84920194'}`
+        ).slice(0, 80),
+        estimatedDelivery: newOrder.estimatedDelivery,
+        updatedAt,
+      };
+      db.shipping.push(shipRecord);
+
+      db.orderStatusHistory.push({
+        id: `hist-${orderId}-1`,
+        orderId,
+        status: 'Order Placed',
+        note: `Order synced from storefront (${newOrder.paymentMethod})`,
+        updatedByAdminName: cleanName,
+        updatedByRole: 'Customer',
+        timestamp: createdAt,
+      });
+
+      if (status !== 'Order Placed') {
+        db.orderStatusHistory.push({
+          id: `hist-${orderId}-2`,
+          orderId,
+          status,
+          previousStatus: 'Order Placed',
+          note: payStatus === 'Paid' ? 'Payment verified' : `Status recorded as ${status}`,
+          updatedByAdminName: 'System',
+          updatedByRole: 'System',
+          timestamp: updatedAt,
+        });
+      }
+
+      pushAdminNotification(db, {
+        type: 'new_order',
+        orderId,
+        orderNumber,
+        customerName: cleanName,
+        customerPhone: cleanPhone,
+        totalAmount,
+        paymentMethod: newOrder.paymentMethod,
+        paymentStatus: payStatus,
+        itemCount: Math.max(1, totalPairs),
+        primaryItemName: firstItemName,
+        message: `Order ${orderNumber} synced for ${cleanName} (${totalPairs} ${
+          totalPairs === 1 ? 'pair' : 'pairs'
+        } · ₹${totalAmount.toLocaleString('en-IN')})`,
+        createdAt,
+      });
+
+      importedCount++;
+      importedOrderNumbers.push(orderNumber);
+    }
+
+    return { importedCount, alreadyPresentCount, importedOrderNumbers };
+  });
+}
+
 export async function getFullOrderByNumber(orderNumberInput: string): Promise<FullOrderView | null> {
   const db = await getDatabase();
   const norm = normalizeOrderNumber(orderNumberInput);
@@ -1978,7 +2477,7 @@ export async function getAllOrdersAdmin(filters?: {
     totalRevenue: number;
   };
 }> {
-  const db = await getDatabase();
+  const db = await getDatabase(true);
 
   const overview = {
     totalOrders: db.orders.length,
@@ -2255,7 +2754,7 @@ export async function getAdminNotificationsFromDb(limit = 50): Promise<{
   notifications: AdminNotificationRecord[];
   unreadCount: number;
 }> {
-  const db = await getDatabase();
+  const db = await getDatabase(true);
   const list = Array.isArray(db.adminNotifications) ? db.adminNotifications : [];
   const sorted = [...list].sort(
     (a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
@@ -2545,12 +3044,11 @@ function buildUnifiedCustomerProfiles(db: DatabaseSchema): AdminCustomerProfile[
 }
 
 export async function getAdminCustomersFromDb(): Promise<AdminCustomerProfile[]> {
-  const db = await getDatabase();
+  const db = await getDatabase(true);
   return buildUnifiedCustomerProfiles(db);
 }
 
-export async function getAdminAnalyticsAndEntities() {
-  const db = await getDatabase();
+function buildAdminAnalyticsAndEntitiesFromSchema(db: DatabaseSchema) {
   const customers = buildUnifiedCustomerProfiles(db);
 
   const activeProducts = db.products.filter((p) => !p.isDeleted);
@@ -2598,6 +3096,70 @@ export async function getAdminAnalyticsAndEntities() {
       return { ...r, orderNumber: ord?.orderNumber, customerName: ord?.customerName };
     }),
     notifications: db.notifications.slice(0, 100),
+  };
+}
+
+export async function getAdminAnalyticsAndEntities() {
+  const db = await getDatabase(true);
+  return buildAdminAnalyticsAndEntitiesFromSchema(db);
+}
+
+export async function getAdminOverviewSnapshotFromDb() {
+  const db = await getDatabase(true);
+
+  const overview = {
+    totalOrders: db.orders.length,
+    pendingOrders: db.orders.filter((o) =>
+      ['Order Placed', 'Order Accepted', 'Payment Failed'].includes(o.status)
+    ).length,
+    confirmedOrders: db.orders.filter((o) => o.status === 'Order Confirmed').length,
+    processingOrders: db.orders.filter((o) =>
+      ['Processing', 'Packed'].includes(o.status)
+    ).length,
+    shippedOrders: db.orders.filter((o) =>
+      ['Shipped', 'Out for Delivery'].includes(o.status)
+    ).length,
+    deliveredOrders: db.orders.filter((o) => o.status === 'Delivered').length,
+    cancelledOrders: db.orders.filter((o) => o.status === 'Order Cancelled').length,
+    returnedOrRefundedOrders: db.orders.filter((o) =>
+      ['Return Requested', 'Returned', 'Refund Initiated', 'Refunded'].includes(o.status)
+    ).length,
+    totalRevenue: db.orders
+      .filter((o) => !['Order Cancelled', 'Payment Failed', 'Refunded'].includes(o.status))
+      .reduce((sum, o) => sum + (o.totalAmount || 0), 0),
+  };
+
+  const sortedOrders = [...db.orders]
+    .sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime())
+    .map((o) => assembleFullOrder(db, o));
+
+  const products = db.products.filter((p) => !p.isDeleted);
+  const entities = buildAdminAnalyticsAndEntitiesFromSchema(db);
+
+  const notifList = Array.isArray(db.adminNotifications) ? db.adminNotifications : [];
+  const sortedNotifications = [...notifList].sort(
+    (a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
+  );
+
+  const admins = db.adminUsers.map(({ passwordHash: _h, passwordSalt: _s, ...safe }) => safe);
+  const storageMode: 'mongodb' | 'local-json' | 'local-memory-fallback' = isMongoConfigured()
+    ? 'mongodb'
+    : globalForDb.__stepstyleMemoryFallbackActive
+    ? 'local-memory-fallback'
+    : 'local-json';
+
+  return {
+    overview,
+    orders: sortedOrders,
+    recentOrders: sortedOrders.slice(0, 8),
+    productsCount: products.length,
+    lowStockProducts: products.filter((p) => (p.stockQuantity ?? 0) <= 10),
+    ...entities,
+    adminNotifications: sortedNotifications.slice(0, 50),
+    unreadNotificationsCount: sortedNotifications.filter((n) => !n.isRead).length,
+    admins,
+    storageMode,
+    syncedAt: new Date().toISOString(),
   };
 }
 
@@ -2651,4 +3213,60 @@ export async function resetHeroBannersInDb(): Promise<HeroBannerRecord[]> {
     db.heroBanners = defaults;
     return defaults;
   });
+}
+
+// ---------- Lightweight Sync Signature Helpers ----------
+
+export async function getAdminSyncSummaryFromDb(): Promise<{
+  totalOrders: number;
+  totalCustomers: number;
+  latestOrderAt: string;
+  latestCustomerAt: string;
+}> {
+  const db = await getDatabase(true);
+  const customers = buildUnifiedCustomerProfiles(db);
+
+  let latestOrderMs = 0;
+  let latestOrderAt = '';
+  for (const ord of db.orders) {
+    const ts = new Date(ord.updatedAt || ord.createdAt || 0).getTime();
+    if (ts > latestOrderMs) {
+      latestOrderMs = ts;
+      latestOrderAt = ord.updatedAt || ord.createdAt || '';
+    }
+  }
+
+  let latestCustomerMs = 0;
+  let latestCustomerAt = '';
+  for (const cust of customers) {
+    const ts = new Date(cust.lastOrderAt || cust.createdAt || 0).getTime();
+    if (ts > latestCustomerMs) {
+      latestCustomerMs = ts;
+      latestCustomerAt = cust.lastOrderAt || cust.createdAt || '';
+    }
+  }
+
+  return {
+    totalOrders: db.orders.length,
+    totalCustomers: customers.length,
+    latestOrderAt,
+    latestCustomerAt,
+  };
+}
+
+export async function getStorefrontSignatureFromDb(): Promise<string> {
+  const db = await getDatabase();
+  const activeProducts = db.products.filter(
+    (p) => !p.isDeleted && p.status !== 'inactive' && p.inStock && (p.stockQuantity ?? 1) > 0
+  );
+  const productSig = activeProducts
+    .map((p) => `${p.id}:${p.price}:${p.mrp}:${p.stockQuantity}:${p.updatedAt || ''}`)
+    .join('|');
+  const banners = Array.isArray(db.heroBanners) ? db.heroBanners : DEFAULT_HERO_BANNERS;
+  const bannerSig = banners
+    .slice(0, 3)
+    .map((b) => `${b.id}:${b.image}:${b.link}:${b.updatedAt || ''}`)
+    .join('|');
+
+  return crypto.createHash('sha1').update(`${productSig}##${bannerSig}`).digest('hex');
 }

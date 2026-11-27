@@ -10,6 +10,12 @@ import {
 
 export const dynamic = 'force-dynamic';
 
+const NO_STORE_HEADERS = {
+  'Cache-Control': 'no-store, no-cache, must-revalidate, proxy-revalidate',
+  Pragma: 'no-cache',
+  Expires: '0',
+};
+
 function maskPhone(phone: string): string {
   const digits = phone.replace(/\D/g, '');
   if (digits.length < 4) return '******';
@@ -144,35 +150,41 @@ export async function GET(req: NextRequest) {
             success: false,
             error: `No order found with Order Number "${orderId.trim().toUpperCase()}". Please verify your confirmation receipt and try again.`,
           },
-          { status: 404 }
+          { status: 404, headers: NO_STORE_HEADERS }
         );
       }
 
       const isVerified = checkCustomerVerification(view, verify);
-      return NextResponse.json({
-        success: true,
-        order: serializeCustomerOrder(view, isVerified),
-      });
+      return NextResponse.json(
+        {
+          success: true,
+          order: serializeCustomerOrder(view, isVerified),
+        },
+        { headers: NO_STORE_HEADERS }
+      );
     }
 
     // Only allow listing own orders when explicit signed-in customer identifier matches
     if (listEmail || listPhone) {
       const views = await getOrdersForCustomer(listEmail || undefined, listPhone || undefined);
-      return NextResponse.json({
-        success: true,
-        orders: views.map((v) => serializeCustomerOrder(v, true)),
-      });
+      return NextResponse.json(
+        {
+          success: true,
+          orders: views.map((v) => serializeCustomerOrder(v, true)),
+        },
+        { headers: NO_STORE_HEADERS }
+      );
     }
 
     return NextResponse.json(
       { success: false, error: 'An Order ID is required to track shipment status.' },
-      { status: 400 }
+      { status: 400, headers: NO_STORE_HEADERS }
     );
   } catch (error) {
     console.error('Error fetching order:', error);
     return NextResponse.json(
       { success: false, error: 'Failed to retrieve order tracking details.' },
-      { status: 500 }
+      { status: 500, headers: NO_STORE_HEADERS }
     );
   }
 }

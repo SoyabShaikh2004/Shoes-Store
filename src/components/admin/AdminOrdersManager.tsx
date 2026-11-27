@@ -24,7 +24,7 @@ import {
   MapPin,
 } from 'lucide-react';
 import { getAdminAuthHeaders, handleAdminUnauthorized } from '@/lib/adminAuth';
-import { notifyStorefrontChanged } from '@/lib/storefrontSync';
+import { notifyStorefrontChanged, subscribeStorefrontChanges } from '@/lib/storefrontSync';
 import { generateTaxInvoicePDF } from '@/lib/invoiceGenerator';
 import { ALL_ORDER_STATUSES, OrderStatus, formatDateTimeIN } from '@/lib/orderTypes';
 import type { AdminNotificationRecord } from '@/lib/db/schema';
@@ -43,6 +43,8 @@ interface OrdersOverview {
 }
 
 interface AdminOrdersManagerProps {
+  initialOrders?: FullOrderView[];
+  initialOverview?: OrdersOverview | null;
   notifications?: AdminNotificationRecord[];
   unreadCount?: number;
   pendingOrderNumber?: string | null;
@@ -72,6 +74,8 @@ function statusBadgeStyle(status: OrderStatus): string {
 }
 
 export default function AdminOrdersManager({
+  initialOrders,
+  initialOverview,
   notifications,
   unreadCount,
   pendingOrderNumber,
@@ -80,12 +84,12 @@ export default function AdminOrdersManager({
   onNotificationsSync,
   onOrdersUpdated,
 }: AdminOrdersManagerProps) {
-  const [orders, setOrders] = useState<FullOrderView[]>([]);
-  const [overview, setOverview] = useState<OrdersOverview | null>(null);
+  const [orders, setOrders] = useState<FullOrderView[]>(initialOrders || []);
+  const [overview, setOverview] = useState<OrdersOverview | null>(initialOverview ?? null);
   const [localNotifications, setLocalNotifications] = useState<AdminNotificationRecord[]>([]);
   const [localUnreadCount, setLocalUnreadCount] = useState(0);
   const [showReadNotifications, setShowReadNotifications] = useState(false);
-  const [isLoading, setIsLoading] = useState(true);
+  const [isLoading, setIsLoading] = useState(!initialOrders);
   const [loadError, setLoadError] = useState<string | null>(null);
 
   // Filters
@@ -153,9 +157,9 @@ export default function AdminOrdersManager({
             ...params,
           }),
         });
-        const data = await res.json();
+        const data = await res.json().catch(() => null);
         if (!res.ok) {
-          handleAdminUnauthorized(res.status);
+          handleAdminUnauthorized(res.status, data?.error);
           return;
         }
         if (data?.success) {
@@ -192,10 +196,10 @@ export default function AdminOrdersManager({
           headers: getAdminAuthHeaders(),
           cache: 'no-store',
         });
-        const data = await res.json();
-        if (!res.ok || !data.success) {
-          handleAdminUnauthorized(res.status);
-          throw new Error(data.error || 'Failed to fetch orders');
+        const data = await res.json().catch(() => null);
+        if (!res.ok || !data?.success) {
+          handleAdminUnauthorized(res.status, data?.error);
+          throw new Error(data?.error || 'Failed to fetch orders');
         }
 
         const fetchedOrders: FullOrderView[] = data.orders || [];
@@ -231,8 +235,28 @@ export default function AdminOrdersManager({
     [search, statusFilter, paymentFilter, dateFrom, dateTo, sortBy]
   );
 
+  const skipInitialSkeletonRef = useRef(Boolean(initialOrders));
+
   useEffect(() => {
-    void fetchOrders(false);
+    if (
+      initialOrders &&
+      !search.trim() &&
+      statusFilter === 'All' &&
+      paymentFilter === 'All' &&
+      !dateFrom &&
+      !dateTo &&
+      sortBy === 'newest'
+    ) {
+      setOrders(initialOrders);
+      if (initialOverview) setOverview(initialOverview);
+      setIsLoading(false);
+    }
+  }, [initialOrders, initialOverview, search, statusFilter, paymentFilter, dateFrom, dateTo, sortBy]);
+
+  useEffect(() => {
+    const silent = skipInitialSkeletonRef.current;
+    skipInitialSkeletonRef.current = false;
+    void fetchOrders(silent);
   }, [fetchOrders]);
 
   // Silent background refresh only when unread count increases
@@ -248,8 +272,32 @@ export default function AdminOrdersManager({
       if (document.visibilityState === 'visible') {
         void fetchOrders(true);
       }
-    }, 8000);
-    return () => clearInterval(timer);
+    }, 4000);
+
+    const handleVisibility = () => {
+      if (document.visibilityState === 'visible') {
+        void fetchOrders(true);
+      }
+    };
+
+    const handleFocus = () => {
+      void fetchOrders(true);
+    };
+
+    const unsubscribe = subscribeStorefrontChanges((reason) => {
+      if (reason === 'orders' || reason === 'all') {
+        void fetchOrders(true);
+      }
+    });
+
+    window.addEventListener('focus', handleFocus);
+    document.addEventListener('visibilitychange', handleVisibility);
+    return () => {
+      clearInterval(timer);
+      unsubscribe();
+      window.removeEventListener('focus', handleFocus);
+      document.removeEventListener('visibilitychange', handleVisibility);
+    };
   }, [fetchOrders]);
 
   const openOrderModal = useCallback(
@@ -335,10 +383,10 @@ export default function AdminOrdersManager({
           cancelReason: nextStatus === 'Order Cancelled' ? cancelReasonInput.trim() : undefined,
         }),
       });
-      const data = await res.json();
-      if (!res.ok || !data.success) {
-        handleAdminUnauthorized(res.status);
-        throw new Error(data.error || 'Failed to update order');
+      const data = await res.json().catch(() => null);
+      if (!res.ok || !data?.success) {
+        handleAdminUnauthorized(res.status, data?.error);
+        throw new Error(data?.error || 'Failed to update order');
       }
 
       toast.success(data.message || 'Order status updated!', { id: toastId });
@@ -369,10 +417,10 @@ export default function AdminOrdersManager({
           note: newAdminNote.trim(),
         }),
       });
-      const data = await res.json();
-      if (!res.ok || !data.success) {
-        handleAdminUnauthorized(res.status);
-        throw new Error(data.error || 'Could not add note');
+      const data = await res.json().catch(() => null);
+      if (!res.ok || !data?.success) {
+        handleAdminUnauthorized(res.status, data?.error);
+        throw new Error(data?.error || 'Could not add note');
       }
       toast.success('Admin note added');
       setNewAdminNote('');
@@ -636,7 +684,10 @@ export default function AdminOrdersManager({
           <div className="flex flex-wrap items-center gap-2">
             <button
               type="button"
-              onClick={() => void fetchOrders(false)}
+              onClick={() => {
+                void fetchOrders(false);
+                onOrdersUpdatedRef.current?.();
+              }}
               className="min-h-[44px] px-3 py-2 rounded-lg border border-slate-200 hover:bg-slate-50 text-xs font-semibold text-slate-700 inline-flex items-center gap-1.5 cursor-pointer"
             >
               <RefreshCw className={`w-3.5 h-3.5 ${isLoading ? 'animate-spin' : ''}`} />

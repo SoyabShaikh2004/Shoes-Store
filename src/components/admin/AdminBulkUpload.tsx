@@ -114,10 +114,10 @@ export default function AdminBulkUpload({ onImportComplete }: AdminBulkUploadPro
         headers: getAdminAuthHeaders(),
         body: formData,
       });
-      const data = await res.json();
-      if (!res.ok || !data.success) {
-        handleAdminUnauthorized(res.status);
-        throw new Error(data.error || 'Image upload failed');
+      const data = await res.json().catch(() => null);
+      if (!res.ok || !data?.success) {
+        handleAdminUnauthorized(res.status, data?.error);
+        throw new Error(data?.error || 'Image upload failed');
       }
 
       const nextMap = { ...imageMap, ...(data.imageMap || {}) };
@@ -157,10 +157,10 @@ export default function AdminBulkUpload({ onImportComplete }: AdminBulkUploadPro
         headers: getAdminAuthHeaders(),
         body: formData,
       });
-      const data = await res.json();
-      if (!res.ok || !data.success) {
-        handleAdminUnauthorized(res.status);
-        throw new Error(data.error || 'Spreadsheet validation failed');
+      const data = await res.json().catch(() => null);
+      if (!res.ok || !data?.success) {
+        handleAdminUnauthorized(res.status, data?.error);
+        throw new Error(data?.error || 'Spreadsheet validation failed');
       }
 
       setUploadedFileName(data.fileName || file.name);
@@ -255,10 +255,10 @@ export default function AdminBulkUpload({ onImportComplete }: AdminBulkUploadPro
           imageMap,
         }),
       });
-      const data = await res.json();
-      if (!res.ok || !data.success) {
-        handleAdminUnauthorized(res.status);
-        throw new Error(data.error || 'Import failed');
+      const data = await res.json().catch(() => null);
+      if (!res.ok || !data?.success) {
+        handleAdminUnauthorized(res.status, data?.error);
+        throw new Error(data?.error || 'Import failed');
       }
 
       clearInterval(progressTimer);

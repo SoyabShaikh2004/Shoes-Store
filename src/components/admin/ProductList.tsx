@@ -138,10 +138,10 @@ export default function ProductList({
         headers: getAdminAuthHeaders({ 'Content-Type': 'application/json' }),
         body: JSON.stringify({ ...payload, ids: selectedIds }),
       });
-      const data = await res.json();
-      if (!res.ok || !data.success) {
-        handleAdminUnauthorized(res.status);
-        throw new Error(data.error || 'Bulk action failed');
+      const data = await res.json().catch(() => null);
+      if (!res.ok || !data?.success) {
+        handleAdminUnauthorized(res.status, data?.error);
+        throw new Error(data?.error || 'Bulk action failed');
       }
       toast.success(data.message || 'Bulk update completed', { id: toastId });
       setBulkModal(null);
@@ -171,10 +171,10 @@ export default function ProductList({
           stockQuantity: newStock ? Math.max(1, product.stockQuantity || 20) : 0,
         }),
       });
-      const data = await res.json();
-      if (!res.ok || !data.success) {
-        handleAdminUnauthorized(res.status);
-        throw new Error(data.error || 'Failed to update stock');
+      const data = await res.json().catch(() => null);
+      if (!res.ok || !data?.success) {
+        handleAdminUnauthorized(res.status, data?.error);
+        throw new Error(data?.error || 'Failed to update stock');
       }
 
       toast.success(
@@ -205,10 +205,10 @@ export default function ProductList({
         credentials: 'include',
         headers: getAdminAuthHeaders(),
       });
-      const data = await res.json();
-      if (!res.ok || !data.success) {
-        handleAdminUnauthorized(res.status);
-        throw new Error(data.error || 'Failed to delete');
+      const data = await res.json().catch(() => null);
+      if (!res.ok || !data?.success) {
+        handleAdminUnauthorized(res.status, data?.error);
+        throw new Error(data?.error || 'Failed to delete');
       }
 
       toast.success(`Shoe #${id} deleted successfully`, { id: toastId });
@@ -242,10 +242,10 @@ export default function ProductList({
         body: JSON.stringify(payload),
       });
 
-      const data = await res.json();
-      if (!res.ok || !data.success) {
-        handleAdminUnauthorized(res.status);
-        throw new Error(data.error || 'Failed to clone');
+      const data = await res.json().catch(() => null);
+      if (!res.ok || !data?.success) {
+        handleAdminUnauthorized(res.status, data?.error);
+        throw new Error(data?.error || 'Failed to clone');
       }
 
       toast.success(`Duplicated as "${data.product.name}"!`, { id: toastId });

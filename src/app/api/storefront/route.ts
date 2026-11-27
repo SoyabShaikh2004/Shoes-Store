@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getProductById, getProducts } from '@/lib/data';
-import { getHeroBannersFromDb } from '@/lib/db/store';
+import { getHeroBannersFromDb, getStorefrontSignatureFromDb } from '@/lib/db/store';
 
 export const dynamic = 'force-dynamic';
 
@@ -14,6 +14,19 @@ export async function GET(req: NextRequest) {
   try {
     const { searchParams } = new URL(req.url);
     const productIdParam = searchParams.get('productId');
+    const signatureOnly = searchParams.get('signature') === '1';
+
+    if (signatureOnly) {
+      const signature = await getStorefrontSignatureFromDb();
+      return NextResponse.json(
+        {
+          success: true,
+          signature,
+          timestamp: Date.now(),
+        },
+        { headers: NO_STORE_HEADERS }
+      );
+    }
 
     if (productIdParam) {
       const id = Number(productIdParam);
@@ -24,7 +37,10 @@ export async function GET(req: NextRequest) {
         );
       }
 
-      const rawProduct = await getProductById(id);
+      const [rawProduct, signature] = await Promise.all([
+        getProductById(id),
+        getStorefrontSignatureFromDb(),
+      ]);
       if (!rawProduct) {
         return NextResponse.json(
           { success: false, error: 'Product not found' },
@@ -41,15 +57,17 @@ export async function GET(req: NextRequest) {
         {
           success: true,
           product,
+          signature,
           timestamp: Date.now(),
         },
         { headers: NO_STORE_HEADERS }
       );
     }
 
-    const [allProducts, heroBanners] = await Promise.all([
+    const [allProducts, heroBanners, signature] = await Promise.all([
       getProducts(false),
       getHeroBannersFromDb(),
+      getStorefrontSignatureFromDb(),
     ]);
 
     const products = allProducts
@@ -75,6 +93,7 @@ export async function GET(req: NextRequest) {
         products,
         categories,
         heroBanners,
+        signature,
         timestamp: Date.now(),
       },
       { headers: NO_STORE_HEADERS }

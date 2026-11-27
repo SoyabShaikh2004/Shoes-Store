@@ -5,6 +5,7 @@ const FOOTER_LINKS = [
   { href: '/track-order', label: 'Track Order' },
   { href: '/about', label: 'About' },
   { href: '/contact', label: 'Contact' },
+  { href: '/admin', label: 'Admin' },
 ] as const;
 
 const SOCIAL_LINKS = [

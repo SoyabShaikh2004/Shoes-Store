@@ -1,35 +1,54 @@
 import { NextRequest, NextResponse } from 'next/server';
 import {
-  getAllOrdersAdmin,
   getAdminNotificationsFromDb,
+  getAdminSyncSummaryFromDb,
   markAdminNotificationsReadInDb,
 } from '@/lib/db/store';
 import { requireAdmin } from '@/lib/server/adminSession';
 
 export const dynamic = 'force-dynamic';
 
+const NO_STORE_HEADERS = {
+  'Cache-Control': 'no-store, no-cache, must-revalidate, proxy-revalidate',
+  Pragma: 'no-cache',
+  Expires: '0',
+};
+
 export async function GET(req: NextRequest) {
   const auth = await requireAdmin(req);
   if (!auth.ok) {
-    return NextResponse.json({ success: false, error: auth.error }, { status: auth.status });
+    return NextResponse.json(
+      { success: false, error: auth.error },
+      { status: auth.status, headers: NO_STORE_HEADERS }
+    );
   }
 
   try {
-    const [{ notifications, unreadCount }, { overview }] = await Promise.all([
+    const [{ notifications, unreadCount }, syncSummary] = await Promise.all([
       getAdminNotificationsFromDb(50),
-      getAllOrdersAdmin({ sort: 'newest' }),
+      getAdminSyncSummaryFromDb(),
     ]);
 
-    return NextResponse.json({
-      success: true,
-      notifications,
-      unreadCount,
-      totalOrders: overview.totalOrders,
-    });
+    return NextResponse.json(
+      {
+        success: true,
+        notifications,
+        unreadCount,
+        totalOrders: syncSummary.totalOrders,
+        totalCustomers: syncSummary.totalCustomers,
+        latestOrderAt: syncSummary.latestOrderAt,
+        latestCustomerAt: syncSummary.latestCustomerAt,
+        syncSummary,
+      },
+      { headers: NO_STORE_HEADERS }
+    );
   } catch (error: unknown) {
     const message =
       error instanceof Error ? error.message : 'Failed to load admin notifications';
-    return NextResponse.json({ success: false, error: message }, { status: 500 });
+    return NextResponse.json(
+      { success: false, error: message },
+      { status: 500, headers: NO_STORE_HEADERS }
+    );
   }
 }
 

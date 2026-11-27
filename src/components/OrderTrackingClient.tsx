@@ -51,6 +51,27 @@ function getStoredVerifyHint(orderCode: string): string {
   return '';
 }
 
+function notifyTrackedOrder(order: CustomerOrderView, normalizedCode: string) {
+  const statusLabel = mapLegacyStageToStatus(order);
+  const orderCode = order.orderNumber || order.orderId;
+  const deliveredFormatted = formatDateTimeIN(order.deliveredAt);
+  const estDelivery = order.estimatedDelivery?.trim();
+  const deliverySummary =
+    statusLabel === 'Delivered' && deliveredFormatted
+      ? ` · Delivered: ${deliveredFormatted}`
+      : estDelivery &&
+          statusLabel !== 'Order Cancelled' &&
+          statusLabel !== 'Payment Failed'
+        ? ` · Delivery: ${estDelivery}`
+        : deliveredFormatted
+          ? ` · Delivered: ${deliveredFormatted}`
+          : '';
+
+  toast.success(`Order ${orderCode}: ${statusLabel}${deliverySummary}`, {
+    id: `order-tracked-${normalizedCode}`,
+  });
+}
+
 export default function OrderTrackingClient() {
   const router = useRouter();
   const searchParams = useSearchParams();
@@ -73,6 +94,7 @@ export default function OrderTrackingClient() {
 
   const activeVerifyRef = useRef<string>('');
   const lastStatusRef = useRef<string>('');
+  const skipNextUrlLookupRef = useRef<string>('');
 
   // Load recent orders belonging to the signed-in user / current browser session
   useEffect(() => {
@@ -149,6 +171,7 @@ export default function OrderTrackingClient() {
       }
 
       if (options?.updateUrl) {
+        skipNextUrlLookupRef.current = normalized;
         router.replace(`/track-order?orderId=${encodeURIComponent(normalized)}`, {
           scroll: false,
         });
@@ -185,6 +208,9 @@ export default function OrderTrackingClient() {
             setErrorMessage('');
             setIsSearching(false);
             setIsRefreshing(false);
+            if (!options?.silent && !options?.verifyOverride) {
+              notifyTrackedOrder(serverOrder, normalized);
+            }
             return;
           }
         }
@@ -206,6 +232,9 @@ export default function OrderTrackingClient() {
                   setFoundOrder(match);
                   setIsSearching(false);
                   setIsRefreshing(false);
+                  if (!options?.verifyOverride) {
+                    notifyTrackedOrder(match, normalized);
+                  }
                   return;
                 }
               }
@@ -234,9 +263,15 @@ export default function OrderTrackingClient() {
 
   // Initial lookup from URL
   useEffect(() => {
-    if (initialQueryId.trim()) {
-      setOrderIdInput(initialQueryId);
-      lookupOrder(initialQueryId, { updateUrl: false });
+    const trimmed = initialQueryId.trim();
+    if (trimmed) {
+      const normalized = normalizeOrderCode(trimmed);
+      setOrderIdInput(trimmed);
+      if (skipNextUrlLookupRef.current === normalized) {
+        skipNextUrlLookupRef.current = '';
+        return;
+      }
+      lookupOrder(trimmed, { updateUrl: false });
     }
   }, [initialQueryId, lookupOrder]);
 

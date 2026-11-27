@@ -30,7 +30,10 @@ import {
   getAdminAuthHeaders,
   handleAdminUnauthorized,
 } from '@/lib/adminAuth';
-import { ADMIN_SESSION_EXPIRED_EVENT } from '@/lib/storefrontSync';
+import {
+  ADMIN_SESSION_EXPIRED_EVENT,
+  subscribeStorefrontChanges,
+} from '@/lib/storefrontSync';
 import { toast } from 'react-hot-toast';
 import {
   ShieldCheck,
@@ -113,7 +116,9 @@ function AdminContent() {
   const [mobileSidebarOpen, setMobileSidebarOpen] = useState(false);
 
   const seenNotifIdsRef = useRef<Set<string> | null>(null);
+  const lastSyncKeyRef = useRef<string | null>(null);
   const notifDropdownRef = useRef<HTMLDivElement | null>(null);
+  const isSyncingLocalOrdersRef = useRef<boolean>(false);
 
   const loadDashboardData = useCallback(async (showToast = false) => {
     setIsLoadingOverview(true);
@@ -131,31 +136,92 @@ function AdminContent() {
         }),
       ]);
 
-      if (handleAdminUnauthorized(prodRes.status) || handleAdminUnauthorized(ovRes.status)) {
+      const [prodData, ovJson] = await Promise.all([
+        prodRes.json().catch(() => null),
+        ovRes.json().catch(() => null),
+      ]);
+
+      if (
+        handleAdminUnauthorized(prodRes.status, prodData?.error) ||
+        handleAdminUnauthorized(ovRes.status, ovJson?.error)
+      ) {
         return;
       }
 
-      const prodData = await prodRes.json();
-      if (prodRes.ok && prodData.success) {
+      if (prodRes.ok && prodData?.success) {
         const list: Product[] = prodData.products || [];
         setProducts(list);
         setCategories(Array.from(new Set(list.map((p) => p.category).filter(Boolean))));
       }
 
-      const ovJson = await ovRes.json();
-      if (ovRes.ok && ovJson.success) {
-        setOverviewData(ovJson);
+      let activeOvJson = ovJson;
+
+      // Recover any placed storefront orders sitting only in this browser's localStorage
+      if (ovRes.ok && ovJson?.success && !isSyncingLocalOrdersRef.current) {
+        try {
+          const rawLocal = localStorage.getItem('orders');
+          if (rawLocal) {
+            const parsedLocal = JSON.parse(rawLocal);
+            if (Array.isArray(parsedLocal) && parsedLocal.length > 0) {
+              const serverNums = new Set(
+                (Array.isArray(ovJson.orders) ? ovJson.orders : []).map(
+                  (o: { order?: { orderNumber?: string } }) =>
+                    String(o?.order?.orderNumber || '').trim().toUpperCase()
+                )
+              );
+              const missingLocal = parsedLocal.filter(
+                (o: { orderNumber?: string; orderId?: string }) => {
+                  const code = String(o?.orderNumber || o?.orderId || '').trim().toUpperCase();
+                  return code.length >= 4 && !serverNums.has(code);
+                }
+              );
+
+              if (missingLocal.length > 0) {
+                isSyncingLocalOrdersRef.current = true;
+                const syncRes = await fetch('/api/admin/orders/sync', {
+                  method: 'POST',
+                  credentials: 'include',
+                  headers: getAdminAuthHeaders({ 'Content-Type': 'application/json' }),
+                  body: JSON.stringify({ orders: missingLocal.slice(0, 100) }),
+                });
+                const syncData = await syncRes.json().catch(() => null);
+                if (syncRes.ok && syncData?.success && Number(syncData.importedCount) > 0) {
+                  toast.success(
+                    `Synced ${syncData.importedCount} placed order(s) into Admin Orders`
+                  );
+                  const refreshedOvRes = await fetch('/api/admin/overview', {
+                    credentials: 'include',
+                    headers: getAdminAuthHeaders(),
+                    cache: 'no-store',
+                  });
+                  const refreshedOvJson = await refreshedOvRes.json().catch(() => null);
+                  if (refreshedOvRes.ok && refreshedOvJson?.success) {
+                    activeOvJson = refreshedOvJson;
+                  }
+                }
+              }
+            }
+          }
+        } catch {
+          // ignore localStorage recovery errors
+        } finally {
+          isSyncingLocalOrdersRef.current = false;
+        }
+      }
+
+      if (ovRes.ok && activeOvJson?.success) {
+        setOverviewData(activeOvJson);
         setOverviewError(null);
-        if (Array.isArray(ovJson.adminNotifications)) {
-          const list = ovJson.adminNotifications as AdminNotificationRecord[];
+        if (Array.isArray(activeOvJson.adminNotifications)) {
+          const list = activeOvJson.adminNotifications as AdminNotificationRecord[];
           setAdminNotifications(list);
-          setUnreadNotificationsCount(Number(ovJson.unreadNotificationsCount) || 0);
+          setUnreadNotificationsCount(Number(activeOvJson.unreadNotificationsCount) || 0);
           if (seenNotifIdsRef.current === null) {
             seenNotifIdsRef.current = new Set(list.map((n) => n.id));
           }
         }
       } else {
-        setOverviewError(ovJson?.error || 'Could not load customer & order overview');
+        setOverviewError(activeOvJson?.error || 'Could not load customer & order overview');
       }
 
       if (showToast) {
@@ -176,13 +242,24 @@ function AdminContent() {
         headers: getAdminAuthHeaders(),
         cache: 'no-store',
       });
-      if (handleAdminUnauthorized(res.status)) return;
-      if (!res.ok) return;
-      const data = await res.json();
-      if (!data?.success || !Array.isArray(data.notifications)) return;
+      const data = await res.json().catch(() => null);
+      if (handleAdminUnauthorized(res.status, data?.error)) return;
+      if (!res.ok || !data?.success || !Array.isArray(data.notifications)) return;
 
       const list = data.notifications as AdminNotificationRecord[];
       const count = Number(data.unreadCount) || 0;
+      const syncKey = `${Number(data.totalOrders ?? 0)}|${Number(data.totalCustomers ?? 0)}|${
+        data.latestOrderAt || ''
+      }|${data.latestCustomerAt || ''}`;
+
+      let shouldRefreshDashboard = false;
+
+      if (lastSyncKeyRef.current === null) {
+        lastSyncKeyRef.current = syncKey;
+      } else if (lastSyncKeyRef.current !== syncKey) {
+        lastSyncKeyRef.current = syncKey;
+        shouldRefreshDashboard = true;
+      }
 
       if (seenNotifIdsRef.current === null) {
         seenNotifIdsRef.current = new Set(list.map((n) => n.id));
@@ -199,8 +276,12 @@ function AdminContent() {
               ? newUnread[0].message
               : `${newUnread.length} new customer order notifications received!`
           );
-          void loadDashboardData();
+          shouldRefreshDashboard = true;
         }
+      }
+
+      if (shouldRefreshDashboard) {
+        void loadDashboardData();
       }
 
       setAdminNotifications(list);
@@ -285,6 +366,8 @@ function AdminContent() {
     verify();
 
     const handleExpired = () => {
+      seenNotifIdsRef.current = null;
+      lastSyncKeyRef.current = null;
       setCurrentAdmin(null);
       toast.error('Admin session expired. Please sign in again.');
     };
@@ -297,11 +380,15 @@ function AdminContent() {
   useEffect(() => {
     if (currentAdmin) {
       void loadDashboardData();
+      void fetchAdminNotifications();
     }
-  }, [currentAdmin, loadDashboardData]);
+  }, [currentAdmin, loadDashboardData, fetchAdminNotifications]);
 
   useEffect(() => {
-    if (currentAdmin && (activeTab === 'customers' || activeTab === 'overview')) {
+    if (
+      currentAdmin &&
+      (activeTab === 'customers' || activeTab === 'overview' || activeTab === 'orders')
+    ) {
       void loadDashboardData();
     }
   }, [currentAdmin, activeTab, loadDashboardData]);
@@ -313,7 +400,7 @@ function AdminContent() {
       if (document.visibilityState === 'visible') {
         void fetchAdminNotifications();
       }
-    }, 5000);
+    }, 4000);
 
     const handleVisibility = () => {
       if (document.visibilityState === 'visible') {
@@ -321,12 +408,32 @@ function AdminContent() {
       }
     };
 
+    const handleFocus = () => {
+      void fetchAdminNotifications();
+    };
+
+    const unsubscribe = subscribeStorefrontChanges((reason) => {
+      if (
+        reason === 'orders' ||
+        reason === 'customers' ||
+        reason === 'products' ||
+        reason === 'banners' ||
+        reason === 'all'
+      ) {
+        void loadDashboardData();
+        void fetchAdminNotifications();
+      }
+    });
+
     document.addEventListener('visibilitychange', handleVisibility);
+    window.addEventListener('focus', handleFocus);
     return () => {
       clearInterval(timer);
+      unsubscribe();
       document.removeEventListener('visibilitychange', handleVisibility);
+      window.removeEventListener('focus', handleFocus);
     };
-  }, [currentAdmin, fetchAdminNotifications]);
+  }, [currentAdmin, fetchAdminNotifications, loadDashboardData]);
 
   useEffect(() => {
     if (!notifDropdownOpen) return;
@@ -355,6 +462,8 @@ function AdminContent() {
 
   const handleSignOut = async () => {
     await adminSignOut();
+    seenNotifIdsRef.current = null;
+    lastSyncKeyRef.current = null;
     setCurrentAdmin(null);
     toast.success('Logged out of Admin Portal');
   };
@@ -801,6 +910,8 @@ function AdminContent() {
 
           {activeTab === 'orders' && (
             <AdminOrdersManager
+              initialOrders={overviewData?.orders}
+              initialOverview={overviewData?.overview}
               notifications={adminNotifications}
               unreadCount={unreadNotificationsCount}
               pendingOrderNumber={pendingInspectOrderNumber}

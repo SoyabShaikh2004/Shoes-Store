@@ -30,7 +30,7 @@ import {
 } from 'lucide-react';
 import { Product } from '@/lib/data';
 import { AdminUser, getAdminAuthHeaders, handleAdminUnauthorized } from '@/lib/adminAuth';
-import { notifyStorefrontChanged } from '@/lib/storefrontSync';
+import { notifyStorefrontChanged, subscribeStorefrontChanges } from '@/lib/storefrontSync';
 import { formatDateTimeIN, OrderStatus } from '@/lib/orderTypes';
 import type { AdminCustomerProfile, FullOrderView } from '@/lib/db/store';
 
@@ -46,6 +46,8 @@ export interface OverviewPayload {
     returnedOrRefundedOrders: number;
     totalRevenue: number;
   };
+  orders?: FullOrderView[];
+  ordersCount?: number;
   recentOrders: FullOrderView[];
   productsCount: number;
   lowStockProducts: Product[];
@@ -93,6 +95,8 @@ export interface OverviewPayload {
     initiatedAt: string;
   }>;
   admins: AdminUser[];
+  storageMode?: 'mongodb' | 'local-json' | 'local-memory-fallback';
+  syncedAt?: string;
 }
 
 export function OverviewSection({
@@ -330,37 +334,81 @@ export function CustomersSection({
     }
   }, [data?.customers]);
 
-  const fetchCustomersDirect = useCallback(async (showSuccessToast = false) => {
-    setLocalLoading(true);
-    setLocalError(null);
-    try {
-      const res = await fetch('/api/admin/customers', {
-        credentials: 'include',
-        headers: getAdminAuthHeaders(),
-        cache: 'no-store',
-      });
-      const json = await res.json();
-      if (!res.ok || !json.success) {
-        throw new Error(json.error || 'Failed to load customer records');
+  const fetchCustomersDirect = useCallback(
+    async (showSuccessToast = false, silent = false) => {
+      if (!silent) {
+        setLocalLoading(true);
+        setLocalError(null);
       }
-      setCustomers(json.customers || []);
-      if (showSuccessToast) {
-        toast.success('Customer directory refreshed');
+      try {
+        const res = await fetch('/api/admin/customers', {
+          credentials: 'include',
+          headers: getAdminAuthHeaders(),
+          cache: 'no-store',
+        });
+        const json = await res.json().catch(() => null);
+        if (!res.ok || !json?.success) {
+          handleAdminUnauthorized(res.status, json?.error);
+          throw new Error(json?.error || 'Failed to load customer records');
+        }
+        setCustomers(json.customers || []);
+        setLocalError(null);
+        if (showSuccessToast) {
+          toast.success('Customer directory refreshed');
+        }
+      } catch (err: unknown) {
+        const msg = err instanceof Error ? err.message : 'Failed to load customers';
+        if (!silent) {
+          setLocalError(msg);
+          toast.error(msg);
+        }
+      } finally {
+        if (!silent) {
+          setLocalLoading(false);
+        }
       }
-    } catch (err: unknown) {
-      const msg = err instanceof Error ? err.message : 'Failed to load customers';
-      setLocalError(msg);
-      toast.error(msg);
-    } finally {
-      setLocalLoading(false);
-    }
-  }, []);
+    },
+    []
+  );
 
   useEffect(() => {
     if (!data && !parentLoading) {
-      void fetchCustomersDirect(false);
+      void fetchCustomersDirect(false, false);
     }
   }, [data, parentLoading, fetchCustomersDirect]);
+
+  useEffect(() => {
+    const timer = setInterval(() => {
+      if (document.visibilityState === 'visible') {
+        void fetchCustomersDirect(false, true);
+      }
+    }, 4500);
+
+    const handleVisibility = () => {
+      if (document.visibilityState === 'visible') {
+        void fetchCustomersDirect(false, true);
+      }
+    };
+
+    const handleFocus = () => {
+      void fetchCustomersDirect(false, true);
+    };
+
+    const unsubscribe = subscribeStorefrontChanges((reason) => {
+      if (reason === 'orders' || reason === 'customers' || reason === 'all') {
+        void fetchCustomersDirect(false, true);
+      }
+    });
+
+    window.addEventListener('focus', handleFocus);
+    document.addEventListener('visibilitychange', handleVisibility);
+    return () => {
+      clearInterval(timer);
+      unsubscribe();
+      window.removeEventListener('focus', handleFocus);
+      document.removeEventListener('visibilitychange', handleVisibility);
+    };
+  }, [fetchCustomersDirect]);
 
   const effectiveLoading = (parentLoading && customers.length === 0) || localLoading;
   const effectiveError = localError || (customers.length === 0 ? parentError : null);
@@ -836,10 +884,10 @@ export function InventorySection({
         headers: getAdminAuthHeaders({ 'Content-Type': 'application/json' }),
         body: JSON.stringify({ stockQuantity: nextQty, inStock: nextQty > 0 }),
       });
-      const json = await res.json();
-      if (!res.ok || !json.success) {
-        handleAdminUnauthorized(res.status);
-        throw new Error(json.error || 'Failed');
+      const json = await res.json().catch(() => null);
+      if (!res.ok || !json?.success) {
+        handleAdminUnauthorized(res.status, json?.error);
+        throw new Error(json?.error || 'Failed');
       }
       toast.success(`Updated ${product.sku || product.name} stock to ${nextQty}`);
       notifyStorefrontChanged('products');
@@ -1391,10 +1439,10 @@ export function SettingsSection({
         },
         body: JSON.stringify({ banners: slides }),
       });
-      const data = await res.json();
-      if (!res.ok || !data.success) {
-        handleAdminUnauthorized(res.status);
-        throw new Error(data.error || 'Failed to save hero banners');
+      const data = await res.json().catch(() => null);
+      if (!res.ok || !data?.success) {
+        handleAdminUnauthorized(res.status, data?.error);
+        throw new Error(data?.error || 'Failed to save hero banners');
       }
       if (Array.isArray(data.banners) && data.banners.length === 3) {
         setSlides(data.banners);
@@ -1424,10 +1472,10 @@ export function SettingsSection({
         credentials: 'include',
         headers: getAdminAuthHeaders(),
       });
-      const data = await res.json();
-      if (!res.ok || !data.success || !Array.isArray(data.banners)) {
-        handleAdminUnauthorized(res.status);
-        throw new Error(data.error || 'Reset failed');
+      const data = await res.json().catch(() => null);
+      if (!res.ok || !data?.success || !Array.isArray(data.banners)) {
+        handleAdminUnauthorized(res.status, data?.error);
+        throw new Error(data?.error || 'Reset failed');
       }
       setSlides(data.banners);
       setBrokenPreview({});
@@ -1468,10 +1516,10 @@ export function SettingsSection({
         credentials: 'include',
         headers: getAdminAuthHeaders(),
       });
-      const data = await res.json();
-      if (!res.ok || !data.success) {
-        handleAdminUnauthorized(res.status);
-        throw new Error(data.error || 'Reset failed');
+      const data = await res.json().catch(() => null);
+      if (!res.ok || !data?.success) {
+        handleAdminUnauthorized(res.status, data?.error);
+        throw new Error(data?.error || 'Reset failed');
       }
       setConfirmResetAction(null);
       notifyStorefrontChanged('products');

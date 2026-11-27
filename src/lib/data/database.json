@@ -10,6 +10,16 @@
       "defaultPincode": "401208",
       "createdAt": "2026-11-23T18:18:23.739Z",
       "lastOrderAt": "2026-11-23T18:18:23.739Z"
+    },
+    {
+      "id": "usr-shopper-verify-example-com",
+      "name": "Test Shopper",
+      "email": "shopper.verify@example.com",
+      "phone": "9876501234",
+      "defaultAddress": "101 MG Road, Indiranagar, Bengaluru",
+      "defaultPincode": "560038",
+      "createdAt": "2026-11-24T21:11:12.491Z",
+      "lastOrderAt": "2026-11-24T21:11:12.491Z"
     }
   ],
   "adminUsers": [
@@ -3995,6 +4005,26 @@
       "estimatedDelivery": "Sunday, 29 November 2026",
       "createdAt": "2026-11-23T18:18:23.739Z",
       "updatedAt": "2026-11-23T18:19:48.108Z"
+    },
+    {
+      "id": "ord-step-9991-8882",
+      "orderNumber": "STEP-9991-8882",
+      "userId": "usr-shopper-verify-example-com",
+      "customerName": "Test Shopper",
+      "customerPhone": "9876501234",
+      "customerEmail": "shopper.verify@example.com",
+      "deliveryAddress": "101 MG Road, Indiranagar, Bengaluru",
+      "pincode": "560038",
+      "subtotal": 12999,
+      "shippingFee": 0,
+      "totalAmount": 12999,
+      "status": "Order Confirmed",
+      "paymentStatus": "Paid",
+      "paymentMethod": "Google Pay UPI",
+      "stockDeducted": false,
+      "estimatedDelivery": "Fri, Nov 28, 2026",
+      "createdAt": "2026-11-24T21:11:12.491Z",
+      "updatedAt": "2026-11-24T21:11:12.491Z"
     }
   ],
   "orderItems": [
@@ -4005,6 +4035,21 @@
       "sku": "STEP-0001",
       "name": "Air Max Comfort",
       "imagePath": "/images/Product1/HomeProduct.jpeg",
+      "brand": "StepStyle",
+      "category": "Running",
+      "selectedSize": 7,
+      "selectedColor": "Black/White",
+      "quantity": 1,
+      "unitPrice": 12999,
+      "lineTotal": 12999
+    },
+    {
+      "id": "oi-ord-step-9991-8882-1",
+      "orderId": "ord-step-9991-8882",
+      "productId": 1,
+      "sku": "STEP-0001",
+      "name": "Air Max Comfort",
+      "imagePath": "/images/Product1",
       "brand": "StepStyle",
       "category": "Running",
       "selectedSize": 7,
@@ -4033,6 +4078,25 @@
       "updatedByAdminName": "System",
       "updatedByRole": "System",
       "timestamp": "2026-11-23T18:19:48.108Z"
+    },
+    {
+      "id": "hist-ord-step-9991-8882-1",
+      "orderId": "ord-step-9991-8882",
+      "status": "Order Placed",
+      "note": "Order created at checkout",
+      "updatedByAdminName": "System",
+      "updatedByRole": "Checkout",
+      "timestamp": "2026-11-24T21:11:12.491Z"
+    },
+    {
+      "id": "hist-ord-step-9991-8882-2",
+      "orderId": "ord-step-9991-8882",
+      "status": "Order Confirmed",
+      "previousStatus": "Order Placed",
+      "note": "Payment verified",
+      "updatedByAdminName": "System",
+      "updatedByRole": "System",
+      "timestamp": "2026-11-24T21:11:12.491Z"
     }
   ],
   "payments": [
@@ -4045,6 +4109,17 @@
       "transactionId": "COD327780455",
       "utrNumber": "N/A",
       "updatedAt": "2026-11-23T18:18:23.739Z"
+    },
+    {
+      "id": "pay-ord-step-9991-8882",
+      "orderId": "ord-step-9991-8882",
+      "method": "Google Pay UPI",
+      "status": "Paid",
+      "amount": 12999,
+      "transactionId": "UPI999888777",
+      "utrNumber": "UTR999888777",
+      "paidAt": "2026-11-24T21:11:12.491Z",
+      "updatedAt": "2026-11-24T21:11:12.491Z"
     }
   ],
   "shipping": [
@@ -4055,6 +4130,14 @@
       "trackingNumber": "BD-IN-37648032",
       "estimatedDelivery": "Sunday, 29 November 2026",
       "updatedAt": "2026-11-23T18:18:23.739Z"
+    },
+    {
+      "id": "ship-ord-step-9991-8882",
+      "orderId": "ord-step-9991-8882",
+      "carrier": "BlueDart Express",
+      "trackingNumber": "BD-IN-99918882",
+      "estimatedDelivery": "Fri, Nov 28, 2026",
+      "updatedAt": "2026-11-24T21:11:12.491Z"
     }
   ],
   "returns": [],
@@ -4082,6 +4165,24 @@
       "alt": "High-Traction Sports Range",
       "link": "/products?category=Sports",
       "updatedAt": "2026-11-24T17:40:28.551Z"
+    }
+  ],
+  "adminNotifications": [
+    {
+      "id": "adm-notif-1795801780361-df25d5",
+      "type": "new_order",
+      "orderId": "ord-step-9991-8882",
+      "orderNumber": "STEP-9991-8882",
+      "customerName": "Test Shopper",
+      "customerPhone": "9876501234",
+      "totalAmount": 12999,
+      "paymentMethod": "Google Pay UPI",
+      "paymentStatus": "Paid",
+      "itemCount": 1,
+      "primaryItemName": "Air Max Comfort",
+      "message": "Order STEP-9991-8882 placed by Test Shopper (₹12,999)",
+      "isRead": false,
+      "createdAt": "2026-11-24T21:11:12.491Z"
     }
   ]
 }

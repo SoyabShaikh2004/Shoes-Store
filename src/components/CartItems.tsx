@@ -349,7 +349,7 @@ export default function CartItems() {
   }): Promise<{ ok: boolean; error?: string; order?: Record<string, unknown> }> => {
     let customerEmail: string | undefined;
     try {
-      const storedUser = localStorage.getItem('authUser');
+      const storedUser = localStorage.getItem('authUser') || localStorage.getItem('user');
       if (storedUser) {
         const parsedEmail = JSON.parse(storedUser)?.email;
         if (typeof parsedEmail === 'string' && parsedEmail.includes('@')) {
@@ -358,6 +358,25 @@ export default function CartItems() {
       }
     } catch {
       // ignore
+    }
+
+    if (!customerEmail) {
+      try {
+        const sessionRes = await fetch('/api/auth/google/session', {
+          credentials: 'include',
+          cache: 'no-store',
+        });
+        if (sessionRes.ok) {
+          const sessionData = await sessionRes.json();
+          if (sessionData?.authenticated && typeof sessionData.user?.email === 'string') {
+            customerEmail = sessionData.user.email.trim();
+            localStorage.setItem('isAuthenticated', 'true');
+            localStorage.setItem('authUser', JSON.stringify(sessionData.user));
+          }
+        }
+      } catch {
+        // ignore fallback session lookup error
+      }
     }
 
     const activeOrderId = orderId || generateFreshOrderId();
@@ -418,7 +437,10 @@ export default function CartItems() {
     try {
       const res = await fetch('/api/orders', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: {
+          'Content-Type': 'application/json',
+          'X-Requested-With': 'XMLHttpRequest',
+        },
         body: JSON.stringify(orderPayload),
       });
       const data = await res.json().catch(() => null);

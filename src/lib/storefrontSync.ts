@@ -1,6 +1,6 @@
 'use client';
 
-export type StorefrontSyncReason = 'products' | 'banners' | 'orders' | 'all';
+export type StorefrontSyncReason = 'products' | 'banners' | 'orders' | 'customers' | 'all';
 
 const CHANNEL_NAME = 'stepstyle_storefront_sync';
 const STORAGE_KEY = 'stepstyle_storefront_version';

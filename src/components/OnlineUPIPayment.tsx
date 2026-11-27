@@ -135,8 +135,6 @@ export default function OnlineUPIPayment({
         amount,
         timestamp: new Date().toISOString(),
       });
-
-      toast.success(`Payment confirmed for Order ${orderId}`);
     }, 950);
   }, [amount, isVerifying, onPaymentSuccess, orderId, selectedApp, utrNumber]);
 

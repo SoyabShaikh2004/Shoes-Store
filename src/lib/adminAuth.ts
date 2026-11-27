@@ -12,40 +12,22 @@ export interface AdminUser {
   lastLogin?: string;
 }
 
-const ADMIN_TOKEN_STORAGE_KEY = 'stepstyle_admin_bearer';
 let inMemoryAdminToken: string | null = null;
 
 function getStoredBearerToken(): string | null {
-  if (inMemoryAdminToken) return inMemoryAdminToken;
-  if (typeof window === 'undefined') return null;
-  try {
-    const stored = sessionStorage.getItem(ADMIN_TOKEN_STORAGE_KEY);
-    if (stored) {
-      inMemoryAdminToken = stored;
-      return stored;
-    }
-  } catch {
-    // ignore storage errors in restricted contexts
-  }
-  return null;
+  return inMemoryAdminToken;
 }
 
 export function setAdminMemoryToken(token: string | null): void {
   inMemoryAdminToken = token;
-  if (typeof window === 'undefined') return;
-  try {
-    if (token) {
-      sessionStorage.setItem(ADMIN_TOKEN_STORAGE_KEY, token);
-    } else {
-      sessionStorage.removeItem(ADMIN_TOKEN_STORAGE_KEY);
-    }
-  } catch {
-    // ignore
-  }
 }
 
-export function handleAdminUnauthorized(status?: number): boolean {
-  if (status === 401) {
+export function handleAdminUnauthorized(status?: number, errorMessage?: string): boolean {
+  const inactiveOrMissing =
+    status === 403 &&
+    typeof errorMessage === 'string' &&
+    errorMessage.toLowerCase().includes('inactive or missing');
+  if (status === 401 || inactiveOrMissing) {
     setAdminMemoryToken(null);
     notifyAdminSessionExpired();
     return true;

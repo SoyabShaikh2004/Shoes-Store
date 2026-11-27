@@ -6,6 +6,7 @@ import { useRouter } from 'next/navigation';
 import Image from 'next/image';
 import { Loader2 } from 'lucide-react';
 import GoogleSignInButton from '@/components/GoogleSignInButton';
+import { notifyStorefrontChanged } from '@/lib/storefrontSync';
 
 export default function SignupPage() {
   const router = useRouter();
@@ -149,6 +150,7 @@ export default function SignupPage() {
             phone: isPhone ? cleanId : undefined,
           }),
         });
+        notifyStorefrontChanged('customers');
       } catch {
         // continue locally if network unavailable
       }

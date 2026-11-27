@@ -1,44 +1,60 @@
 import { NextRequest, NextResponse } from 'next/server';
-import {
-  getAllOrdersAdmin,
-  getAdminAnalyticsAndEntities,
-  getAdminNotificationsFromDb,
-  getAdminUsersFromDb,
-  getProductsFromDb,
-} from '@/lib/db/store';
+import { getAdminOverviewSnapshotFromDb } from '@/lib/db/store';
 import { requireAdmin } from '@/lib/server/adminSession';
 
 export const dynamic = 'force-dynamic';
 
+const NO_STORE_HEADERS = {
+  'Cache-Control': 'no-store, no-cache, must-revalidate, proxy-revalidate',
+  Pragma: 'no-cache',
+  Expires: '0',
+};
+
 export async function GET(req: NextRequest) {
   const auth = await requireAdmin(req);
   if (!auth.ok) {
-    return NextResponse.json({ success: false, error: auth.error }, { status: auth.status });
+    return NextResponse.json(
+      { success: false, error: auth.error },
+      { status: auth.status, headers: NO_STORE_HEADERS }
+    );
   }
 
   try {
-    const [{ overview, orders }, entities, products, admins, adminNotifData] =
-      await Promise.all([
-        getAllOrdersAdmin({ sort: 'newest' }),
-        getAdminAnalyticsAndEntities(),
-        getProductsFromDb(true),
-        getAdminUsersFromDb(),
-        getAdminNotificationsFromDb(50),
-      ]);
+    const snapshot = await getAdminOverviewSnapshotFromDb();
 
-    return NextResponse.json({
-      success: true,
-      overview,
-      recentOrders: orders.slice(0, 8),
-      productsCount: products.length,
-      lowStockProducts: products.filter((p) => (p.stockQuantity ?? 0) <= 10),
-      ...entities,
-      adminNotifications: adminNotifData.notifications,
-      unreadNotificationsCount: adminNotifData.unreadCount,
-      admins: auth.admin.role === 'Super Admin' ? admins : admins.filter((a) => a.id === auth.admin.id),
-    });
+    return NextResponse.json(
+      {
+        success: true,
+        overview: snapshot.overview,
+        orders: snapshot.orders,
+        ordersCount: snapshot.orders.length,
+        recentOrders: snapshot.recentOrders,
+        productsCount: snapshot.productsCount,
+        lowStockProducts: snapshot.lowStockProducts,
+        categories: snapshot.categories,
+        brands: snapshot.brands,
+        customers: snapshot.customers,
+        payments: snapshot.payments,
+        shipping: snapshot.shipping,
+        returns: snapshot.returns,
+        refunds: snapshot.refunds,
+        notifications: snapshot.notifications,
+        adminNotifications: snapshot.adminNotifications,
+        unreadNotificationsCount: snapshot.unreadNotificationsCount,
+        admins:
+          auth.admin.role === 'Super Admin'
+            ? snapshot.admins
+            : snapshot.admins.filter((a) => a.id === auth.admin.id),
+        storageMode: snapshot.storageMode,
+        syncedAt: snapshot.syncedAt,
+      },
+      { headers: NO_STORE_HEADERS }
+    );
   } catch (error: unknown) {
     const message = error instanceof Error ? error.message : 'Failed to load dashboard overview';
-    return NextResponse.json({ success: false, error: message }, { status: 500 });
+    return NextResponse.json(
+      { success: false, error: message },
+      { status: 500, headers: NO_STORE_HEADERS }
+    );
   }
 }

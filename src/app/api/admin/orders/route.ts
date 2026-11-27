@@ -13,6 +13,12 @@ import { requireAdmin } from '@/lib/server/adminSession';
 
 export const dynamic = 'force-dynamic';
 
+const NO_STORE_HEADERS = {
+  'Cache-Control': 'no-store, no-cache, must-revalidate, proxy-revalidate',
+  Pragma: 'no-cache',
+  Expires: '0',
+};
+
 function escapeCsvCell(value: unknown): string {
   let str = String(value ?? '');
   // Prevent CSV formula injection
@@ -28,7 +34,10 @@ function escapeCsvCell(value: unknown): string {
 export async function GET(req: NextRequest) {
   const auth = await requireAdmin(req);
   if (!auth.ok) {
-    return NextResponse.json({ success: false, error: auth.error }, { status: auth.status });
+    return NextResponse.json(
+      { success: false, error: auth.error },
+      { status: auth.status, headers: NO_STORE_HEADERS }
+    );
   }
 
   try {
@@ -40,10 +49,10 @@ export async function GET(req: NextRequest) {
       if (!view) {
         return NextResponse.json(
           { success: false, error: 'Order not found.' },
-          { status: 404 }
+          { status: 404, headers: NO_STORE_HEADERS }
         );
       }
-      return NextResponse.json({ success: true, order: view });
+      return NextResponse.json({ success: true, order: view }, { headers: NO_STORE_HEADERS });
     }
 
     const search = searchParams.get('search') || '';
@@ -118,6 +127,7 @@ export async function GET(req: NextRequest) {
         return new NextResponse(csvLines.join('\n'), {
           status: 200,
           headers: {
+            ...NO_STORE_HEADERS,
             'Content-Type': 'text/csv; charset=utf-8',
             'Content-Disposition': `attachment; filename="stepstyle-orders-${Date.now()}.csv"`,
           },
@@ -131,6 +141,7 @@ export async function GET(req: NextRequest) {
       return new NextResponse(buf, {
         status: 200,
         headers: {
+          ...NO_STORE_HEADERS,
           'Content-Type':
             'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
           'Content-Disposition': `attachment; filename="stepstyle-orders-${Date.now()}.xlsx"`,
@@ -138,16 +149,22 @@ export async function GET(req: NextRequest) {
       });
     }
 
-    return NextResponse.json({
-      success: true,
-      overview,
-      orders,
-      adminNotifications: adminNotifData.notifications,
-      unreadNotificationsCount: adminNotifData.unreadCount,
-    });
+    return NextResponse.json(
+      {
+        success: true,
+        overview,
+        orders,
+        adminNotifications: adminNotifData.notifications,
+        unreadNotificationsCount: adminNotifData.unreadCount,
+      },
+      { headers: NO_STORE_HEADERS }
+    );
   } catch (error: unknown) {
     const message = error instanceof Error ? error.message : 'Failed to load orders';
-    return NextResponse.json({ success: false, error: message }, { status: 500 });
+    return NextResponse.json(
+      { success: false, error: message },
+      { status: 500, headers: NO_STORE_HEADERS }
+    );
   }
 }
 

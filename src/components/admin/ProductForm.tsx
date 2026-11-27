@@ -248,11 +248,11 @@ export default function ProductForm({
         body: JSON.stringify(payload),
       });
 
-      const data = await res.json();
+      const data = await res.json().catch(() => null);
 
-      if (!res.ok || !data.success) {
-        handleAdminUnauthorized(res.status);
-        throw new Error(data.error || 'Failed to save product');
+      if (!res.ok || !data?.success) {
+        handleAdminUnauthorized(res.status, data?.error);
+        throw new Error(data?.error || 'Failed to save product');
       }
 
       toast.success(
